@@ -55,7 +55,7 @@ public class RMIJavaServerTest {
         Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Connecting to server.");
         RMIInterface client = (RMIInterface) reg.lookup("server");
         assertFalse(client == null);
-        long startTime = System.nanoTime();
+        long startTime = System.currentTimeMillis();
         for (int i = 0; i < numMessages; i++) {
             // Send 10 MarketDatas for each QuoteRequest
             if (i % 10 == 5) {
@@ -64,10 +64,11 @@ public class RMIJavaServerTest {
                 client.sendMarketData(Util.createMarketData());
             }
         }
-        long finishTime = System.nanoTime();
-        long difference = finishTime - startTime;        
+        long finishTime = System.currentTimeMillis();
+        long difference = finishTime - startTime; 
+        difference = difference * 1000;
         double latency = (double) difference / (numMessages * 2.0);
-        System.out.println("\n\nAverage latency is " + String.format("%.3f",latency) + " nano seconds\n\n\n");    
+        System.out.println("\n\nAverage latency is " + String.format("%.3f",latency) + " microseconds\n\n\n");    
         System.out.println("Finished");
     }
 

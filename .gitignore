@@ -1,3 +1,5 @@
+*~
+
 /KIARA_Java/KIARARMIInterface/target/
 /KIARA_Java/KIARARMIServer/target/
 /KIARA_Java/KIARARMIClient/target/
@@ -11,3 +13,4 @@
 /KIARA_Java/RMIClientProject/target/
 /KIARA_Java/TCPSocketProject/target/
 /KIARA_Java/RabbitMQJava/target/
+/KIARA/target

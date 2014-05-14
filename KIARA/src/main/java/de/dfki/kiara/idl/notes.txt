@@ -1,0 +1,2 @@
+MULTICOMM     : '/*' ( options {greedy=false;} : . )* '*/' -> channel(HIDDEN);
+COMMENT       : ('//' (~'\n')*) -> channel(HIDDEN);

@@ -1,0 +1,14 @@
+
+<serviceGroup>
+  <service name="MarketDataService" targetNamespace="http://webservice.MarketDataService/">
+    <description>Benchmark service</description>
+    <schema schemaNamespace="http://webservice.MarketDataService/" />
+    <parameter name="ServiceClass">dfki.sb.apacheaxis2javaweb.ws.MarketDataService</parameter>
+    <operation name="sendMarketData">
+      <messageReceiver mep="http://www.w3.org/2004/08/wsdl/in-out" class="org.apache.axis2.rpc.receivers.RPCMessageReceiver" />
+    </operation>
+    <operation name="sendQuoteRequest">
+      <messageReceiver mep="http://www.w3.org/2004/08/wsdl/in-out" class="org.apache.axis2.rpc.receivers.RPCMessageReceiver" />
+    </operation>
+  </service>
+</serviceGroup>

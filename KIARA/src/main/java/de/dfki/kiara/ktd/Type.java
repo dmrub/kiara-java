@@ -3,73 +3,88 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package de.dfki.kiara.ktd;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.ArrayList;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class Type extends KTDObject {
+public class Type extends KTDObject implements ParameterInfo {
+
     private String name;
     private int kind;
     private Namespace namespace;
     private Type canonicalType;
-    protected ArrayList<Object> elements;
+    protected ArrayList<KTDObject> elements;
 
     @SuppressWarnings("LeakingThisInConstructor")
     protected Type(World world, String name, int kind, int numElems) {
-        this(world, name, kind, new ArrayList<>(numElems), null);
+        this(world, name, kind, numElems, null);
         this.canonicalType = this;
     }
 
     @SuppressWarnings("LeakingThisInConstructor")
-    protected Type(World world, String name, int kind, ArrayList<Object> elems) {
+    protected Type(World world, String name, int kind,
+            List<? extends KTDObject> elems) {
         this(world, name, kind, elems, null);
         this.canonicalType = this;
     }
 
     protected Type(World world, String name, int kind, int numElems,
             Type canonicalType) {
-        this(world, name, kind, new ArrayList<Object>(numElems), canonicalType);
-    }
-
-    protected Type(World world, String name, int kind, ArrayList<Object> elems,
-            Type canonicalType) {
         super(world);
-        this.elements = elems;
+        this.elements = new ArrayList<>(numElems);
         this.kind = kind;
         this.namespace = null;
         this.canonicalType = canonicalType;
     }
 
-    public Namespace getNamespace() {
+    protected Type(World world, String name, int kind,
+            List<? extends KTDObject> elems, Type canonicalType) {
+        super(world);
+        this.elements = new ArrayList<>(elems);
+        this.kind = kind;
+        this.namespace = null;
+        this.canonicalType = canonicalType;
+    }
+
+    @Override public String getParameterName() {
+        return null;
+    }
+
+    @Override public Type getParameterType() {
+        return this;
+    }
+
+    public final Namespace getNamespace() {
         return namespace;
     }
 
-    public void setNamespace(Namespace namespace) {
+    public final void setNamespace(Namespace namespace) {
         this.namespace = namespace;
     }
 
-    public String getTypeName() {
+    public final String getTypeName() {
         return name;
     }
 
     public String getFullTypeName() {
-        if (namespace != null)
+        if (namespace != null) {
             return namespace.getFullName() + "." + getTypeName();
-        else
+        } else {
             return getTypeName();
+        }
     }
 
     public final int getKind() {
         return kind;
     }
 
-    public final ArrayList<Object> getElements() {
+    public final ArrayList<KTDObject> getElements() {
         return this.elements;
     }
 
@@ -78,11 +93,13 @@ public class Type extends KTDObject {
     }
 
     public final <T> T getAs(Class<T> cls) {
-        if (cls.isInstance(this))
+        if (cls.isInstance(this)) {
             return cls.cast(this);
+        }
         Type ty = getCanonicalType();
-        if (cls.isInstance(ty))
+        if (cls.isInstance(ty)) {
             return cls.cast(ty);
+        }
         return null;
     }
 
@@ -92,8 +109,9 @@ public class Type extends KTDObject {
 
     public final <T> T getSafeElementAs(Class<T> cls, int index) {
         Object element = this.elements.get(index);
-        if (cls.isInstance(element))
+        if (cls.isInstance(element)) {
             return cls.cast(element);
+        }
         return null;
     }
 
@@ -105,16 +123,8 @@ public class Type extends KTDObject {
         return this == canonicalType;
     }
 
-    protected final void resizeElements(int newSize) {
-        this.elements.ensureCapacity(newSize);
-        // trim
-        while (this.elements.size() > newSize) {
-            this.elements.remove(this.elements.size()-1);
-        }
-        // fill
-        while (this.elements.size() < newSize) {
-            this.elements.add(null);
-        }
+    protected void resizeElements(int newSize) {
+        Lists.resizeList(this.elements, newSize);
     }
 
     protected void setCanonicalTypeUnsafe(Type type) {
@@ -123,18 +133,28 @@ public class Type extends KTDObject {
 
     @Override
     public boolean equals(Object other) {
-        if (!(other instanceof Type))
+        if (!(other instanceof Type)) {
             return false;
-        Type otherTy = (Type)other;
-        if (getKind() != otherTy.getKind())
+        }
+        Type otherTy = (Type) other;
+        if (getKind() != otherTy.getKind()) {
             return false;
-        if (elements.size() != otherTy.elements.size())
+        }
+        if (elements.size() != otherTy.elements.size()) {
             return false;
+        }
         for (int i = 0; i < elements.size(); ++i) {
-            if (elements.get(i) == otherTy.elements.get(i))
+            KTDObject thisEl = elements.get(i);
+            KTDObject thatEl = otherTy.elements.get(i);
+
+            if (thisEl == thatEl) {
                 continue;
-            if (elements.get(i) != null && elements.equals(otherTy.elements.get(i)))
+            }
+
+            if (thisEl != null && thisEl.equals(thatEl)) {
                 continue;
+            }
+
             return false;
         }
         return true;

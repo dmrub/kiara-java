@@ -15,7 +15,6 @@ import java.util.HashMap;
  */
 public final class World {
 
-    private Map<String, StructType> uniqueStructTypes;
     private HashMap<KTDObject, KTDObject> objects;
     private final Namespace namespace;
 
@@ -49,6 +48,7 @@ public final class World {
     private final StructType encryptedAnnotation;
 
     public World() {
+        objects = new HashMap<>();
         namespace = Namespace.create(this, "kiara");
 
         typeType = (TypeType)getOrCreate(new TypeType(this));

@@ -54,6 +54,6 @@ public class EnumType extends Type {
     }
 
     @Override public int hashCode() {
-        return Objects.hashCode(this);
+        return System.identityHashCode(this);
     }
 }

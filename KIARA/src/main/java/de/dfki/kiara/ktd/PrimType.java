@@ -57,6 +57,8 @@ public class PrimType extends Type {
                 return "java_boolean";
             case PrimTypeKind.PRIMTYPE_java_char:
                 return "java_char";
+            case PrimTypeKind.PRIMTYPE_java_nullptr:
+                return "java_nullptr";
             default:
                 throw new IllegalArgumentException("Unknown primitive type ID");
         }

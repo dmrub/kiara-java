@@ -29,11 +29,22 @@ public class CompositeType extends CompoundType {
         resizeElements(0);
     }
 
+    private void resizeElementDataList(int newSize) {
+        // trim
+        while (elementDataList.size() > newSize) {
+            elementDataList.remove(elementDataList.size()-1);
+        }
+        // fill
+        while (elementDataList.size() < newSize) {
+            elementDataList.add(new ElementData());
+        }
+    }
+
     @Override public void resizeElements(int newSize) {
         if (!isUnique())
             throw new IllegalStateException("Structure is not unique");
         Lists.resizeList(this.elements, newSize);
-        Lists.resizeList(this.elementDataList, newSize);
+        resizeElementDataList(newSize);
     }
 
     public final void setElements(Type ... elements) {
@@ -112,7 +123,7 @@ public class CompositeType extends CompoundType {
 
     @Override public int hashCode() {
         if (unique)
-            return Objects.hashCode(this);
+            return System.identityHashCode(this);
         else
             return super.hashCode();
     }
@@ -135,6 +146,7 @@ public class CompositeType extends CompoundType {
         super(world, name, kind, num);
         this.unique = unique;
         this.elementDataList = new ArrayList<>(num);
+        resizeElementDataList(num);
     }
 
     protected CompositeType(World world, String name, int kind,
@@ -147,6 +159,7 @@ public class CompositeType extends CompoundType {
         super(world, name, kind, elems);
         this.unique = unique;
         this.elementDataList = new ArrayList<>(elems.size());
+        resizeElementDataList(elems.size());
         if (names != null)
             setElementNames(names);
     }

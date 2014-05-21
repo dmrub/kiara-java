@@ -38,6 +38,7 @@ public class Type extends KTDObject implements ParameterInfo {
             Type canonicalType) {
         super(world);
         this.elements = new ArrayList<>(numElems);
+        Lists.resizeList(this.elements, numElems);
         this.kind = kind;
         this.namespace = null;
         this.canonicalType = canonicalType;

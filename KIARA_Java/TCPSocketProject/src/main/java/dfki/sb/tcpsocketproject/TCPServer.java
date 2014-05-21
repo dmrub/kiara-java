@@ -41,6 +41,8 @@ public class TCPServer {
                     break;
                 }
             }
+            ois.close();
+            oos.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

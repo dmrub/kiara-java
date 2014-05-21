@@ -28,8 +28,14 @@ public class ThriftJavaServerTest {
     
     @BeforeClass
     public static void setUpClass() {
-        String[] args = null;
-        ThriftJavaServer.main(args);
+        Runnable startServer = new Runnable() {
+            @Override
+            public void run() {
+                String[] args = null;
+                ThriftJavaServer.main(args);
+            }
+        };
+        new Thread(startServer).start();
     }
     
     @AfterClass

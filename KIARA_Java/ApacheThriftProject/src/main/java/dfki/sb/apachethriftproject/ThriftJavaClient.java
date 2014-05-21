@@ -3,10 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package dfki.sb.apachethriftclient;
+package dfki.sb.apachethriftproject;
 
 import benchmark.Benchmark;
-import dfki.sb.apachethriftproject.Util;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;

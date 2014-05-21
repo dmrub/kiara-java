@@ -3,54 +3,18 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 package dfki.sb.zerociceproject;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import dfki.sb.zerociceproject.Main.*;
+
 
 /**
  *
  * @author Shahzad
  */
-public class IceJavaServerTest {
-
-    public IceJavaServerTest() {
-    }
-
-    @BeforeClass
-    public static void setUpClass() throws InterruptedException {
-        String[] args = null;
-        Runnable startServer = new Runnable() {
-            @Override
-            public void run() {
-                IceJavaServer.main(null);
-            }
-        };
-        new Thread(startServer).start();
-        Thread.sleep(100);
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
-    @Before
-    public void setUp() {
-    }
-
-    @After
-    public void tearDown() {
-    }
-
-    /**
-     * Test of main method, of class IceJavaServer.
-     */
-    @Test
-    public void testMain() {
+public class IceJavaClient {
+    public static void main(String[] args) {
         int numMessages = 1000;
         String host = "localhost";
         long startTime = 0;
@@ -58,8 +22,7 @@ public class IceJavaServerTest {
         try {
             ic = Ice.Util.initialize(new String[]{});
             Ice.ObjectPrx base = ic.stringToProxy("Benchmark:tcp -p 10000 -h "+host);
-            dfki.sb.zerociceproject.Main.BenchmarkPrx benchmark = dfki.sb.zerociceproject.Main.BenchmarkPrxHelper.checkedCast(base);
-            assertFalse(benchmark == null);
+            BenchmarkPrx benchmark = BenchmarkPrxHelper.checkedCast(base);
             startTime = System.currentTimeMillis();
             for (int i = 0; i < numMessages; i++) {
                 // Send 10 MarketDatas for each QuoteRequest
@@ -74,7 +37,7 @@ public class IceJavaServerTest {
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
-        long finishTime = System.currentTimeMillis();
+        long finishTime = System.currentTimeMillis();        
         long difference = finishTime - startTime;
         difference = difference * 1000;
         if (ic != null) {

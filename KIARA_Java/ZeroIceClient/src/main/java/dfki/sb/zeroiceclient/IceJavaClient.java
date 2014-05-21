@@ -51,7 +51,7 @@ public class IceJavaClient {
             }
         }
         double latency = (double) difference / (numMessages * 2.0);
-        System.out.println("\n\nAverage latency is " + String.format("%.3f", latency) + " milli seconds\n\n");
+        System.out.println("\n\nAverage latency is " + String.format("%.3f", latency) + " microseconds\n\n");
         System.out.println("\t\tFinished");
     }
 }

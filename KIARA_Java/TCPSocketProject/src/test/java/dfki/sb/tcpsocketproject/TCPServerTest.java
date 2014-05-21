@@ -82,10 +82,12 @@ public class TCPServerTest {
                         oos.flush();                        
                         ois.readObject();                        
                     }
-                }
+                }                
+                long finishTime = System.currentTimeMillis();
                 oos.writeInt(-1);
                 oos.flush();   
-                long finishTime = System.currentTimeMillis();
+                oos.close();
+                ois.close();
                 long difference = finishTime - startTime;
                 difference = difference * 1000;
                 double latency = (double) difference / (numMessages * 2.0);

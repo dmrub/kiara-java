@@ -45,15 +45,6 @@ public class IceJavaServer {
     }
 
     public static void main(String[] args) {
-        try {
-            Runnable startServer = new Runnable() {
-                public void run() {
-                    startServer();
-                }
-            };
-            new Thread(startServer).start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        startServer();
     }
 }

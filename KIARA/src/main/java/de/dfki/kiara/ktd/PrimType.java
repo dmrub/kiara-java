@@ -139,11 +139,29 @@ public class PrimType extends Type {
                 || kind == PrimTypeKind.PRIMTYPE_java_long);
     }
 
-    boolean isFloatingPointPrimTypeKind(int kind) {
+    public final boolean isFloatingPointPrimTypeKind(int kind) {
         return (kind == PrimTypeKind.PRIMTYPE_float
                 || kind == PrimTypeKind.PRIMTYPE_double
                 || kind == PrimTypeKind.PRIMTYPE_java_float
                 || kind == PrimTypeKind.PRIMTYPE_java_double);
+    }
+
+    public final int getByteSize() { return getByteSizeOfPrimTypeKind(getKind()); }
+
+    public final boolean isInteger() {
+        return isIntegerPrimTypeKind(getKind());
+    }
+
+    public final boolean isSignedInteger() {
+        return isSignedIntegerPrimTypeKind(getKind());
+    }
+
+    public final boolean isFloatingPoint() {
+        return isFloatingPointPrimTypeKind(getKind());
+    }
+
+    public final boolean isJavaType() {
+        return getKind() >= PrimTypeKind.FIRST_JAVA_PRIMTYPE;
     }
 
     public static final PrimType getBooleanType(World world) {

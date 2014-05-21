@@ -6,7 +6,6 @@
 
 package de.dfki.kiara.ktd;
 
-import java.util.Arrays;
 import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -44,18 +43,13 @@ public class TypeTest {
     public void tearDown() {
     }
 
-    // TODO add test methods here.
-    // The methods must be annotated with annotation @Test. For example:
-    //
-    // @Test
-    // public void hello() {}
-
     @Test
     public void testWorld() {
         World world = new World();
 
-        PrimType i8 = PrimType.getBooleanType(world);
-        logger.info(i8.getTypeName());
+        assertEquals(world.type_i8().getTypeName(), "i8");
+        assertEquals(world.type_u8().getTypeName(), "u8");
+        assertEquals(PrimType.getBooleanType(world).getTypeName(), "boolean");
 
         StructType t1 = StructType.get(
                 world, "T1",
@@ -76,5 +70,7 @@ public class TypeTest {
         assertSame(t1, t2);
         assertNotSame(t1, t3);
         assertNotSame(t2, t3);
+
+        assertSame(t1, t1.getCanonicalType());
     }
 }

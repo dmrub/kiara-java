@@ -37,11 +37,12 @@ public class Type extends KTDObject implements ParameterInfo {
     protected Type(World world, String name, int kind, int numElems,
             Type canonicalType) {
         super(world);
-        this.elements = new ArrayList<>(numElems);
-        Lists.resizeList(this.elements, numElems);
+        this.name = name;
         this.kind = kind;
         this.namespace = null;
         this.canonicalType = canonicalType;
+        this.elements = new ArrayList<>(numElems);
+        Lists.resizeList(this.elements, numElems);
     }
 
     protected Type(World world, String name, int kind,

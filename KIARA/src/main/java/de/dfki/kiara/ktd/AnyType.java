@@ -11,7 +11,7 @@ package de.dfki.kiara.ktd;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class AnyType extends Type {
-    private AnyType(World world) {
+    AnyType(World world) {
         super(world, "any", NodeKind.NODE_ANYTYPE, 0);
     }
 

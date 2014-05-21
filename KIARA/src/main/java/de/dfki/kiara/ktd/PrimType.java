@@ -11,7 +11,7 @@ package de.dfki.kiara.ktd;
  */
 public class PrimType extends Type {
 
-    private PrimType(World world, int kind) {
+    PrimType(World world, int kind) {
         super(world, getNameOfPrimTypeKind(kind), kind, 0);
     }
 
@@ -41,32 +41,22 @@ public class PrimType extends Type {
                 return "boolean";
             case PrimTypeKind.PRIMTYPE_string:
                 return "string";
-            case PrimTypeKind.PRIMTYPE_c_int8_t:
-                return "c_int8_t";
-            case PrimTypeKind.PRIMTYPE_c_uint8_t:
-                return "c_uint8_t";
-            case PrimTypeKind.PRIMTYPE_c_int16_t:
-                return "c_int16_t";
-            case PrimTypeKind.PRIMTYPE_c_uint16_t:
-                return "c_uint16_t";
-            case PrimTypeKind.PRIMTYPE_c_int32_t:
-                return "c_int32_t";
-            case PrimTypeKind.PRIMTYPE_c_uint32_t:
-                return "c_uint32_t";
-            case PrimTypeKind.PRIMTYPE_c_int64_t:
-                return "c_int64_t";
-            case PrimTypeKind.PRIMTYPE_c_uint64_t:
-                return "c_uint64_t";
-            case PrimTypeKind.PRIMTYPE_c_float:
-                return "c_float";
-            case PrimTypeKind.PRIMTYPE_c_double:
-                return "c_double";
-            case PrimTypeKind.PRIMTYPE_c_longdouble:
-                return "c_longdouble";
-            case PrimTypeKind.PRIMTYPE_c_bool:
-                return "c_bool";
-            case PrimTypeKind.PRIMTYPE_c_nullptr:
-                return "c_nullptr";
+            case PrimTypeKind.PRIMTYPE_java_byte:
+                return "java_byte";
+            case PrimTypeKind.PRIMTYPE_java_short:
+                return "java_short";
+            case PrimTypeKind.PRIMTYPE_java_int:
+                return "java_int";
+            case PrimTypeKind.PRIMTYPE_java_long:
+                return "java_long";
+            case PrimTypeKind.PRIMTYPE_java_float:
+                return "java_float";
+            case PrimTypeKind.PRIMTYPE_java_double:
+                return "java_double";
+            case PrimTypeKind.PRIMTYPE_java_boolean:
+                return "java_boolean";
+            case PrimTypeKind.PRIMTYPE_java_char:
+                return "java_char";
             default:
                 throw new IllegalArgumentException("Unknown primitive type ID");
         }
@@ -99,31 +89,23 @@ public class PrimType extends Type {
                 return 1; //??? Is this correct
             case PrimTypeKind.PRIMTYPE_string:
                 return 0; //??? What to return here ?
-            // For native types function should report size measured with sizeof
-            case PrimTypeKind.PRIMTYPE_c_int8_t:
+            // For native types function should report size used by DataOutputStream encoding
+            case PrimTypeKind.PRIMTYPE_java_byte:
                 return 1;
-            case PrimTypeKind.PRIMTYPE_c_uint8_t:
-                return 1;
-            case PrimTypeKind.PRIMTYPE_c_int16_t:
+            case PrimTypeKind.PRIMTYPE_java_short:
                 return 2;
-            case PrimTypeKind.PRIMTYPE_c_uint16_t:
-                return 2;
-            case PrimTypeKind.PRIMTYPE_c_int32_t:
+            case PrimTypeKind.PRIMTYPE_java_int:
                 return 4;
-            case PrimTypeKind.PRIMTYPE_c_uint32_t:
+            case PrimTypeKind.PRIMTYPE_java_long:
+                return 8;
+            case PrimTypeKind.PRIMTYPE_java_float:
                 return 4;
-            case PrimTypeKind.PRIMTYPE_c_int64_t:
+            case PrimTypeKind.PRIMTYPE_java_double:
                 return 8;
-            case PrimTypeKind.PRIMTYPE_c_uint64_t:
-                return 8;
-            case PrimTypeKind.PRIMTYPE_c_float:
-                return 4;
-            case PrimTypeKind.PRIMTYPE_c_double:
-                return 8;
-            case PrimTypeKind.PRIMTYPE_c_longdouble:
-                return 0; //??? What to return here ?
-            case PrimTypeKind.PRIMTYPE_c_bool:
+            case PrimTypeKind.PRIMTYPE_java_boolean:
                 return 1;
+            case PrimTypeKind.PRIMTYPE_java_char:
+                return 2;
             default:
                 throw new IllegalArgumentException("Unknown primitive type ID");
         }
@@ -138,14 +120,10 @@ public class PrimType extends Type {
                 || kind == PrimTypeKind.PRIMTYPE_u32
                 || kind == PrimTypeKind.PRIMTYPE_i64
                 || kind == PrimTypeKind.PRIMTYPE_u64
-                || kind == PrimTypeKind.PRIMTYPE_c_int8_t
-                || kind == PrimTypeKind.PRIMTYPE_c_uint8_t
-                || kind == PrimTypeKind.PRIMTYPE_c_int16_t
-                || kind == PrimTypeKind.PRIMTYPE_c_uint16_t
-                || kind == PrimTypeKind.PRIMTYPE_c_int32_t
-                || kind == PrimTypeKind.PRIMTYPE_c_uint32_t
-                || kind == PrimTypeKind.PRIMTYPE_c_int64_t
-                || kind == PrimTypeKind.PRIMTYPE_c_uint64_t);
+                || kind == PrimTypeKind.PRIMTYPE_java_byte
+                || kind == PrimTypeKind.PRIMTYPE_java_short
+                || kind == PrimTypeKind.PRIMTYPE_java_int
+                || kind == PrimTypeKind.PRIMTYPE_java_long);
     }
 
     public static final boolean isSignedIntegerPrimTypeKind(int kind) {
@@ -153,18 +131,17 @@ public class PrimType extends Type {
                 || kind == PrimTypeKind.PRIMTYPE_i16
                 || kind == PrimTypeKind.PRIMTYPE_i32
                 || kind == PrimTypeKind.PRIMTYPE_i64
-                || kind == PrimTypeKind.PRIMTYPE_c_int8_t
-                || kind == PrimTypeKind.PRIMTYPE_c_int16_t
-                || kind == PrimTypeKind.PRIMTYPE_c_int32_t
-                || kind == PrimTypeKind.PRIMTYPE_c_int64_t);
+                || kind == PrimTypeKind.PRIMTYPE_java_byte
+                || kind == PrimTypeKind.PRIMTYPE_java_short
+                || kind == PrimTypeKind.PRIMTYPE_java_int
+                || kind == PrimTypeKind.PRIMTYPE_java_long);
     }
 
     boolean isFloatingPointPrimTypeKind(int kind) {
         return (kind == PrimTypeKind.PRIMTYPE_float
                 || kind == PrimTypeKind.PRIMTYPE_double
-                || kind == PrimTypeKind.PRIMTYPE_c_float
-                || kind == PrimTypeKind.PRIMTYPE_c_double
-                || kind == PrimTypeKind.PRIMTYPE_c_longdouble);
+                || kind == PrimTypeKind.PRIMTYPE_java_float
+                || kind == PrimTypeKind.PRIMTYPE_java_double);
     }
 
     public static final PrimType getBooleanType(World world) {

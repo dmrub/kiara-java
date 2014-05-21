@@ -11,7 +11,7 @@ package de.dfki.kiara.ktd;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class VoidType extends Type {
-    private VoidType(World world) {
+    VoidType(World world) {
         super(world, "void", NodeKind.NODE_VOIDTYPE, 0);
     }
 

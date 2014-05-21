@@ -11,7 +11,7 @@ package de.dfki.kiara.ktd;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class TypeType extends Type {
-    private TypeType(World world) {
+    TypeType(World world) {
         super(world, "type", NodeKind.NODE_TYPETYPE, 0);
     }
 

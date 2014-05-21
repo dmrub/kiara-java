@@ -13,68 +13,81 @@ import java.util.HashMap;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class World {
+public final class World {
 
     private Map<String, StructType> uniqueStructTypes;
     private HashMap<KTDObject, KTDObject> objects;
     private final Namespace namespace;
 
-    private TypeType type_;
-    private VoidType void_;
-    private UnresolvedSymbolType unresolved_symbol_;
-    private AnyType any_;
-    private PrimType i8_;
-    private PrimType u8_;
-    private PrimType i16_;
-    private PrimType u16_;
-    private PrimType i32_;
-    private PrimType u32_;
-    private PrimType i64_;
-    private PrimType u64_;
-    private PrimType float_;
-    private PrimType double_;
-    private PrimType boolean_;
-    private PrimType string_;
+    private final TypeType typeType;
+    private final VoidType voidType;
+    private final UnresolvedSymbolType unresolvedSymbolType;
+    private final AnyType anyType;
+    private final PrimType i8Type;
+    private final PrimType u8Type;
+    private final PrimType i16Type;
+    private final PrimType u16Type;
+    private final PrimType i32Type;
+    private final PrimType u32Type;
+    private final PrimType i64Type;
+    private final PrimType u64Type;
+    private final PrimType floatType;
+    private final PrimType doubleType;
+    private final PrimType booleanType;
+    private final PrimType stringType;
 
-    private PrimType c_int8_t_;
-    private PrimType c_uint8_t_;
-    private PrimType c_int16_t_;
-    private PrimType c_uint16_t_;
-    private PrimType c_int32_t_;
-    private PrimType c_uint32_t_;
-    private PrimType c_int64_t_;
-    private PrimType c_uint64_t_;
-    private PrimType c_float_;
-    private PrimType c_double_;
-    private PrimType c_longdouble_;
-    private PrimType c_bool_;
-    private PrimType c_nullptr_;
+    private final PrimType byteJavaType;
+    private final PrimType shortJavaType;
+    private final PrimType intJavaType;
+    private final PrimType longJavaType;
+    private final PrimType floatJavaType;
+    private final PrimType doubleJavaType;
+    private final PrimType charJavaType;
+    private final PrimType booleanJavaType;
+    private final PrimType nullptrJavaType;
 
-    private Type c_char_;
-    private Type c_wchar_t_;
-    private Type c_schar_;
-    private Type c_uchar_;
-    private Type c_short_;
-    private Type c_ushort_;
-    private Type c_int_;
-    private Type c_uint_;
-    private Type c_long_;
-    private Type c_ulong_;
-    private Type c_longlong_;
-    private Type c_ulonglong_;
-    private Type c_size_t_;
-    private Type c_ssize_t_;
-
-    private Type c_string_ptr_;
-
-    //private PtrType c_void_ptr_;
-    //private PtrType c_raw_char_ptr_;
-    private Type c_char_ptr_;
-
-    private StructType encryptedAnnotation_;
+    private final StructType encryptedAnnotation;
 
     public World() {
         namespace = Namespace.create(this, "kiara");
+
+        typeType = (TypeType)getOrCreate(new TypeType(this));
+        voidType = (VoidType)getOrCreate(new VoidType(this));
+        unresolvedSymbolType = (UnresolvedSymbolType)getOrCreate(new UnresolvedSymbolType(this));
+        anyType = (AnyType)getOrCreate(new AnyType(this));
+        i8Type = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_i8));
+        u8Type = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_u8));
+        i16Type = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_i16));
+        u16Type = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_u16));
+        i32Type = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_i32));
+        u32Type = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_u32));
+        i64Type = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_i64));
+        u64Type = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_u64));
+        floatType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_float));
+        doubleType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_double));
+        booleanType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_boolean));
+        stringType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_string));
+
+        byteJavaType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_java_byte));
+        shortJavaType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_java_short));
+        intJavaType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_java_int));
+        longJavaType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_java_long));
+        floatJavaType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_java_float));
+        doubleJavaType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_java_double));
+        charJavaType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_java_char));
+        booleanJavaType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_java_boolean));
+
+        nullptrJavaType = (PrimType)getOrCreate(new PrimType(this, PrimTypeKind.PRIMTYPE_java_nullptr));
+
+
+        // builtin annotations
+
+        {
+            encryptedAnnotation = StructType.create(this, "Encrypted", 1);
+            encryptedAnnotation.setElementNameAt(0, "keyName");
+            encryptedAnnotation.setElements(type_string());
+            //encryptedAnnotation.setAttributeValue<AnnotationTypeAttr>(true);
+        }
 
     }
 
@@ -84,204 +97,109 @@ public class World {
 
     // Abstract built-in types
     public TypeType type_type() {
-        return type_;
+        return typeType;
     }
 
     public VoidType type_void() {
-        return void_;
+        return voidType;
     }
 
     public UnresolvedSymbolType type_unresolved_symbol() {
-        return unresolved_symbol_;
+        return unresolvedSymbolType;
     }
 
     public AnyType type_any() {
-        return any_;
+        return anyType;
     }
 
     public PrimType type_i8() {
-        return i8_;
+        return i8Type;
     }
 
     public PrimType type_u8() {
-        return u8_;
+        return u8Type;
     }
 
     public PrimType type_i16() {
-        return i16_;
+        return i16Type;
     }
 
     public PrimType type_u16() {
-        return u16_;
+        return u16Type;
     }
 
     public PrimType type_i32() {
-        return i32_;
+        return i32Type;
     }
 
     public PrimType type_u32() {
-        return u32_;
+        return u32Type;
     }
 
     public PrimType type_i64() {
-        return i64_;
+        return i64Type;
     }
 
     public PrimType type_u64() {
-        return u64_;
+        return u64Type;
     }
 
     public PrimType type_float() {
-        return float_;
+        return floatType;
     }
 
     public PrimType type_double() {
-        return double_;
+        return doubleType;
     }
 
     public PrimType type_boolean() {
-        return boolean_;
+        return booleanType;
     }
 
     public PrimType type_string() {
-        return string_;
+        return stringType;
     }
 
     // Native built-in types
-    public PrimType type_c_int8_t() {
-        return c_int8_t_;
+
+    public PrimType type_java_byte() {
+        return byteJavaType;
     }
 
-    public PrimType type_c_uint8_t() {
-        return c_uint8_t_;
+    public PrimType type_java_short() {
+        return shortJavaType;
     }
 
-    public PrimType type_c_int16_t() {
-        return c_int16_t_;
+    public PrimType type_java_int() {
+        return intJavaType;
     }
 
-    public PrimType type_c_uint16_t() {
-        return c_uint16_t_;
+    public PrimType type_java_long() {
+        return longJavaType;
     }
 
-    public PrimType type_c_int32_t() {
-        return c_int32_t_;
+    public PrimType type_java_float() {
+        return floatJavaType;
     }
 
-    public PrimType type_c_uint32_t() {
-        return c_uint32_t_;
+    public PrimType type_java_double() {
+        return doubleJavaType;
     }
 
-    public PrimType type_c_int64_t() {
-        return c_int64_t_;
+    public PrimType type_java_char() {
+        return charJavaType;
     }
 
-    public PrimType type_c_uint64_t() {
-        return c_uint64_t_;
+    public PrimType type_java_boolean() {
+        return booleanJavaType;
     }
 
-    public Type type_c_char() {
-        return c_char_;
-    }
-
-    public Type type_c_wchar_t() {
-        return c_wchar_t_;
-    }
-
-    public Type type_c_schar() {
-        return c_schar_;
-    }
-
-    public Type type_c_uchar() {
-        return c_uchar_;
-    }
-
-    public Type type_c_short() {
-        return c_short_;
-    }
-
-    public Type type_c_ushort() {
-        return c_ushort_;
-    }
-
-    public Type type_c_int() {
-        return c_int_;
-    }
-
-    public Type type_c_uint() {
-        return c_uint_;
-    }
-
-    public Type type_c_long() {
-        return c_long_;
-    }
-
-    public Type type_c_ulong() {
-        return c_ulong_;
-    }
-
-    public Type type_c_longlong() {
-        return c_longlong_;
-    }
-
-    public Type type_c_ulonglong() {
-        return c_ulonglong_;
-    }
-
-    public Type type_c_size_t() {
-        return c_size_t_;
-    }
-
-    public Type type_c_ssize_t() {
-        return c_ssize_t_;
-    }
-
-    public PrimType type_c_float() {
-        return c_float_;
-    }
-
-    public PrimType type_c_double() {
-        return c_double_;
-    }
-
-    public PrimType type_c_longdouble() {
-        return c_longdouble_;
-    }
-
-    public PrimType type_c_bool() {
-        return c_bool_;
-    }
-
-    public PrimType type_c_nullptr() {
-        return c_nullptr_;
-    }
-
-//    public PtrType type_c_ptr(Type elementType) {
-//        return PtrType.get(elementType);
-//    }
-
-//    public RefType type_c_ref(Type elementType) {
-//        return RefType::get(elementType);
-//    }
-
-    public Type type_c_char_ptr() {
-        return c_char_ptr_;
-    }
-
-//    public PtrType type_c_raw_char_ptr() {
-//        return c_raw_char_ptr_;
-//    }
-//
-//    public PtrType type_c_void_ptr() {
-//        return c_void_ptr_;
-//    }
-
-    public Type type_c_string_ptr() {
-        return c_string_ptr_;
+    public PrimType type_java_nullptr() {
+        return nullptrJavaType;
     }
 
     public StructType getEncryptedAnnotation() {
-        return encryptedAnnotation_;
+        return encryptedAnnotation;
     }
 
     public <T extends KTDObject> T getOrCreate(Class<T> cls, T val) {

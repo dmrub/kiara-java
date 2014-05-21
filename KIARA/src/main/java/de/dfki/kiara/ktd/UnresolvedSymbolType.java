@@ -11,7 +11,7 @@ package de.dfki.kiara.ktd;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class UnresolvedSymbolType extends Type {
-    private UnresolvedSymbolType(World world) {
+    UnresolvedSymbolType(World world) {
         super(world, "unresolved_symbol", NodeKind.NODE_UNRESOLVEDSYMBOLTYPE, 0);
     }
 

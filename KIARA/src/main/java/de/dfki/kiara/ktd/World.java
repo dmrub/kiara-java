@@ -218,4 +218,12 @@ public final class World {
         return val;
     }
 
+    public void dump() {
+        System.out.println("World "+System.identityHashCode(this)+" {");
+        for (Object obj : objects.values()) {
+            System.out.println("  "+obj);
+        }
+        System.out.println("}");
+    }
+
 }

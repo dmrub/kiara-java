@@ -6,6 +6,9 @@
 
 package de.dfki.kiara.ktd;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.reflect.TypeToken;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -13,7 +16,6 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import com.google.common.collect.ImmutableList;
 
 /**
  *
@@ -72,5 +74,19 @@ public class TypeTest {
         assertNotSame(t2, t3);
 
         assertSame(t1, t1.getCanonicalType());
+
+        ObjectType ot1 = ObjectType.get(world, String.class);
+        ObjectType ot2 = ObjectType.get(world, String.class);
+
+        ObjectType ot3 = ObjectType.get(world,
+                new TypeToken<java.util.List<String>>() {});
+
+        assertEquals(ot1, ot2);
+        assertSame(ot1, ot2);
+
+        logger.log(Level.INFO, "Name of String class: {0}", ot1.getTypeName());
+        logger.log(Level.INFO, "Name of List<String> class: {0}", ot3.getTypeName());
+
+        world.dump();
     }
 }

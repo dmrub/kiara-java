@@ -46,10 +46,11 @@ public class NodeKind {
     public static final int NODE_ENUMTYPE = LAST_PRIMTYPE_NODE + 8;
     public static final int NODE_PTRTYPE = LAST_PRIMTYPE_NODE + 9;
     public static final int NODE_REFTYPE = LAST_PRIMTYPE_NODE + 10;
-    public static final int NODE_ARRAYTYPE = LAST_PRIMTYPE_NODE + 11;
-    public static final int NODE_FIXEDARRAYTYPE = LAST_PRIMTYPE_NODE + 12;
-    public static final int NODE_STRUCTTYPE = LAST_PRIMTYPE_NODE + 13;
-    public static final int NODE_FUNCTYPE = LAST_PRIMTYPE_NODE + 14;
-    public static final int NODE_SERVICETYPE = LAST_PRIMTYPE_NODE + 15;
+    public static final int NODE_OBJECTTYPE = LAST_PRIMTYPE_NODE + 11;
+    public static final int NODE_ARRAYTYPE = LAST_PRIMTYPE_NODE + 12;
+    public static final int NODE_FIXEDARRAYTYPE = LAST_PRIMTYPE_NODE + 13;
+    public static final int NODE_STRUCTTYPE = LAST_PRIMTYPE_NODE + 14;
+    public static final int NODE_FUNCTYPE = LAST_PRIMTYPE_NODE + 15;
+    public static final int NODE_SERVICETYPE = LAST_PRIMTYPE_NODE + 16;
     public static final int LAST_NODE_KIND = NODE_SERVICETYPE;
 }

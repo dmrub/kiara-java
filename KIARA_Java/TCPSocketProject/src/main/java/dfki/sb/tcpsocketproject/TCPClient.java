@@ -57,58 +57,5 @@ public class TCPClient {
             e.printStackTrace();
         }
 
-    }
-    
-        
-
-/*    private static void handleQuoteData(DataOutputStream dos, DataInputStream dis) throws IOException {
-        dos.writeInt(1);
-        QuoteRequest quote = Util.createQuoteRequestData();
-        dos.writeBoolean(quote.isIsEcho());
-        dos.writeInt(quote.getCounter());
-        dos.writeInt(quote.getSecurityID());
-        dos.writeDouble(quote.getApplVersionID());
-        dos.writeDouble(quote.getMessageType());
-        dos.writeDouble(quote.getSenderCompID());
-        dos.writeInt(quote.getMsgSeqNum());
-        dos.writeInt(quote.getSendingTime());
-        dos.writeDouble(quote.getQuoteReqID());
-        for (RelatedSym related : quote.getRelated()) {
-            dos.writeDouble(related.getSymbol());
-            dos.writeLong(related.getOrderQuantity());
-            dos.writeInt(related.getSide());
-            dos.writeLong(related.getTransactTime());
-            dos.writeInt(related.getQuoteType());
-            dos.writeInt(related.getSecurityID());
-            dos.writeInt(related.getSecurityIDSource());
-            dos.writeDouble(related.getDummy1());
-            dos.writeInt(related.getDummy2());
-        }
-        dos.flush();
-        readRelatedSystemObject(dis, quote);
-    }
-
-    private static void readRelatedSystemObject(DataInputStream dis, QuoteRequest quote) throws IOException {
-        dis.readBoolean();        
-        dis.readInt();
-        dis.readInt();
-        dis.readDouble();
-        dis.readDouble();
-        dis.readDouble();
-        dis.readInt();
-        dis.readInt();
-        dis.readDouble();
-        for (RelatedSym related : quote.getRelated()) {
-            dis.readDouble();
-            dis.readLong();
-            dis.readInt();
-            dis.readLong();
-            dis.readInt();
-            dis.readInt();
-            dis.readInt();
-            dis.readDouble();
-            dis.readInt();
-        }
-    }
-    */
+    }    
 }

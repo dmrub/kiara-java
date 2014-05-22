@@ -20,22 +20,14 @@ package de.dfki.kiara.ktd;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ElementData extends AttributeHolder {
-    private String name;
+public class AnnotationTypeAttr {
+    private final boolean value;
 
-    public ElementData() {
-        this(new String());
+    public AnnotationTypeAttr(boolean value) {
+        this.value = value;
     }
 
-    public ElementData(String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public final boolean getValue() {
+        return value;
     }
 }

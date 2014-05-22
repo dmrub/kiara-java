@@ -20,22 +20,17 @@ package de.dfki.kiara.ktd;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ElementData extends AttributeHolder {
-    private String name;
+public abstract class Attribute {
 
-    public ElementData() {
-        this(new String());
+    private final Object value;
+
+    public Attribute(Object value) {
+        this.value = value;
     }
 
-    public ElementData(String name) {
-        this.name = name;
+    public Object getAttrValue() {
+        return this.value;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
+    public abstract String getAttrName();
 }

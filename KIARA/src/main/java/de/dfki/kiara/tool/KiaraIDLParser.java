@@ -5,12 +5,14 @@
  */
 package de.dfki.kiara.tool;
 
+import de.dfki.kiara.idl.KiaraKTDConstructor;
 import de.dfki.kiara.idl.KiaraLexer;
 import de.dfki.kiara.idl.KiaraParser;
 import java.io.FileInputStream;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 /**
  *
@@ -29,6 +31,10 @@ public class KiaraIDLParser {
         // create a parser that feeds off the tokens buffer
         KiaraParser parser = new KiaraParser(tokens);
         ParseTree tree = parser.program(); // begin parsing at program rule
+
+        ParseTreeWalker walker = new ParseTreeWalker();
+        KiaraKTDConstructor ktdConstructor = new KiaraKTDConstructor();
+        walker.walk(ktdConstructor, tree);
         System.out.println(tree.toStringTree(parser)); // print LISP-style tree
     }
 

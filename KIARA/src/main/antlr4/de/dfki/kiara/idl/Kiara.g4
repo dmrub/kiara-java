@@ -32,10 +32,11 @@ program:
 header_list: header*;
 
 /* Header */
-header:
-  INCLUDE                LITERAL |
-  NAMESPACE t=IDENTIFIER n=IDENTIFIER |
-  NAMESPACE STAR          IDENTIFIER;
+header
+    : INCLUDE                LITERAL        # HeaderInclude
+    | NAMESPACE t=IDENTIFIER n=IDENTIFIER   # HeaderNamedNamespace
+    | NAMESPACE STAR          IDENTIFIER    # HeaderStarNamespace
+    ;
 
 definition_list: definition*;
 

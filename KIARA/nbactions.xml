@@ -10,9 +10,9 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath de.dfki.kiara.tool.ThriftIDLParser tutorial.thrift</exec.args>
+                <exec.args>-classpath %classpath de.dfki.kiara.tool.KiaraIDLParser tutorial.kiara</exec.args>
                 <exec.executable>java</exec.executable>
-                <exec.workingdir>/home/rubinste/proj_de3/kiara_java/KIARA_Java/KIARA/</exec.workingdir>
+                <exec.workingdir>/home/rubinste/proj_de3/kiara_java/KIARA/examples</exec.workingdir>
             </properties>
         </action>
         <action>
@@ -25,10 +25,10 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath de.dfki.kiara.tool.ThriftIDLParser tutorial.thrift</exec.args>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath de.dfki.kiara.tool.KiaraIDLParser tutorial.kiara</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
-                <exec.workingdir>/home/rubinste/proj_de3/kiara_java/KIARA_Java/KIARA/</exec.workingdir>
+                <exec.workingdir>/home/rubinste/proj_de3/kiara_java/KIARA/examples</exec.workingdir>
             </properties>
         </action>
         <action>
@@ -41,9 +41,9 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath de.dfki.kiara.tool.ThriftIDLParser tutorial.thrift</exec.args>
+                <exec.args>-classpath %classpath de.dfki.kiara.tool.KiaraIDLParser tutorial.kiara</exec.args>
                 <exec.executable>java</exec.executable>
-                <exec.workingdir>/home/rubinste/proj_de3/kiara_java/KIARA_Java/KIARA/</exec.workingdir>
+                <exec.workingdir>/home/rubinste/proj_de3/kiara_java/KIARA/examples</exec.workingdir>
             </properties>
         </action>
     </actions>

@@ -6,7 +6,6 @@
 package de.dfki.kiara.ktd;
 
 
-import java.util.Map;
 import java.util.HashMap;
 
 /**
@@ -15,7 +14,7 @@ import java.util.HashMap;
  */
 public final class World {
 
-    private HashMap<KTDObject, KTDObject> objects;
+    private final HashMap<KTDObject, KTDObject> objects;
     private final Namespace namespace;
 
     private final TypeType typeType;
@@ -221,7 +220,12 @@ public final class World {
     public void dump() {
         System.out.println("World "+System.identityHashCode(this)+" {");
         for (Object obj : objects.values()) {
-            System.out.println("  "+obj);
+            if (obj instanceof Type) {
+                Type type = (Type)obj;
+                System.out.println("  "+type.getTypeName()+" : "+type);
+            } else {
+                System.out.println("  "+obj);
+            }
         }
         System.out.println("}");
     }

@@ -55,6 +55,7 @@ public final class World {
     private final PrimType nullptrJavaType;
 
     private final StructType encryptedAnnotation;
+    private final StructType onewayAnnotation;
 
     public World() {
         objects = new HashMap<>();
@@ -98,117 +99,126 @@ public final class World {
             encryptedAnnotation.setAttributeValue(new AnnotationTypeAttr(true));
         }
 
+        {
+            onewayAnnotation = StructType.create(this, "Oneway", 0);
+            onewayAnnotation.setAttributeValue(new AnnotationTypeAttr(true));
+        }
+
     }
 
-    public Namespace getWorldNamespace() {
+    public final Namespace getWorldNamespace() {
         return namespace;
     }
 
     // Abstract built-in types
-    public TypeType type_type() {
+    public final TypeType type_type() {
         return typeType;
     }
 
-    public VoidType type_void() {
+    public final VoidType type_void() {
         return voidType;
     }
 
-    public UnresolvedSymbolType type_unresolved_symbol() {
+    public final UnresolvedSymbolType type_unresolved_symbol() {
         return unresolvedSymbolType;
     }
 
-    public AnyType type_any() {
+    public final AnyType type_any() {
         return anyType;
     }
 
-    public PrimType type_i8() {
+    public final PrimType type_i8() {
         return i8Type;
     }
 
-    public PrimType type_u8() {
+    public final PrimType type_u8() {
         return u8Type;
     }
 
-    public PrimType type_i16() {
+    public final PrimType type_i16() {
         return i16Type;
     }
 
-    public PrimType type_u16() {
+    public final PrimType type_u16() {
         return u16Type;
     }
 
-    public PrimType type_i32() {
+    public final PrimType type_i32() {
         return i32Type;
     }
 
-    public PrimType type_u32() {
+    public final PrimType type_u32() {
         return u32Type;
     }
 
-    public PrimType type_i64() {
+    public final PrimType type_i64() {
         return i64Type;
     }
 
-    public PrimType type_u64() {
+    public final PrimType type_u64() {
         return u64Type;
     }
 
-    public PrimType type_float() {
+    public final PrimType type_float() {
         return floatType;
     }
 
-    public PrimType type_double() {
+    public final PrimType type_double() {
         return doubleType;
     }
 
-    public PrimType type_boolean() {
+    public final PrimType type_boolean() {
         return booleanType;
     }
 
-    public PrimType type_string() {
+    public final PrimType type_string() {
         return stringType;
     }
 
     // Native built-in types
 
-    public PrimType type_java_byte() {
+    public final PrimType type_java_byte() {
         return byteJavaType;
     }
 
-    public PrimType type_java_short() {
+    public final PrimType type_java_short() {
         return shortJavaType;
     }
 
-    public PrimType type_java_int() {
+    public final PrimType type_java_int() {
         return intJavaType;
     }
 
-    public PrimType type_java_long() {
+    public final PrimType type_java_long() {
         return longJavaType;
     }
 
-    public PrimType type_java_float() {
+    public final PrimType type_java_float() {
         return floatJavaType;
     }
 
-    public PrimType type_java_double() {
+    public final PrimType type_java_double() {
         return doubleJavaType;
     }
 
-    public PrimType type_java_char() {
+    public final PrimType type_java_char() {
         return charJavaType;
     }
 
-    public PrimType type_java_boolean() {
+    public final PrimType type_java_boolean() {
         return booleanJavaType;
     }
 
-    public PrimType type_java_nullptr() {
+    public final PrimType type_java_nullptr() {
         return nullptrJavaType;
     }
 
-    public StructType getEncryptedAnnotation() {
+    public final StructType getEncryptedAnnotation() {
         return encryptedAnnotation;
+    }
+
+    public final StructType getOnewayAnnotation() {
+        return onewayAnnotation;
     }
 
     public <T extends KTDObject> T getOrCreate(Class<T> cls, T val) {

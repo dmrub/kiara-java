@@ -45,9 +45,11 @@ definition:
   typeDefinition |
   service;
 
-typeDefinition:
-  nonAnnotatedTypeDefinition |
-  annotationList annotatedTypeDefinition;
+typeDefinition
+    :
+    | nonAnnotatedTypeDefinition
+    | annotationList annotatedTypeDefinition
+    ;
 
 nonAnnotatedTypeDefinition:
   typedef;

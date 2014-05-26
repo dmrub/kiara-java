@@ -79,7 +79,7 @@ public class Namespace extends KTDObject {
         if (type.getWorld() != this.getWorld())
             throw new IllegalArgumentException("type's world is invalid");
 
-        if (!typeMap.containsKey(name))
+        if (typeMap.containsKey(name))
             throw new IllegalStateException("Type '"+name+"' already defined.");
         typeMap.put(name, type);
         if (takeOwnership) {

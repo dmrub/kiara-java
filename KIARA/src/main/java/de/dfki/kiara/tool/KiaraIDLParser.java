@@ -8,6 +8,8 @@ package de.dfki.kiara.tool;
 import de.dfki.kiara.idl.KiaraKTDConstructor;
 import de.dfki.kiara.idl.KiaraLexer;
 import de.dfki.kiara.idl.KiaraParser;
+import de.dfki.kiara.ktd.Module;
+import de.dfki.kiara.ktd.World;
 import java.io.FileInputStream;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -33,7 +35,10 @@ public class KiaraIDLParser {
         ParseTree tree = parser.program(); // begin parsing at program rule
 
         ParseTreeWalker walker = new ParseTreeWalker();
-        KiaraKTDConstructor ktdConstructor = new KiaraKTDConstructor();
+
+        World world = new World();
+        Module module = new Module(world, "kiara");
+        KiaraKTDConstructor ktdConstructor = new KiaraKTDConstructor(module);
         walker.walk(ktdConstructor, tree);
         System.out.println(tree.toStringTree(parser)); // print LISP-style tree
     }

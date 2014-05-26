@@ -16,6 +16,15 @@
  */
 package de.dfki.kiara.idl;
 
+import de.dfki.kiara.ktd.Annotation;
+import de.dfki.kiara.ktd.AnnotationListAttr;
+import de.dfki.kiara.ktd.AnnotationTypeAttr;
+import de.dfki.kiara.ktd.AttributeHolder;
+import de.dfki.kiara.ktd.Module;
+import de.dfki.kiara.ktd.StructType;
+import de.dfki.kiara.ktd.Type;
+import de.dfki.kiara.ktd.World;
+import java.util.List;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -28,7 +37,21 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  */
 public class KiaraKTDConstructor implements KiaraListener {
 
-    ParseTreeProperty<Object> values = new ParseTreeProperty<>();
+    private final ParseTreeProperty<Object> values;
+    private final Module module;
+
+    public KiaraKTDConstructor(Module module) {
+        this.values = new ParseTreeProperty<>();
+        this.module = module;
+    }
+
+    public final Module getModule() {
+        return this.module;
+    }
+
+    public final World getWorld() {
+        return this.module.getWorld();
+    }
 
     public void setValue(ParseTree node, Object value) {
         values.put(node, value);
@@ -36,6 +59,20 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     public Object getValue(ParseTree node) {
         return values.get(node);
+    }
+
+    private final boolean DEBUG_MODE = true;
+
+    public void pdebug(String msg) {
+        if (DEBUG_MODE) {
+            System.err.print("DEBUG: ");
+            System.err.println(msg);
+        }
+    }
+
+    public void perror(String msg) {
+        System.err.print("ERROR: ");
+        System.err.println(msg);
     }
 
     @Override
@@ -100,7 +137,29 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitAnnotation(KiaraParser.AnnotationContext ctx) {
+        final String typeId = ctx.IDENTIFIER().getText();
+        pdebug("Annotation -> IDENTIFIER:"+typeId);
+
+        final Type ty = this.module.lookupType(typeId);
+        if (ty == null) {
+            perror("Unknown type identifier : "+typeId);
+        } else {
+            if (!(ty instanceof StructType)) {
+                perror("Type '"+typeId+"' is not an annotation type");
+                return;
+            }
+
+            StructType sty = (StructType)ty;
+            AnnotationTypeAttr atr = sty.getAttributeValue(AnnotationTypeAttr.class);
+            if (atr == null || atr.getValue() == false) {
+                perror("Type '"+typeId+"' is not an annotation type");
+                return;
+            }
+
+            setValue(ctx, new Annotation(sty));
+        }
     }
+
 
     @Override
     public void enterEnum_t(KiaraParser.Enum_tContext ctx) {
@@ -164,6 +223,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitProgram(KiaraParser.ProgramContext ctx) {
+        pdebug("Program -> Headers DefinitionList");
     }
 
     @Override
@@ -180,6 +240,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitHeader_list(KiaraParser.Header_listContext ctx) {
+                pdebug("Header_list -> header*");
     }
 
     @Override
@@ -448,6 +509,15 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitTypeDefinition(KiaraParser.TypeDefinitionContext ctx) {
+        Object value = getValue(ctx.nonAnnotatedTypeDefinition());
+        if (value == null) {
+            value = getValue(ctx.annotatedTypeDefinition());
+            if (value != null) {
+                List<Annotation> al = (List<Annotation>)getValue(ctx.annotationList());
+                ((AttributeHolder)value).setAttributeValue(new AnnotationListAttr(al));
+            }
+        }
+        setValue(ctx, value);
     }
 
     @Override

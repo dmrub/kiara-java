@@ -65,6 +65,10 @@ public class Module extends KTDObject {
 
         this.namespace.bindType("i16", world.type_i16());
 
+        this.namespace.bindType("u16", world.type_u16());
+
+        this.namespace.bindType("i32", world.type_i32());
+
         this.namespace.bindType("u32", world.type_u32());
 
         this.namespace.bindType("i64", world.type_i64());

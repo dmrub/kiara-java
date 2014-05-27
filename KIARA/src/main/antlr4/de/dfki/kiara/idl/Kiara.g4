@@ -46,21 +46,21 @@ definition:
   service;
 
 typeDefinition
-    :
-    | nonAnnotatedTypeDefinition
+    : nonAnnotatedTypeDefinition
     | annotationList annotatedTypeDefinition
     ;
 
 nonAnnotatedTypeDefinition:
   typedef;
 
-annotatedTypeDefinition:
-  enum_t |
-  senum |
-  struct |
-  union |
-  xception |
-  annotationDef;
+annotatedTypeDefinition
+    : enum_t
+    | senum
+    | struct
+    | union
+    | xception
+    | annotationDef
+    ;
 
 typedef:
   TYPEDEF fieldType IDENTIFIER;
@@ -84,13 +84,14 @@ senumDef:
 constDefinition:
   CONST ft=fieldType id=IDENTIFIER EQ cv=constValue commaOrSemicolon?;
 
-constValue:
-  intConstant |
-  (DUBCONSTANT |
-  LITERAL |
-  IDENTIFIER) |
-  constList |
-  constMap;
+constValue
+    : intConstant
+    | (DUBCONSTANT
+    | LITERAL
+    | IDENTIFIER)
+    | constList
+    | constMap
+    ;
 
 constList:
   LBRACKET (constValue commaOrSemicolon?)* RBRACKET;
@@ -155,13 +156,14 @@ functionType:
   VOID |
   fieldType;
 
-fieldType:
-  IDENTIFIER |
-  baseType |
-  genericType;
+fieldType
+    : IDENTIFIER
+    | baseType
+    | genericType
+    ;
 
-baseType:
-  simpleBaseType ;
+baseType
+    : simpleBaseType ;
 
 simpleBaseType
     : STRING
@@ -205,12 +207,8 @@ genericTypeArgList
     ;
 
 annotationList
-    : LBRACKET nonEmptyAnnotationList RBRACKET
+    : LBRACKET annotation (COMMA annotation)* RBRACKET
     |
-    ;
-
-nonEmptyAnnotationList
-    :  annotation (COMMA annotation)*
     ;
 
 annotation
@@ -224,12 +222,8 @@ annotationArg
     ;
 
 annotationArgList
-    : nonEmptyAnnotationArgList
-    |
-    ;
-
-nonEmptyAnnotationArgList
     : annotationArg (COMMA annotationArg)*
+    |
     ;
 
 intConstant: INTCONSTANT | HEXCONSTANT;

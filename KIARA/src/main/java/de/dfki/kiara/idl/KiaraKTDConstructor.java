@@ -19,11 +19,16 @@ package de.dfki.kiara.idl;
 import de.dfki.kiara.ktd.Annotation;
 import de.dfki.kiara.ktd.AnnotationListAttr;
 import de.dfki.kiara.ktd.AnnotationTypeAttr;
+import de.dfki.kiara.ktd.AnyType;
 import de.dfki.kiara.ktd.AttributeHolder;
+import de.dfki.kiara.ktd.Expr;
 import de.dfki.kiara.ktd.Module;
+import de.dfki.kiara.ktd.PrimLiteral;
 import de.dfki.kiara.ktd.StructType;
 import de.dfki.kiara.ktd.Type;
+import de.dfki.kiara.ktd.VoidType;
 import de.dfki.kiara.ktd.World;
+import java.util.ArrayList;
 import java.util.List;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -108,11 +113,16 @@ public class KiaraKTDConstructor implements KiaraListener {
     }
 
     @Override
-    public void enterAnnotationList(KiaraParser.AnnotationListContext ctx) {
-    }
-
-    @Override
     public void exitAnnotationList(KiaraParser.AnnotationListContext ctx) {
+        List<Annotation> al = null;
+        if (ctx.getChildCount() > 0) {
+            pdebug("AnnotationList: number of children "+ctx.getChildCount());
+            al = new ArrayList<>();
+            for (KiaraParser.AnnotationContext annotation : ctx.annotation()) {
+                al.add((Annotation)getValue(annotation));
+            }
+        }
+        setValue(ctx, al);
     }
 
     @Override
@@ -129,10 +139,6 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitFunction(KiaraParser.FunctionContext ctx) {
-    }
-
-    @Override
-    public void enterAnnotation(KiaraParser.AnnotationContext ctx) {
     }
 
     @Override
@@ -160,7 +166,6 @@ public class KiaraKTDConstructor implements KiaraListener {
         }
     }
 
-
     @Override
     public void enterEnum_t(KiaraParser.Enum_tContext ctx) {
     }
@@ -178,19 +183,14 @@ public class KiaraKTDConstructor implements KiaraListener {
     }
 
     @Override
-    public void enterNonEmptyAnnotationArgList(KiaraParser.NonEmptyAnnotationArgListContext ctx) {
-    }
-
-    @Override
-    public void exitNonEmptyAnnotationArgList(KiaraParser.NonEmptyAnnotationArgListContext ctx) {
-    }
-
-    @Override
-    public void enterIntConstant(KiaraParser.IntConstantContext ctx) {
-    }
-
-    @Override
     public void exitIntConstant(KiaraParser.IntConstantContext ctx) {
+        TerminalNode tn = ctx.INTCONSTANT();
+        if (tn != null) {
+            setValue(ctx, Integer.valueOf(tn.getText(), 10));
+        } else {
+            setValue(ctx, Integer.valueOf(ctx.HEXCONSTANT().getText().substring(2), 16));
+        }
+        pdebug("intConstant : "+getValue(ctx));
     }
 
     @Override
@@ -215,6 +215,16 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitTypedef(KiaraParser.TypedefContext ctx) {
+        pdebug("TypeDef -> TYPEDEF FieldType IDENTIFIER:"+ctx.IDENTIFIER().getText());
+        KiaraParser.FieldTypeContext fieldTypeCtx = ctx.fieldType();
+        Type fieldType = null;
+        if (fieldTypeCtx != null) {
+            fieldType = (Type)getValue(fieldTypeCtx);
+            pdebug("BIND "+getModule().getTypeName(fieldType)+" TO "+ctx.IDENTIFIER().getText());
+            getModule().bindType(ctx.IDENTIFIER().getText(), fieldType);
+            getModule().addTypeDeclaration(Module.TypeDeclarationKind.TYPEDEF, fieldType);
+        }
+        setValue(ctx, fieldType);
     }
 
     @Override
@@ -261,26 +271,86 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void enterConstList(KiaraParser.ConstListContext ctx) {
+
     }
 
     @Override
     public void exitConstList(KiaraParser.ConstListContext ctx) {
-    }
-
-    @Override
-    public void enterSimpleBaseType(KiaraParser.SimpleBaseTypeContext ctx) {
+        List<Expr> constList = new ArrayList<>();
+        for (KiaraParser.ConstValueContext constValueCtx : ctx.constValue()) {
+            constList.add((Expr)getValue(constValueCtx));
+        }
+        setValue(ctx, constList);
     }
 
     @Override
     public void exitSimpleBaseType(KiaraParser.SimpleBaseTypeContext ctx) {
-    }
-
-    @Override
-    public void enterConstValue(KiaraParser.ConstValueContext ctx) {
+        Type ty = null;
+        String text = ctx.getText();
+        if (text.equals("string"))
+            ty = getWorld().type_string();
+        else if (text.equals("binary"))
+            ty = null; // FIXME not supported yet
+        else if (text.equals("slist"))
+            ty = null; // FIXME not supported yet
+        else if (text.equals("boolean"))
+            ty = getWorld().type_boolean();
+        else if (text.equals("i8"))
+            ty = getWorld().type_i8();
+        else if (text.equals("u8"))
+            ty = getWorld().type_u8();
+        else if (text.equals("i16"))
+            ty = getWorld().type_i16();
+        else if (text.equals("u16"))
+            ty = getWorld().type_u16();
+        else if (text.equals("i32"))
+            ty = getWorld().type_i32();
+        else if (text.equals("u32"))
+            ty = getWorld().type_u32();
+        else if (text.equals("i64"))
+            ty = getWorld().type_i64();
+        else if (text.equals("u64"))
+            ty = getWorld().type_u64();
+        else if (text.equals("float"))
+            ty = getWorld().type_float();
+        else if (text.equals("double"))
+            ty = getWorld().type_double();
+        else if (text.equals("any"))
+            ty = AnyType.get(getWorld());
+        setValue(ctx, ty);
     }
 
     @Override
     public void exitConstValue(KiaraParser.ConstValueContext ctx) {
+        KiaraParser.IntConstantContext intConstantCtx = ctx.intConstant();
+        if (intConstantCtx != null) {
+            setValue(ctx,
+                    new PrimLiteral((Integer)getValue(intConstantCtx),
+                            getWorld()));
+            return;
+        }
+
+        TerminalNode tn = ctx.DUBCONSTANT();
+        if (tn != null) {
+            setValue(ctx,
+                    new PrimLiteral(Double.valueOf(tn.getText()),
+                            getWorld()));
+            return;
+        }
+
+        tn = ctx.LITERAL();
+        if (tn != null) {
+            setValue(ctx, new PrimLiteral(tn.getText(), getWorld()));
+            return;
+        }
+
+        tn = ctx.IDENTIFIER();
+        if (tn != null) {
+            setValue(ctx, new PrimLiteral(tn.getText(), getWorld()));
+            return;
+        }
+
+        setValue(ctx, getValue(ctx.getChild(0)));
     }
 
     @Override
@@ -333,6 +403,10 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitFunctionType(KiaraParser.FunctionTypeContext ctx) {
+        if (ctx.VOID() != null)
+            setValue(ctx, VoidType.get(getWorld()));
+        else
+            setValue(ctx, getValue(ctx.getChild(0)));
     }
 
     @Override
@@ -341,6 +415,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitBaseType(KiaraParser.BaseTypeContext ctx) {
+        setValue(ctx, getValue(ctx.simpleBaseType()));
     }
 
     @Override
@@ -413,6 +488,17 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitFieldType(KiaraParser.FieldTypeContext ctx) {
+        Type ty;
+        TerminalNode tn = ctx.IDENTIFIER();
+        if (tn != null) {
+            ty = getModule().lookupType(tn.getText());
+            if (ty == null) {
+                perror("Unknown type identifier : "+tn.getText());
+            }
+        } else {
+            ty = (Type)getValue(ctx.getChild(0));
+        }
+        setValue(ctx, ty);
     }
 
     @Override
@@ -472,14 +558,6 @@ public class KiaraKTDConstructor implements KiaraListener {
     }
 
     @Override
-    public void enterNonEmptyAnnotationList(KiaraParser.NonEmptyAnnotationListContext ctx) {
-    }
-
-    @Override
-    public void exitNonEmptyAnnotationList(KiaraParser.NonEmptyAnnotationListContext ctx) {
-    }
-
-    @Override
     public void enterGenericType(KiaraParser.GenericTypeContext ctx) {
     }
 
@@ -534,6 +612,26 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitEveryRule(ParserRuleContext prc) {
+    }
+
+    @Override
+    public void enterSimpleBaseType(KiaraParser.SimpleBaseTypeContext ctx) {
+    }
+
+    @Override
+    public void enterConstValue(KiaraParser.ConstValueContext ctx) {
+    }
+
+    @Override
+    public void enterAnnotationList(KiaraParser.AnnotationListContext ctx) {
+    }
+
+    @Override
+    public void enterAnnotation(KiaraParser.AnnotationContext ctx) {
+    }
+
+    @Override
+    public void enterIntConstant(KiaraParser.IntConstantContext ctx) {
     }
 
 }

@@ -40,10 +40,11 @@ header
 
 definition_list: definition*;
 
-definition:
-  constDefinition |
-  typeDefinition |
-  service;
+definition
+    : constDefinition
+    | typeDefinition
+    | service
+    ;
 
 typeDefinition
     : nonAnnotatedTypeDefinition
@@ -68,12 +69,14 @@ typedef:
 commaOrSemicolon:
   (COMMA | SEMI);
 
-enum_t:
-  ENUM IDENTIFIER LBRACE enumDef* RBRACE;
+enum_t
+    : ENUM IDENTIFIER LBRACE enumDef* RBRACE
+    ;
 
-enumDef:
-  IDENTIFIER EQ intConstant  commaOrSemicolon? |
-  IDENTIFIER  commaOrSemicolon?;
+enumDef
+    : IDENTIFIER EQ intConstant  commaOrSemicolon? # EnumExplicitConstDef
+    | IDENTIFIER  commaOrSemicolon?                # EnumAutoConstDef
+    ;
 
 senum:
   SENUM IDENTIFIER LBRACE senumDef* RBRACE ;

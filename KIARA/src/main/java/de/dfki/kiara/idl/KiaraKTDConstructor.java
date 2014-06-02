@@ -23,6 +23,7 @@ import de.dfki.kiara.ktd.AnyType;
 import de.dfki.kiara.ktd.AttributeHolder;
 import de.dfki.kiara.ktd.DefaultFieldValueAttr;
 import de.dfki.kiara.ktd.ElementData;
+import de.dfki.kiara.ktd.EnumType;
 import de.dfki.kiara.ktd.Expr;
 import de.dfki.kiara.ktd.FunctionType;
 import de.dfki.kiara.ktd.Module;
@@ -221,12 +222,16 @@ public class KiaraKTDConstructor implements KiaraListener {
         return this.module.getWorld();
     }
 
-    public void setValue(ParseTree node, Object value) {
+    public final void setValue(ParseTree node, Object value) {
         values.put(node, value);
     }
 
-    public Object getValue(ParseTree node) {
+    public final Object getValue(ParseTree node) {
         return values.get(node);
+    }
+
+    public final void copyValue(ParseTree destNode, ParseTree srcNode) {
+        setValue(destNode, getValue(srcNode));
     }
 
     private final boolean DEBUG_MODE = true;
@@ -304,6 +309,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitDefinition(KiaraParser.DefinitionContext ctx) {
+        copyValue(ctx, ctx.getChild(0));
     }
 
     @Override
@@ -329,6 +335,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitNonAnnotatedTypeDefinition(KiaraParser.NonAnnotatedTypeDefinitionContext ctx) {
+        copyValue(ctx, ctx.typedef());
     }
 
     @Override
@@ -337,6 +344,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitAnnotatedTypeDefinition(KiaraParser.AnnotatedTypeDefinitionContext ctx) {
+        copyValue(ctx, ctx.getChild(0));
     }
 
     @Override
@@ -371,14 +379,45 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitEnum_t(KiaraParser.Enum_tContext ctx) {
+        pdebug("Enum -> ENUM IDENTIFIER { enumDef* }");
+
+        String ename = ctx.IDENTIFIER().getText();
+
+        EnumType ety = EnumType.create(getWorld(), ename);
+
+        for (KiaraParser.EnumDefContext edctx : ctx.enumDef()) {
+            EnumDef ed = (EnumDef)getValue(edctx);
+            ety.addConstant(ed.name, ed.constant);
+        }
+        try {
+            getModule().bindType(ename, ety);
+            getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, ety);
+        } catch (Exception e) {
+            perror(e.toString());
+        }
+
+        setValue(ctx, ety);
     }
 
     @Override
-    public void enterEnumDef(KiaraParser.EnumDefContext ctx) {
+    public void enterEnumExplicitConstDef(KiaraParser.EnumExplicitConstDefContext ctx) {
     }
 
     @Override
-    public void exitEnumDef(KiaraParser.EnumDefContext ctx) {
+    public void exitEnumExplicitConstDef(KiaraParser.EnumExplicitConstDefContext ctx) {
+        EnumDef enumDef = new EnumDef(ctx.IDENTIFIER().getText(),
+                new PrimLiteral((Integer)getValue(ctx.intConstant()), getWorld()));
+        setValue(ctx, enumDef);
+    }
+
+    @Override
+    public void enterEnumAutoConstDef(KiaraParser.EnumAutoConstDefContext ctx) {
+        EnumDef enumDef = new EnumDef(ctx.IDENTIFIER().getText(), null);
+        setValue(ctx, enumDef);
+    }
+
+    @Override
+    public void exitEnumAutoConstDef(KiaraParser.EnumAutoConstDefContext ctx) {
     }
 
     @Override

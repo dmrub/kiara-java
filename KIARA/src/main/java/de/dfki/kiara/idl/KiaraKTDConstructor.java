@@ -33,6 +33,7 @@ import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.ParameterInfo;
 import de.dfki.kiara.ktd.PrimLiteral;
 import de.dfki.kiara.ktd.PrimValueType;
+import de.dfki.kiara.ktd.ServiceType;
 import de.dfki.kiara.ktd.StructType;
 import de.dfki.kiara.ktd.Type;
 import de.dfki.kiara.ktd.VoidType;
@@ -252,7 +253,7 @@ public class KiaraKTDConstructor implements KiaraListener {
         }
     }
 
-    private void initStructTypeFromFunctions(StructType sty,
+    private void initServiceTypeFromFunctions(ServiceType sty,
             List<KiaraParser.FunctionContext> functionCtxList) {
         final int n = functionCtxList.size();
         for (int i = 0; i < n; ++i) {
@@ -464,7 +465,7 @@ public class KiaraKTDConstructor implements KiaraListener {
             fieldType = (Type)getValue(fieldTypeCtx);
             pdebug("BIND "+getModule().getTypeName(fieldType)+" TO "+ctx.IDENTIFIER().getText());
             getModule().bindType(ctx.IDENTIFIER().getText(), fieldType);
-            getModule().addTypeDeclaration(Module.TypeDeclarationKind.TYPEDEF, fieldType);
+            getModule().addTypeDeclaration(Module.TypeDeclarationKind.TYPEDEF, fieldType, ctx.IDENTIFIER().getText());
         }
         setValue(ctx, fieldType);
     }
@@ -744,9 +745,9 @@ public class KiaraKTDConstructor implements KiaraListener {
         pdebug("Service -> SERVICE IDENTIFIER { FunctionList }");
         String serviceName = ctx.sname.getText();
         List<KiaraParser.FunctionContext> functionCtxList = ctx.function();
-        StructType s = StructType.create(getWorld(), serviceName, functionCtxList.size());
+        ServiceType s = ServiceType.create(getWorld(), serviceName, functionCtxList.size());
 
-        initStructTypeFromFunctions(s, functionCtxList);
+        initServiceTypeFromFunctions(s, functionCtxList);
 
         List<Annotation> al = (List<Annotation>)getValue(ctx.annotationList());
         if (al != null && !al.isEmpty()) {

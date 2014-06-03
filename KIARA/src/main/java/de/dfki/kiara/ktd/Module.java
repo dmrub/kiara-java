@@ -34,10 +34,16 @@ public class Module extends KTDObject {
 
         public final TypeDeclarationKind kind;
         public final Type type;
+        public final String name;
 
         public TypeDeclaration(TypeDeclarationKind kind, Type type) {
+            this(kind, type, null);
+        }
+
+        public TypeDeclaration(TypeDeclarationKind kind, Type type, String name) {
             this.kind = kind;
             this.type = type;
+            this.name = name;
         }
     }
 
@@ -125,5 +131,13 @@ public class Module extends KTDObject {
 
     public final void addTypeDeclaration(TypeDeclarationKind kind, Type type) {
         typeDeclarations.add(new TypeDeclaration(kind, type));
+    }
+
+    public final void addTypeDeclaration(TypeDeclarationKind kind, Type type, String name) {
+        typeDeclarations.add(new TypeDeclaration(kind, type, name));
+    }
+
+    public List<TypeDeclaration> getTypeDeclarations() {
+        return typeDeclarations;
     }
 }

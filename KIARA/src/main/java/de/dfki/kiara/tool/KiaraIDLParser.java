@@ -5,6 +5,7 @@
  */
 package de.dfki.kiara.tool;
 
+import de.dfki.kiara.idl.IDLWriter;
 import de.dfki.kiara.idl.KiaraKTDConstructor;
 import de.dfki.kiara.idl.KiaraLexer;
 import de.dfki.kiara.idl.KiaraParser;
@@ -41,6 +42,9 @@ public class KiaraIDLParser {
         KiaraKTDConstructor ktdConstructor = new KiaraKTDConstructor(module);
         walker.walk(ktdConstructor, tree);
         System.out.println(tree.toStringTree(parser)); // print LISP-style tree
+
+        IDLWriter idlWriter = new IDLWriter(module);
+        idlWriter.write(System.out);
     }
 
 }

@@ -84,8 +84,9 @@ senum:
 senumDef:
   LITERAL commaOrSemicolon?;
 
-constDefinition:
-  CONST ft=fieldType id=IDENTIFIER EQ cv=constValue commaOrSemicolon?;
+constDefinition
+    : CONST ft=fieldType id=IDENTIFIER EQ cv=constValue commaOrSemicolon?
+    ;
 
 constValue
     : intConstant
@@ -130,10 +131,10 @@ annotationDef:
   ANNOTATION IDENTIFIER LBRACE field* RBRACE;
 
 service:
-  annotationList SERVICE IDENTIFIER (EXTENDS IDENTIFIER)? LBRACE function* RBRACE;
+  annotationList SERVICE sname=IDENTIFIER (EXTENDS extendsNames=IDENTIFIER)? LBRACE function* RBRACE;
 
 function:
-  annotationList functionType annotationList IDENTIFIER LPAREN field* RPAREN throwz? commaOrSemicolon?;
+  funcAnnotationList=annotationList retType=functionType retAnnotationList=annotationList IDENTIFIER LPAREN field* RPAREN throwz? commaOrSemicolon?;
 
 
 throwz:

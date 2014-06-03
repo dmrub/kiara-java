@@ -20,22 +20,28 @@ import de.dfki.kiara.ktd.Annotation;
 import de.dfki.kiara.ktd.AnnotationListAttr;
 import de.dfki.kiara.ktd.AnnotationTypeAttr;
 import de.dfki.kiara.ktd.AnyType;
+import de.dfki.kiara.ktd.ArrayType;
 import de.dfki.kiara.ktd.AttributeHolder;
 import de.dfki.kiara.ktd.DefaultFieldValueAttr;
 import de.dfki.kiara.ktd.ElementData;
 import de.dfki.kiara.ktd.EnumType;
+import de.dfki.kiara.ktd.ExceptionTypeAttr;
 import de.dfki.kiara.ktd.Expr;
+import de.dfki.kiara.ktd.FixedArrayType;
 import de.dfki.kiara.ktd.FunctionType;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.ParameterInfo;
 import de.dfki.kiara.ktd.PrimLiteral;
+import de.dfki.kiara.ktd.PrimValueType;
 import de.dfki.kiara.ktd.StructType;
 import de.dfki.kiara.ktd.Type;
 import de.dfki.kiara.ktd.VoidType;
 import de.dfki.kiara.ktd.World;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -81,7 +87,7 @@ public class KiaraKTDConstructor implements KiaraListener {
     }
 
     private static final class Field {
-        public int id;
+        public Integer id;
         public Type type;
         public String name;
         public Expr value;
@@ -162,13 +168,111 @@ public class KiaraKTDConstructor implements KiaraListener {
         public Iterator<Field> iterator() {
             return fields.iterator();
         }
+    }
 
+
+    private List<Field> unwrapFieldList(List<KiaraParser.FieldContext> fieldCtxList) {
+        List<Field> fields = new ArrayList<>(fieldCtxList.size());
+        for (KiaraParser.FieldContext fctx : fieldCtxList) {
+            fields.add((Field)getValue(fctx));
+        }
+        return fields;
+    }
+
+    private List<Annotation> unwrapAnnotationList(KiaraParser.AnnotationListContext ctx) {
+        return (List<Annotation>)getValue(ctx);
+    }
+
+    private Expr unwrapFieldValue(KiaraParser.FieldValueContext ctx) {
+        return (Expr)getValue(ctx);
+    }
+
+    private Type unwrapFieldType(KiaraParser.FieldTypeContext ctx) {
+        return (Type)getValue(ctx);
+    }
+
+    private Integer unwrapFieldIdentifier(KiaraParser.FieldIdentifierContext ctx) {
+        return (Integer)getValue(ctx);
+    }
+
+    private List<Type> unwrapGenericTypeArgList(KiaraParser.GenericTypeArgListContext ctx) {
+        return (List<Type>)getValue(ctx);
+    }
+
+    private FunctionType createFunction(String name, Type returnType,
+            List<Field> fields,
+            List<Annotation> funcAnnotList,
+            List<Annotation> retAnnotList) {
+                //KIARA::World &world = returnType->getWorld();
+        List<ParameterInfo> paramTypes = new ArrayList<>(fields.size());
+
+        for (Field field : fields) {
+            paramTypes.add(new FunctionType.Parameter(field.name, field.type));
+        }
+
+        FunctionType fty = FunctionType.create(name, returnType, paramTypes);
+
+        // set parameter annotations
+        for (int i = 0; i < fty.getNumParams(); ++i) {
+
+            if (fields.get(i).annotationList != null && !fields.get(i).annotationList.isEmpty())
+                fty.getParamElementDataAt(i).setAttributeValue(
+                        new AnnotationListAttr(fields.get(i).annotationList));
+        }
+
+        // set return type annotations
+        if (retAnnotList != null && !retAnnotList.isEmpty())
+            fty.getReturnElementData().setAttributeValue(new AnnotationListAttr(retAnnotList));
+
+        // set function annotations
+        if (funcAnnotList != null && !funcAnnotList.isEmpty())
+            fty.setAttributeValue(new AnnotationListAttr(funcAnnotList));
+
+        return fty;
+    }
+
+    private void initStructTypeFromFields(StructType sty,
+            List<KiaraParser.FieldContext> fieldCtxList) {
+        final int n = fieldCtxList.size();
+        for (int i = 0; i < n; ++i) {
+            KiaraParser.FieldContext fieldCtx = fieldCtxList.get(i);
+            Field field = (Field)getValue(fieldCtx);
+
+            sty.setElementAt(i, field.type);
+            sty.setElementNameAt(i, field.name);
+
+            ElementData elemData = sty.getElementDataAt(i);
+            if (field.value != null)
+                elemData.setAttributeValue(
+                        new DefaultFieldValueAttr(field.value));
+            if (field.annotationList != null &&
+                    !field.annotationList.isEmpty())
+                elemData.setAttributeValue(
+                        new AnnotationListAttr(field.annotationList));
+        }
+    }
+
+    private void initStructTypeFromFunctions(StructType sty,
+            List<KiaraParser.FunctionContext> functionCtxList) {
+        final int n = functionCtxList.size();
+        for (int i = 0; i < n; ++i) {
+            KiaraParser.FunctionContext fieldCtx = functionCtxList.get(i);
+            Function func = (Function)getValue(fieldCtx);
+
+            sty.setElementAt(i, func.type);
+            sty.setElementNameAt(i, func.getName());
+        }
     }
 
     private static final class Function {
         public FunctionType type;
 
         public Function() {
+            this(null);
+        }
+
+        public Function(FunctionType type) {
+            this.type = type;
         }
 
         public final Type getType() {
@@ -412,12 +516,12 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void enterEnumAutoConstDef(KiaraParser.EnumAutoConstDefContext ctx) {
-        EnumDef enumDef = new EnumDef(ctx.IDENTIFIER().getText(), null);
-        setValue(ctx, enumDef);
     }
 
     @Override
     public void exitEnumAutoConstDef(KiaraParser.EnumAutoConstDefContext ctx) {
+        EnumDef enumDef = new EnumDef(ctx.IDENTIFIER().getText(), null);
+        setValue(ctx, enumDef);
     }
 
     @Override
@@ -442,6 +546,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitConstDefinition(KiaraParser.ConstDefinitionContext ctx) {
+        pdebug("CONST ft=fieldType id=IDENTIFIER EQ cv=constValue commaOrSemicolon?");
     }
 
     @Override
@@ -518,6 +623,22 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitStruct(KiaraParser.StructContext ctx) {
+        pdebug("Struct -> tok_struct tok_identifier { FieldList }");
+
+        String structName = ctx.IDENTIFIER().getText();
+        List<KiaraParser.FieldContext> fieldCtxList = ctx.field();
+        StructType s = StructType.create(getWorld(), structName,
+                fieldCtxList.size());
+
+        initStructTypeFromFields(s, fieldCtxList);
+        try {
+            getModule().bindType(structName, s);
+            getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
+        } catch (Exception e) {
+            perror(e.toString());
+            s = null;
+        }
+        setValue(ctx, s);
     }
 
     @Override
@@ -566,6 +687,25 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitXception(KiaraParser.XceptionContext ctx) {
+        pdebug("Xception -> XCEPTION IDENTIFIER { FieldList }");
+
+        String exceptionName = ctx.IDENTIFIER().getText();
+        List<KiaraParser.FieldContext> fieldCtxList = ctx.field();
+        StructType s = StructType.create(getWorld(), exceptionName,
+                fieldCtxList.size());
+
+        initStructTypeFromFields(s, fieldCtxList);
+
+        s.setAttributeValue(new ExceptionTypeAttr());
+
+        try {
+            getModule().bindType(exceptionName, s);
+            getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
+        } catch (Exception e) {
+            perror(e.toString());
+            s = null;
+        }
+        setValue(ctx, s);
     }
 
     @Override
@@ -574,6 +714,25 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitAnnotationDef(KiaraParser.AnnotationDefContext ctx) {
+        pdebug("AnnotationDef -> ANNOTATION IDENTIFIER { FieldList }");
+
+        String annotationName = ctx.IDENTIFIER().getText();
+        List<KiaraParser.FieldContext> fieldCtxList = ctx.field();
+        StructType s = StructType.create(getWorld(), annotationName,
+                fieldCtxList.size());
+
+        initStructTypeFromFields(s, fieldCtxList);
+
+        s.setAttributeValue(new AnnotationTypeAttr(true));
+
+        try {
+            getModule().bindType(annotationName, s);
+            getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
+        } catch (Exception e) {
+            perror(e.toString());
+            s = null;
+        }
+        setValue(ctx, s);
     }
 
     @Override
@@ -582,6 +741,26 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitService(KiaraParser.ServiceContext ctx) {
+        pdebug("Service -> SERVICE IDENTIFIER { FunctionList }");
+        String serviceName = ctx.sname.getText();
+        List<KiaraParser.FunctionContext> functionCtxList = ctx.function();
+        StructType s = StructType.create(getWorld(), serviceName, functionCtxList.size());
+
+        initStructTypeFromFunctions(s, functionCtxList);
+
+        List<Annotation> al = (List<Annotation>)getValue(ctx.annotationList());
+        if (al != null && !al.isEmpty()) {
+            s.setAttributeValue(new AnnotationListAttr(al));
+        }
+
+        try {
+            getModule().bindType(serviceName, s);
+            getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
+        } catch (Exception e) {
+            perror(e.toString());
+            s = null;
+        }
+        setValue(ctx, s);
     }
 
     @Override
@@ -590,6 +769,20 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitFunction(KiaraParser.FunctionContext ctx) {
+        pdebug("Function");
+        String funcName = ctx.IDENTIFIER().getText();
+        Type retType = (Type)getValue(ctx.retType);
+        Function f = null;
+        if (retType != null) {
+            List<Annotation> funcAnnotationList = unwrapAnnotationList(ctx.funcAnnotationList);
+            List<Annotation> retAnnotationList = unwrapAnnotationList(ctx.retAnnotationList);
+            List<Field> fieldList = unwrapFieldList(ctx.field());
+            f = new Function(createFunction(funcName, retType, fieldList,
+                    funcAnnotationList, retAnnotationList));
+        } else {
+            perror("No return type for function "+funcName+" specified");
+        }
+        setValue(ctx, f);
     }
 
     @Override
@@ -606,6 +799,14 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitField(KiaraParser.FieldContext ctx) {
+        Field f = new Field();
+        f.id = unwrapFieldIdentifier(ctx.fieldIdentifier());
+        f.type = unwrapFieldType(ctx.fieldType());
+        f.name = ctx.IDENTIFIER().getText();
+        f.value = unwrapFieldValue(ctx.fieldValue());
+        f.annotationList = unwrapAnnotationList(ctx.annotationList());
+
+        setValue(ctx, f);
     }
 
     @Override
@@ -614,6 +815,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitFieldIdentifier(KiaraParser.FieldIdentifierContext ctx) {
+        copyValue(ctx, ctx.intConstant());
     }
 
     @Override
@@ -630,6 +832,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitFieldValue(KiaraParser.FieldValueContext ctx) {
+        copyValue(ctx, ctx.constValue());
     }
 
     @Override
@@ -719,6 +922,8 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitGenericType(KiaraParser.GenericTypeContext ctx) {
+        pdebug("GenericType -> SimpleGenericType");
+        copyValue(ctx, ctx.simpleGenericType());
     }
 
     @Override
@@ -727,6 +932,33 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitSimpleGenericType(KiaraParser.SimpleGenericTypeContext ctx) {
+        String tname = ctx.IDENTIFIER().getText();
+        if (tname.equals("array")) {
+            List<Type> typeList = unwrapGenericTypeArgList(ctx.genericTypeArgList());
+            if (typeList == null || (typeList.size() != 1 && typeList.size() != 2)) {
+                perror("Array argument list must have single type and optional size");
+            } else {
+                Type elementType = typeList.get(0);
+                if (typeList.size() == 2)
+                {
+                    PrimValueType sizeType = (PrimValueType)typeList.get(1);
+                    if (sizeType != null && sizeType.getValue() instanceof Integer)
+                    {
+                        setValue(ctx, FixedArrayType.get(elementType, (Integer)sizeType.getValue()));
+                    }
+                    else
+                    {
+                        perror("Second argument of array type must be integer constant");
+                    }
+                }
+                else
+                {
+                    setValue(ctx, ArrayType.get(elementType));
+                }
+            }
+        } else {
+            perror("Unsupported generic type: "+tname);
+        }
     }
 
     @Override
@@ -735,6 +967,21 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitGenericTypeArg(KiaraParser.GenericTypeArgContext ctx) {
+        if (ctx.IDENTIFIER() != null) {
+            setValue(ctx, getModule().lookupType(ctx.IDENTIFIER().getText()));
+        } else if (ctx.VOID() != null) {
+            setValue(ctx, getWorld().type_void());
+        } else if (ctx.baseType() != null) {
+            copyValue(ctx, ctx.baseType());
+        } else if (ctx.genericType() != null) {
+            copyValue(ctx, ctx.genericType());
+        } else if (ctx.INTCONSTANT() != null) {
+            setValue(ctx, PrimValueType.get(getWorld(), Integer.valueOf(ctx.INTCONSTANT().getText(), 10)));
+        } else if (ctx.DUBCONSTANT() != null) {
+            setValue(ctx, PrimValueType.get(getWorld(), Double.valueOf(ctx.DUBCONSTANT().getText())));
+        } else if (ctx.LITERAL() != null) {
+            setValue(ctx, PrimValueType.get(getWorld(), ctx.LITERAL().getText()));
+        }
     }
 
     @Override
@@ -743,6 +990,12 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitGenericTypeArgList(KiaraParser.GenericTypeArgListContext ctx) {
+        List<KiaraParser.GenericTypeArgContext> tyArgCtxList = ctx.genericTypeArg();
+        List<Type> typeList = new ArrayList<>();
+        for (KiaraParser.GenericTypeArgContext tactx : tyArgCtxList) {
+            typeList.add((Type)getValue(tactx));
+        }
+        setValue(ctx, typeList);
     }
 
     @Override

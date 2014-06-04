@@ -25,30 +25,8 @@ import java.util.List;
  */
 public class Module extends KTDObject {
 
-    public static enum TypeDeclarationKind {
-
-        TYPEDEF, NEWTYPE
-    };
-
-    public static class TypeDeclaration {
-
-        public final TypeDeclarationKind kind;
-        public final Type type;
-        public final String name;
-
-        public TypeDeclaration(TypeDeclarationKind kind, Type type) {
-            this(kind, type, null);
-        }
-
-        public TypeDeclaration(TypeDeclarationKind kind, Type type, String name) {
-            this.kind = kind;
-            this.type = type;
-            this.name = name;
-        }
-    }
-
     private final Namespace namespace;
-    private final List<TypeDeclaration> typeDeclarations;
+    private final List<Type> typeDeclarations;
 
     public Module(World world, String namespaceName) {
         super(world);
@@ -129,15 +107,11 @@ public class Module extends KTDObject {
         return namespace.getTypeName(type);
     }
 
-    public final void addTypeDeclaration(TypeDeclarationKind kind, Type type) {
-        typeDeclarations.add(new TypeDeclaration(kind, type));
+    public final void addTypeDeclaration(Type type) {
+        typeDeclarations.add(type);
     }
 
-    public final void addTypeDeclaration(TypeDeclarationKind kind, Type type, String name) {
-        typeDeclarations.add(new TypeDeclaration(kind, type, name));
-    }
-
-    public List<TypeDeclaration> getTypeDeclarations() {
+    public List<Type> getTypeDeclarations() {
         return typeDeclarations;
     }
 }

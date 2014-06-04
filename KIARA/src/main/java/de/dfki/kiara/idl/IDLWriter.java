@@ -34,6 +34,7 @@ import de.dfki.kiara.ktd.Namespace;
 import de.dfki.kiara.ktd.ServiceType;
 import de.dfki.kiara.ktd.StructType;
 import de.dfki.kiara.ktd.Type;
+import de.dfki.kiara.ktd.TypedefType;
 import java.io.PrintStream;
 import java.util.List;
 
@@ -112,21 +113,20 @@ public class IDLWriter {
     public void write(PrintStream out) {
         Namespace ns = module.getNamespace();
         println(out, "// Module Namespace "+ns.getName());
-        List<Module.TypeDeclaration> decls = module.getTypeDeclarations();
+        List<Type> decls = module.getTypeDeclarations();
 
-        for (Module.TypeDeclaration decl : decls) {
-            String ownTypeName = getTypeName(decl.type);
-            String nsTypeName = ns.getTypeName(decl.type);
-            if (decl.kind == Module.TypeDeclarationKind.TYPEDEF) {
-                println(out, "typedef " + ownTypeName + " " + decl.name);
-            } else {
-                if (decl.type instanceof StructType) {
-                    writeStructType((StructType)decl.type, out);
-                } else if (decl.type instanceof ServiceType) {
-                    writeServiceType((ServiceType)decl.type, out);
-                } else if (decl.type instanceof EnumType) {
-                    writeEnumType((EnumType)decl.type, out);
-                }
+        for (Type decl : decls) {
+            String ownTypeName = getTypeName(decl);
+            String nsTypeName = ns.getTypeName(decl);
+            if (decl instanceof TypedefType) {
+                TypedefType typedefType = (TypedefType)decl;
+                println(out, "typedef " + getTypeName(typedefType.getDeclType()) + " " + ownTypeName);
+            } else if (decl instanceof StructType) {
+                writeStructType((StructType)decl, out);
+            } else if (decl instanceof ServiceType) {
+                writeServiceType((ServiceType)decl, out);
+            } else if (decl instanceof EnumType) {
+                writeEnumType((EnumType)decl, out);
             }
         }
     }

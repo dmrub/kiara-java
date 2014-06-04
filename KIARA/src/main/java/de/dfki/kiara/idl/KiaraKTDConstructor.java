@@ -36,6 +36,7 @@ import de.dfki.kiara.ktd.PrimValueType;
 import de.dfki.kiara.ktd.ServiceType;
 import de.dfki.kiara.ktd.StructType;
 import de.dfki.kiara.ktd.Type;
+import de.dfki.kiara.ktd.TypedefType;
 import de.dfki.kiara.ktd.VoidType;
 import de.dfki.kiara.ktd.World;
 import java.util.ArrayList;
@@ -357,9 +358,11 @@ public class KiaraKTDConstructor implements KiaraListener {
         Type fieldType = null;
         if (fieldTypeCtx != null) {
             fieldType = (Type)getValue(fieldTypeCtx);
+
+            TypedefType typedefType = TypedefType.create(ctx.IDENTIFIER().getText(), fieldType);
             pdebug("BIND "+getModule().getTypeName(fieldType)+" TO "+ctx.IDENTIFIER().getText());
             getModule().bindType(ctx.IDENTIFIER().getText(), fieldType);
-            getModule().addTypeDeclaration(Module.TypeDeclarationKind.TYPEDEF, fieldType, ctx.IDENTIFIER().getText());
+            getModule().addTypeDeclaration(typedefType);
         }
         setValue(ctx, fieldType);
     }
@@ -390,7 +393,7 @@ public class KiaraKTDConstructor implements KiaraListener {
         }
         try {
             getModule().bindType(ename, ety);
-            getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, ety);
+            getModule().addTypeDeclaration(ety);
         } catch (Exception e) {
             perror(ctx, e.toString());
         }
@@ -528,7 +531,7 @@ public class KiaraKTDConstructor implements KiaraListener {
         initStructTypeFromFields(s, fieldCtxList);
         try {
             getModule().bindType(structName, s);
-            getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
+            getModule().addTypeDeclaration(s);
         } catch (Exception e) {
             perror(ctx, e.toString());
             s = null;
@@ -595,7 +598,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
         try {
             getModule().bindType(exceptionName, s);
-            getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
+            getModule().addTypeDeclaration(s);
         } catch (Exception e) {
             perror(ctx, e.toString());
             s = null;
@@ -622,7 +625,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
         try {
             getModule().bindType(annotationName, s);
-            getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
+            getModule().addTypeDeclaration(s);
         } catch (Exception e) {
             perror(ctx, e.toString());
             s = null;
@@ -650,7 +653,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
         try {
             getModule().bindType(serviceName, s);
-            getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
+            getModule().addTypeDeclaration(s);
         } catch (Exception e) {
             perror(ctx, e.toString());
             s = null;

@@ -39,4 +39,9 @@ public class TypedefType extends Type {
         return getElementAs(Type.class, 0);
     }
 
+    @Override
+    public int hashCode() {
+        return System.identityHashCode(this);
+    }
+
 }

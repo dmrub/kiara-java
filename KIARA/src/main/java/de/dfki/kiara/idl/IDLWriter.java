@@ -17,13 +17,18 @@
 package de.dfki.kiara.idl;
 
 import de.dfki.kiara.ktd.Annotation;
+import de.dfki.kiara.ktd.AnnotationListAttr;
 import de.dfki.kiara.ktd.AnnotationTypeAttr;
 import de.dfki.kiara.ktd.ArrayType;
 import de.dfki.kiara.ktd.AttributeHolder;
 import de.dfki.kiara.ktd.CompositeType;
+import de.dfki.kiara.ktd.DefaultFieldValueAttr;
+import de.dfki.kiara.ktd.ElementData;
 import de.dfki.kiara.ktd.EnumType;
 import de.dfki.kiara.ktd.ExceptionTypeAttr;
+import de.dfki.kiara.ktd.Expr;
 import de.dfki.kiara.ktd.FixedArrayType;
+import de.dfki.kiara.ktd.FunctionType;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.Namespace;
 import de.dfki.kiara.ktd.ServiceType;
@@ -129,18 +134,79 @@ public class IDLWriter {
 
         writeAnnotationList(type, out);
 
-        out.println("service "+getTypeName(type)+" {\n");
+        out.println("service "+getTypeName(type)+" {");
         // indent
         writeTypeMembers(type, out);
         out.println("}");
     }
 
     private void writeEnumType(EnumType type, PrintStream out) {
+        if (type == null)
+            return;
 
+        writeAnnotationList(type, out);
+
+        out.println("enum "+getTypeName(type)+" {");
+        // indent
+        final int n = type.getNumConstants();
+        for (int i = 0; i < n; ++i) {
+            if (i != 0)
+                out.print(",\n");
+            Expr expr = type.getConstantAt(i);
+            String name = type.getConstantNameAt(i);
+            out.print(name+" = ");
+            out.print(expr);
+        }
+        if (n != 0)
+            out.println();
+        out.println("}");
     }
 
     private void writeTypeMembers(CompositeType type, PrintStream out) {
+        final int n = type.getNumElements();
+        for (int i = 0; i < n; ++i) {
+            Type elemTy = type.getElementAt(i);
+            final ElementData elemData = type.getElementDataAt(i);
+            if (i != 0)
+                out.println();
+            if (elemTy instanceof FunctionType) {
+                FunctionType fty = (FunctionType)elemTy;
+                writeAnnotationList(fty, out);
 
+                out.print(getTypeName(fty.getReturnType()));
+                out.print(" ");
+
+                writeAnnotationList(fty.getReturnElementData(), out, " ");
+
+                out.print(elemData.getName());
+                out.print("(");
+
+                final int nargs = fty.getNumParams();
+                for (int j = 0; j < nargs; ++j) {
+                    if (j != 0)
+                        out.print(", ");
+                    ElementData paramElementData = fty.getParamElementDataAt(j);
+                    writeAnnotationList(paramElementData, out, " ");
+                    out.print(getTypeName(fty.getParamType(j)));
+                    out.print(" ");
+                    out.print(fty.getParamName(j));
+                }
+                out.print(")");
+            } else {
+                writeAnnotationList(elemData, out);
+                out.print(getTypeName(elemTy));
+                out.print(" ");
+                out.print(elemData.getName());
+                if (elemData.hasAttributeValue(DefaultFieldValueAttr.class)) {
+                    Expr expr = elemData.getAttributeValue(DefaultFieldValueAttr.class).getValue();
+                    out.print(" = ");
+                    out.print(expr);
+                }
+            }
+            out.print(";");
+        }
+        if (n != 0)
+            out.println();
     }
 
     private void writeAnnotationList(AttributeHolder attributeHolder, PrintStream out) {
@@ -148,7 +214,10 @@ public class IDLWriter {
     }
 
     private void writeAnnotationList(AttributeHolder attributeHolder, PrintStream out, String sep) {
-
+        if (attributeHolder.hasAttributeValue(AnnotationListAttr.class)) {
+            List<Annotation> alist = attributeHolder.getAttributeValue(AnnotationListAttr.class).getValue();
+            writeAnnotationList(alist, out, sep);
+        }
     }
 
     private void writeAnnotationList(List<Annotation> alist, PrintStream out) {
@@ -156,6 +225,25 @@ public class IDLWriter {
     }
 
     private void writeAnnotationList(List<Annotation> alist, PrintStream out, String sep) {
+        if (alist == null || alist.isEmpty())
+            return;
+        out.print("[");
 
+        boolean first = true;
+
+        for (Annotation annotation : alist) {
+            if (annotation == null)
+                continue;
+            if (!first)
+                out.print(", ");
+            else
+                first = false;
+            out.print(getTypeName(annotation.getAnnotationType()));
+            // FIXME Implement output of arguments
+        }
+
+        out.print("]");
+        if (sep != null)
+            out.print(sep);
     }
 }

@@ -92,4 +92,8 @@ public class PrimLiteral extends Expr {
         return new PrimLiteral(world);
     }
 
+    @Override
+    public String toString() {
+        return value.toString();
+    }
 }

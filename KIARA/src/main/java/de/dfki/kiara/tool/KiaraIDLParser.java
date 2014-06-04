@@ -41,7 +41,7 @@ public class KiaraIDLParser {
         Module module = new Module(world, "kiara");
         KiaraKTDConstructor ktdConstructor = new KiaraKTDConstructor(module, args[0]);
         walker.walk(ktdConstructor, tree);
-        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
+        //System.out.println(tree.toStringTree(parser)); // print LISP-style tree
 
         if (!ktdConstructor.getParserErrors().isEmpty()) {
             System.err.println("Parser errors:");

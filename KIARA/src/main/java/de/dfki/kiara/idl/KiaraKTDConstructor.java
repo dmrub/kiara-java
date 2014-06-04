@@ -39,10 +39,7 @@ import de.dfki.kiara.ktd.Type;
 import de.dfki.kiara.ktd.VoidType;
 import de.dfki.kiara.ktd.World;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -74,21 +71,6 @@ public class KiaraKTDConstructor implements KiaraListener {
         }
     }
 
-    private static final class EnumDefList implements Iterable<EnumDef> {
-        public final List<EnumDef> constants;
-        public long nextConst;
-
-        public EnumDefList() {
-            this.constants = new ArrayList<>();
-            this.nextConst = 0;
-        }
-
-        @Override
-        public Iterator<EnumDef> iterator() {
-            return constants.iterator();
-        }
-    }
-
     private static final class Field {
         public Integer id;
         public Type type;
@@ -103,76 +85,6 @@ public class KiaraKTDConstructor implements KiaraListener {
             return name;
         }
     }
-
-    private static final class FieldList implements Iterable<Field> {
-        public List<Field> fields;
-
-        public final List<Type> getTypes() {
-            List<Type> result = new ArrayList<>();
-            for (Field f : fields) {
-                result.add(f.type);
-            }
-            return result;
-        }
-
-        public final List<String> getNames() {
-            List<String> result = new ArrayList<>();
-            for (Field f : fields) {
-                result.add(f.name);
-            }
-            return result;
-        }
-
-        public final void initAnnotations(StructType sty) {
-            final int n = fields.size();
-            for (int i = 0; i < n; ++i) {
-                ElementData elemData = sty.getElementDataAt(i);
-                if (fields.get(i).value != null)
-                    elemData.setAttributeValue(
-                            new DefaultFieldValueAttr(fields.get(i).value));
-                if (fields.get(i).annotationList != null &&
-                        !fields.get(i).annotationList.isEmpty())
-                    elemData.setAttributeValue(
-                            new AnnotationListAttr(fields.get(i).annotationList));
-            }
-        }
-
-        public final FunctionType createFunction(String name, Type returnType,
-                List<Annotation> funcAnnotList,
-                List<Annotation> retAnnotList) {
-                    //KIARA::World &world = returnType->getWorld();
-            List<ParameterInfo> paramTypes = new ArrayList<>(fields.size());
-
-            for (Field f : fields) {
-                paramTypes.add(new FunctionType.Parameter(f.name, f.type));
-            }
-
-            FunctionType fty = FunctionType.create(name, returnType, paramTypes);
-
-            // set parameter annotations
-            for (int i = 0; i < fty.getNumParams(); ++i) {
-                if (fields.get(i).annotationList != null && !fields.get(i).annotationList.isEmpty())
-                    fty.getParamElementDataAt(i).setAttributeValue(
-                            new AnnotationListAttr(fields.get(i).annotationList));
-            }
-
-            // set return type annotations
-            if (retAnnotList != null && !retAnnotList.isEmpty())
-                fty.getReturnElementData().setAttributeValue(new AnnotationListAttr(retAnnotList));
-
-            // set function annotations
-            if (funcAnnotList != null && !funcAnnotList.isEmpty())
-                fty.setAttributeValue(new AnnotationListAttr(funcAnnotList));
-
-            return fty;
-        }
-
-        @Override
-        public Iterator<Field> iterator() {
-            return fields.iterator();
-        }
-    }
-
 
     private List<Field> unwrapFieldList(List<KiaraParser.FieldContext> fieldCtxList) {
         List<Field> fields = new ArrayList<>(fieldCtxList.size());
@@ -284,35 +196,6 @@ public class KiaraKTDConstructor implements KiaraListener {
 
         public final String getName() {
             return type != null ? type.getTypeName() : "";
-        }
-    }
-
-    private static final class FunctionList implements Iterable<Function> {
-        public final List<Function> functions;
-
-        public FunctionList() {
-            this.functions = new ArrayList<>();
-        }
-
-        public final List<Type> getTypes() {
-            List<Type> result = new ArrayList<>();
-            for (Function f : functions) {
-                result.add(f.type);
-            }
-            return result;
-        }
-
-        public final List<String> getNames() {
-            List<String> result = new ArrayList<>();
-            for (Function f : functions) {
-                result.add(f.getName());
-            }
-            return result;
-        }
-
-        @Override
-        public Iterator<Function> iterator() {
-            return functions.iterator();
         }
     }
 

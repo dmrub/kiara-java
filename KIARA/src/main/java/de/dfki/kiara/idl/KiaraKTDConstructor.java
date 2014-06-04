@@ -57,6 +57,8 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     private final ParseTreeProperty<Object> values;
     private final Module module;
+    private final List<String> parserErrors;
+    private final String fileName;
 
     private static final class EnumDef {
         public final String name;
@@ -315,8 +317,18 @@ public class KiaraKTDConstructor implements KiaraListener {
     }
 
     public KiaraKTDConstructor(Module module) {
+        this(module, "<stdin>");
+    }
+
+    public KiaraKTDConstructor(Module module, String fileName) {
         this.values = new ParseTreeProperty<>();
         this.module = module;
+        this.parserErrors = new ArrayList<>();
+        this.fileName = fileName;
+    }
+
+    public final List<String> getParserErrors() {
+        return parserErrors;
     }
 
     public final Module getModule() {
@@ -339,7 +351,7 @@ public class KiaraKTDConstructor implements KiaraListener {
         setValue(destNode, getValue(srcNode));
     }
 
-    private final boolean DEBUG_MODE = true;
+    private final boolean DEBUG_MODE = false;
 
     public void pdebug(String msg) {
         if (DEBUG_MODE) {
@@ -348,9 +360,8 @@ public class KiaraKTDConstructor implements KiaraListener {
         }
     }
 
-    public void perror(String msg) {
-        System.err.print("ERROR: ");
-        System.err.println(msg);
+    public void perror(ParserRuleContext ctx, String msg) {
+        parserErrors.add(fileName+":"+ctx.getStart().getLine()+":"+ctx.getStart().getCharPositionInLine()+": "+msg);
     }
 
     @Override
@@ -373,7 +384,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void enterHeaderInclude(KiaraParser.HeaderIncludeContext ctx) {
-        System.out.println("INCLUDE "+ctx.LITERAL().getText()); //???DEBUG
+        pdebug("INCLUDE "+ctx.LITERAL().getText());
     }
 
     @Override
@@ -498,7 +509,7 @@ public class KiaraKTDConstructor implements KiaraListener {
             getModule().bindType(ename, ety);
             getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, ety);
         } catch (Exception e) {
-            perror(e.toString());
+            perror(ctx, e.toString());
         }
 
         setValue(ctx, ety);
@@ -636,7 +647,7 @@ public class KiaraKTDConstructor implements KiaraListener {
             getModule().bindType(structName, s);
             getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
         } catch (Exception e) {
-            perror(e.toString());
+            perror(ctx, e.toString());
             s = null;
         }
         setValue(ctx, s);
@@ -703,7 +714,7 @@ public class KiaraKTDConstructor implements KiaraListener {
             getModule().bindType(exceptionName, s);
             getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
         } catch (Exception e) {
-            perror(e.toString());
+            perror(ctx, e.toString());
             s = null;
         }
         setValue(ctx, s);
@@ -730,7 +741,7 @@ public class KiaraKTDConstructor implements KiaraListener {
             getModule().bindType(annotationName, s);
             getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
         } catch (Exception e) {
-            perror(e.toString());
+            perror(ctx, e.toString());
             s = null;
         }
         setValue(ctx, s);
@@ -758,7 +769,7 @@ public class KiaraKTDConstructor implements KiaraListener {
             getModule().bindType(serviceName, s);
             getModule().addTypeDeclaration(Module.TypeDeclarationKind.NEWTYPE, s);
         } catch (Exception e) {
-            perror(e.toString());
+            perror(ctx, e.toString());
             s = null;
         }
         setValue(ctx, s);
@@ -781,7 +792,7 @@ public class KiaraKTDConstructor implements KiaraListener {
             f = new Function(createFunction(funcName, retType, fieldList,
                     funcAnnotationList, retAnnotationList));
         } else {
-            perror("No return type for function "+funcName+" specified");
+            perror(ctx, "No return type for function "+funcName+" specified");
         }
         setValue(ctx, f);
     }
@@ -859,7 +870,7 @@ public class KiaraKTDConstructor implements KiaraListener {
         if (tn != null) {
             ty = getModule().lookupType(tn.getText());
             if (ty == null) {
-                perror("Unknown type identifier : "+tn.getText());
+                perror(ctx, "Unknown type identifier : "+tn.getText());
             }
         } else {
             ty = (Type)getValue(ctx.getChild(0));
@@ -937,7 +948,7 @@ public class KiaraKTDConstructor implements KiaraListener {
         if (tname.equals("array")) {
             List<Type> typeList = unwrapGenericTypeArgList(ctx.genericTypeArgList());
             if (typeList == null || (typeList.size() != 1 && typeList.size() != 2)) {
-                perror("Array argument list must have single type and optional size");
+                perror(ctx, "Array argument list must have single type and optional size");
             } else {
                 Type elementType = typeList.get(0);
                 if (typeList.size() == 2)
@@ -949,7 +960,7 @@ public class KiaraKTDConstructor implements KiaraListener {
                     }
                     else
                     {
-                        perror("Second argument of array type must be integer constant");
+                        perror(ctx, "Second argument of array type must be integer constant");
                     }
                 }
                 else
@@ -958,7 +969,7 @@ public class KiaraKTDConstructor implements KiaraListener {
                 }
             }
         } else {
-            perror("Unsupported generic type: "+tname);
+            perror(ctx, "Unsupported generic type: "+tname);
         }
     }
 
@@ -1028,17 +1039,17 @@ public class KiaraKTDConstructor implements KiaraListener {
 
         final Type ty = this.module.lookupType(typeId);
         if (ty == null) {
-            perror("Unknown type identifier : "+typeId);
+            perror(ctx, "Unknown type identifier : "+typeId);
         } else {
             if (!(ty instanceof StructType)) {
-                perror("Type '"+typeId+"' is not an annotation type");
+                perror(ctx, "Type '"+typeId+"' is not an annotation type");
                 return;
             }
 
             StructType sty = (StructType)ty;
             AnnotationTypeAttr atr = sty.getAttributeValue(AnnotationTypeAttr.class);
             if (atr == null || atr.getValue() == false) {
-                perror("Type '"+typeId+"' is not an annotation type");
+                perror(ctx, "Type '"+typeId+"' is not an annotation type");
                 return;
             }
 

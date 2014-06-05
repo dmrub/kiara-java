@@ -7,6 +7,8 @@
 package dfki.sb.apacheaxis2javaclient;
 
 import dfki.sb.MarketDataServiceStub;
+import dfki.sb.MarketDataServiceStub.SendMarketData;
+import dfki.sb.MarketDataServiceStub.SendQuoteRequest;
 import java.rmi.RemoteException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,6 +25,7 @@ public class MarketServiceClient {
             MarketDataServiceStub stub = new MarketDataServiceStub();
             MarketDataServiceStub.SendQuoteRequest quoteData = new MarketDataServiceStub.SendQuoteRequest();
             MarketDataServiceStub.SendMarketData marketData = new MarketDataServiceStub.SendMarketData();                        
+            preprationMethod(quoteData, stub, marketData);
             long startTime = System.currentTimeMillis();
             for (int i = 0; i < numMessages; i++) {
                 // Send 10 MarketDatas for each QuoteRequest
@@ -38,12 +41,25 @@ public class MarketServiceClient {
             long difference = finishTime - startTime;
             difference = difference * 1000;
             double latency = (double) difference / (numMessages * 2.0);
-            System.out.println("\n\nAverage latency is " + String.format("%.3f", latency) + " milli seconds\n\n\n");
+            System.out.println("\n\nAverage latency is " + String.format("%.3f", latency) + " microseconds\n\n\n");
             System.out.println("Finished");                                    
         } catch (AxisFault ex) {
             Logger.getLogger(MarketServiceClient.class.getName()).log(Level.SEVERE, null, ex);
         } catch (RemoteException ex) {
             Logger.getLogger(MarketServiceClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private static void preprationMethod(SendQuoteRequest quoteData, MarketDataServiceStub stub, SendMarketData marketData) throws RemoteException {
+        for (int i = 0; i < 1000; i++) {
+            // Send 10 MarketDatas for each QuoteRequest
+            if (i % 10 == 5) {
+                quoteData.setQuoteRequest(Util.createQuoteRequestData());
+                stub.sendQuoteRequest(quoteData);
+            } else {
+                marketData.setMarketData(Util.createMarketData());
+                stub.sendMarketData(marketData);
+            }
         }
     }
 }

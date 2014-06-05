@@ -15,7 +15,7 @@ import dfki.sb.zerociceproject.Main.*;
  */
 public class IceJavaClient {
     public static void main(String[] args) {
-        int numMessages = 1000;
+        int numMessages = 10000;
         String host = "localhost";
         long startTime = 0;
         Ice.Communicator ic = null;
@@ -23,6 +23,7 @@ public class IceJavaClient {
             ic = Ice.Util.initialize(new String[]{});
             Ice.ObjectPrx base = ic.stringToProxy("Benchmark:tcp -p 10000 -h "+host);
             BenchmarkPrx benchmark = BenchmarkPrxHelper.checkedCast(base);
+            preprationMethod(benchmark);
             startTime = System.currentTimeMillis();
             for (int i = 0; i < numMessages; i++) {
                 // Send 10 MarketDatas for each QuoteRequest
@@ -52,5 +53,16 @@ public class IceJavaClient {
         double latency = (double) difference / (numMessages * 2.0);
         System.out.println("\n\nAverage latency is " + String.format("%.3f", latency) + " microseconds\n\n");
         System.out.println("\t\tFinished");
+    }
+
+    private static void preprationMethod(BenchmarkPrx benchmark) {
+        for (int i = 0; i < 20000; i++) {
+            // Send 10 MarketDatas for each QuoteRequest
+            if (i % 10 == 5) {
+                benchmark.sendQuoteRequest(Util.createQuoteRequestData());
+            } else {
+                benchmark.sendMarketData(Util.createMarketData());
+            }
+        }
     }
 }

@@ -15,52 +15,178 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
 import dfki.sb.rabbitmqjava.model.MarketData;
+import dfki.sb.rabbitmqjava.model.MarketDataEntry;
 import dfki.sb.rabbitmqjava.model.QuoteRequest;
+import dfki.sb.rabbitmqjava.model.RelatedSym;
 import dfki.sb.rabbitmqjava.model.Util;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.UUID;
-import org.apache.commons.lang.SerializationUtils;
 
 public class RabbitMQClient {
 
-    private QuoteRequest sendQuoteRequest(QuoteRequest quoteObject) throws IOException, InterruptedException {
-        QuoteRequest response = null;
+    private void sendQuoteRequest(QuoteRequest quote) throws IOException, InterruptedException {        
         String corrId = UUID.randomUUID().toString();
-
-        BasicProperties props = new BasicProperties.Builder()
-                .correlationId(corrId)
-                .replyTo(replyQueueName)
-                .build();
-
-        channel.basicPublish("", requestQueueName, props, SerializationUtils.serialize(quoteObject));
+        BasicProperties props = new BasicProperties.Builder().correlationId(corrId).
+                replyTo(replyQueueName).build();
+        try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream(); 
+                DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(byteOut))) {
+            dos.writeInt(1);
+            dos.writeBoolean(quote.isIsEcho());
+            dos.writeInt(quote.getCounter());
+            dos.writeInt(quote.getSecurityID());
+            dos.writeDouble(quote.getApplVersionID());
+            dos.writeDouble(quote.getMessageType());
+            dos.writeDouble(quote.getSenderCompID());
+            dos.writeInt(quote.getMsgSeqNum());
+            dos.writeInt(quote.getSendingTime());
+            dos.writeDouble(quote.getQuoteReqID());
+            dos.writeInt(quote.getRelated().length);
+            for (RelatedSym related : quote.getRelated()) {
+                dos.writeDouble(related.getSymbol());
+                dos.writeLong(related.getOrderQuantity());
+                dos.writeInt(related.getSide());
+                dos.writeLong(related.getTransactTime());
+                dos.writeInt(related.getQuoteType());
+                dos.writeInt(related.getSecurityID());
+                dos.writeInt(related.getSecurityIDSource());
+                dos.writeDouble(related.getDummy1());
+                dos.writeInt(related.getDummy2());
+            }
+            dos.flush();
+            channel.basicPublish("", requestQueueName, props, byteOut.toByteArray());
+        }
         while (true) {
             QueueingConsumer.Delivery delivery = consumer.nextDelivery();
             if (delivery.getProperties().getCorrelationId().equals(corrId)) {
-                response = (QuoteRequest) SerializationUtils.deserialize(delivery.getBody());
+                readQuoteRequest(delivery.getBody());
                 break;
             }
         }
-        return response;
+    }
+    
+    private void readQuoteRequest(byte[] body) throws IOException{
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(
+                new ByteArrayInputStream(body)))) {
+            dis.readBoolean();
+            dis.readInt();
+            dis.readInt();
+            dis.readDouble();
+            dis.readDouble();
+            dis.readDouble();
+            dis.readInt();
+            dis.readInt();
+            dis.readDouble();
+            int loopEnd = dis.readInt();
+            for (int i=0 ; i < loopEnd ;i++) {
+                dis.readDouble();
+                dis.readLong();
+                dis.readInt();
+                dis.readLong();
+                dis.readInt();
+                dis.readInt();
+                dis.readInt();
+                dis.readDouble();
+                dis.readInt();
+            }
+        }
     }
 
-    private MarketData sendMarketData(MarketData marketObject) throws IOException, InterruptedException {
-        MarketData response = null;
+    private void readMarketData(byte[] body) throws IOException{
+        DataInputStream dis = new DataInputStream(new BufferedInputStream(
+                            new ByteArrayInputStream(body)));
+        dis.readBoolean();
+        dis.readInt();
+        dis.readInt();
+        dis.readDouble();
+        dis.readDouble();
+        dis.readDouble();
+        dis.readInt();
+        dis.readInt();
+        dis.readInt();
+        int loopEnd = dis.readInt();
+        for (int i=0 ;i < loopEnd ; i++) {
+            dis.readInt();
+            dis.readInt();
+            dis.readDouble();
+            dis.readInt();
+            dis.readInt();
+            dis.readInt();
+            dis.readInt();
+            dis.readDouble();
+            dis.readInt();
+            dis.readInt();
+            dis.readInt();
+            dis.readDouble();
+            dis.readDouble();
+            dis.readInt();
+            dis.readDouble();
+            dis.readDouble();
+            dis.readDouble();
+            dis.readInt();
+            dis.readDouble();
+            dis.readDouble();
+            dis.readInt();
+        }    
+    }
+    
+    private void sendMarketData(MarketData market) throws IOException, InterruptedException {
         String corrId = UUID.randomUUID().toString();
-
         BasicProperties props = new BasicProperties.Builder()
                 .correlationId(corrId)
                 .replyTo(replyQueueName)
                 .build();
-
-        channel.basicPublish("", requestQueueName, props, SerializationUtils.serialize(marketObject));
+        try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream(); 
+                DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(byteOut))) {
+            dos.writeInt(2);
+            dos.writeBoolean(market.isIsEcho());
+            dos.writeInt(market.getCounter());
+            dos.writeInt(market.getSecurityID());
+            dos.writeDouble(market.getApplVersionID());
+            dos.writeDouble(market.getMessageType());
+            dos.writeDouble(market.getSenderCompID());
+            dos.writeInt(market.getMsgSeqNum());
+            dos.writeInt(market.getSendingTime());
+            dos.writeInt(market.getTradeDate());
+            dos.writeInt(market.getMdEntries().length);
+            for (MarketDataEntry marketEntry : market.getMdEntries()) {
+                dos.writeInt(marketEntry.getMdUpdateAction());
+                dos.writeInt(marketEntry.getMdPriceLevel());
+                dos.writeDouble(marketEntry.getMdEntryType());
+                dos.writeInt(marketEntry.getOpenCloseSettleFlag());
+                dos.writeInt(marketEntry.getSecurityIDSource());
+                dos.writeInt(marketEntry.getSecurityID());
+                dos.writeInt(marketEntry.getRptSeq());
+                dos.writeDouble(marketEntry.getMdEntryPx());
+                dos.writeInt(marketEntry.getMdEntryTime());
+                dos.writeInt(marketEntry.getMdEntrySize());
+                dos.writeInt(marketEntry.getNumberOfOrders());
+                dos.writeDouble(marketEntry.getTradingSessionID());
+                dos.writeDouble(marketEntry.getNetChgPrevDay());
+                dos.writeInt(marketEntry.getTradeVolume());
+                dos.writeDouble(marketEntry.getTradeCondition());
+                dos.writeDouble(marketEntry.getTickDirection());
+                dos.writeDouble(marketEntry.getQuoteCondition());
+                dos.writeInt(marketEntry.getAggressorSide());
+                dos.writeDouble(marketEntry.getMatchEventIndicator());
+                dos.writeDouble(marketEntry.getDummy1());
+                dos.writeInt(marketEntry.getDummy2());
+            }
+            dos.flush();
+            channel.basicPublish("", requestQueueName, props, byteOut.toByteArray());
+        }
         while (true) {
             QueueingConsumer.Delivery delivery = consumer.nextDelivery();
             if (delivery.getProperties().getCorrelationId().equals(corrId)) {
-                response = (MarketData) SerializationUtils.deserialize(delivery.getBody());
+                readMarketData(delivery.getBody());
                 break;
             }
-        }
-        return response;
+        } 
     }
 
     private final Connection connection;
@@ -85,11 +211,11 @@ public class RabbitMQClient {
     }
 
     public static void main(String[] argv) {
-        int numMessages = 1000;
-        RabbitMQClient rpcClient = null;
-        String response = null;
+        int numMessages = 10000;
+        RabbitMQClient rpcClient = null;        
         try {
             rpcClient = new RabbitMQClient();
+            prepratoryCalls(rpcClient);
             long startTime = System.currentTimeMillis();
             for (int i = 0; i < numMessages; i++) {
                 // Send 10 MarketDatas for each QuoteRequest
@@ -114,6 +240,17 @@ public class RabbitMQClient {
                     rpcClient.close();
                 } catch (Exception ignore) {
                 }
+            }
+        }
+    }
+
+    private static void prepratoryCalls(RabbitMQClient rpcClient) throws InterruptedException, IOException {
+        for (int i = 0; i < 20000; i++) {
+            // Send 10 MarketDatas for each QuoteRequest
+            if (i % 10 == 5) {
+                rpcClient.sendQuoteRequest(Util.createQuoteRequestData());
+            } else {
+                rpcClient.sendMarketData(Util.createMarketData());
             }
         }
     }

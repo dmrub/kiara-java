@@ -17,10 +17,11 @@ import java.rmi.registry.Registry;
  */
 public class RMIJavaClient {
     public static void main(String[] args) throws RemoteException, NotBoundException{
-        int numMessages = 1000;
+        int numMessages = 10000;
         Registry reg = LocateRegistry.getRegistry("127.0.0.1", 9989);
         System.out.println("Connecting to server.");
-        RMIInterface client = (RMIInterface) reg.lookup("server");        
+        RMIInterface client = (RMIInterface) reg.lookup("server");   
+        preprationMethod(client);
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < numMessages; i++) {
             // Send 10 MarketDatas for each QuoteRequest
@@ -37,5 +38,16 @@ public class RMIJavaClient {
         System.out.println("\n\nAverage latency is " + String.format("%.3f",latency) + " microseconds\n\n\n");    
         System.out.println("Finished");
 
+    }
+
+    private static void preprationMethod(RMIInterface client) throws RemoteException {
+        for (int i = 0; i < 20000; i++) {
+            // Send 10 MarketDatas for each QuoteRequest
+            if (i % 10 == 5) {
+                client.sendQuoteRequest(Util.createQuoteRequestData());
+            } else {
+                client.sendMarketData(Util.createMarketData());
+            }
+        }
     }
 }

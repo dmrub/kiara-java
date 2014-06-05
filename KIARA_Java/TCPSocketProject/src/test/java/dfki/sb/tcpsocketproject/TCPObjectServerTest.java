@@ -3,9 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+package dfki.sb.tcpsocketproject;
 
-package dfki.sb.apachethriftproject;
-
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -16,40 +18,43 @@ import org.junit.Test;
  *
  * @author Shahzad
  */
-public class ThriftJavaServerTest {
-    
-    public ThriftJavaServerTest() {
+public class TCPObjectServerTest {
+
+    public TCPObjectServerTest() {
     }
-    
+
     @BeforeClass
     public static void setUpClass() {
         Runnable startServer = new Runnable() {
             @Override
             public void run() {
-                String[] args = null;
-                ThriftJavaServer.main(args);
+                try {
+                    TCPObjectServer.main(null);
+                } catch (IOException | ClassNotFoundException ex) {
+                    Logger.getLogger(TCPObjectServerTest.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         };
-        new Thread(startServer).start();
+        new Thread(startServer).start();      
     }
-    
+
     @AfterClass
     public static void tearDownClass() {
     }
-    
+
     @Before
     public void setUp() {
     }
-    
+
     @After
     public void tearDown() {
     }
 
     /**
-     * Test Client.
+     * Test of main method, of class TCPObjectServer.
      */
     @Test
-    public void testClient(){
-        ThriftJavaClient.main(null);
+    public void testClient() {
+        TCPObjectClient.main(null);
     }
 }

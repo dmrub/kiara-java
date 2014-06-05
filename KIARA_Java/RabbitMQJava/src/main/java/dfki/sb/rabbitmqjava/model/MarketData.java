@@ -24,7 +24,7 @@ public class MarketData implements Serializable {
     public int msgSeqNum;
     public int sendingTime;
     public int tradeDate;
-    public List<MarketDataEntry> mdEntries;
+    public MarketDataEntry[] mdEntries;
 
     /**
      * @return the isEcho
@@ -155,14 +155,14 @@ public class MarketData implements Serializable {
     /**
      * @return the mdEntries
      */
-    public List<MarketDataEntry> getMdEntries() {
+    public MarketDataEntry[] getMdEntries() {
         return mdEntries;
     }
 
     /**
      * @param mdEntries the mdEntries to set
      */
-    public void setMdEntries(List<MarketDataEntry> mdEntries) {
+    public void setMdEntries(MarketDataEntry[] mdEntries) {
         this.mdEntries = mdEntries;
     }
 }

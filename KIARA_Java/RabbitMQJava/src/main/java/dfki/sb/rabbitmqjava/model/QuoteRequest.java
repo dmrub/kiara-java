@@ -23,7 +23,7 @@ public class QuoteRequest implements Serializable{
     public int msgSeqNum;
     public int sendingTime;
     public double quoteReqID;
-    public List<RelatedSym> related;
+    public RelatedSym[] related;
 
     /**
      * @return the isEcho
@@ -154,14 +154,14 @@ public class QuoteRequest implements Serializable{
     /**
      * @return the related
      */
-    public List<RelatedSym> getRelated() {
+    public RelatedSym[] getRelated() {
         return related;
     }
 
     /**
      * @param related the related to set
      */
-    public void setRelated(List<RelatedSym> related) {
+    public void setRelated(RelatedSym[] related) {
         this.related = related;
     }
 }

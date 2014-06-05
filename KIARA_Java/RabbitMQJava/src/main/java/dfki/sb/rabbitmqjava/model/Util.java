@@ -22,35 +22,36 @@ public static MarketData createMarketData() {
         data.setMsgSeqNum(4);
         data.setSendingTime(00162635);
         data.setTradeDate(20100422);
-        data.setMdEntries(new ArrayList<MarketDataEntry>());
-        data.getMdEntries().add(createMarketEntryData());
-        data.getMdEntries().add(createMarketEntryData());
-        data.getMdEntries().add(createMarketEntryData());
+        MarketDataEntry[] entry = new MarketDataEntry[3];
+        entry[0] = createMarketEntryData();
+        entry[1] = createMarketEntryData();
+        entry[2] = createMarketEntryData();
+        data.setMdEntries(entry);
         return data;
     }
     private static MarketDataEntry createMarketEntryData() {
         MarketDataEntry entry = new MarketDataEntry();
-        entry.mdUpdateAction = 1;
-        entry.mdPriceLevel = 2;
-        entry.mdEntryType = 7;
-        entry.openCloseSettleFlag = 3;
-        entry.securityID = 99;
-        entry.securityIDSource = 9;
-        entry.rptSeq = 2;
-        entry.mdEntryPx = 100.0;
-        entry.mdEntryTime = 12345;
-        entry.mdEntrySize = 50;
-        entry.numberOfOrders = 10;
-        entry.tradingSessionID = 2;
-        entry.netChgPrevDay = 10.0;
-        entry.tradeVolume = 30;
-        entry.tradeCondition = 100.0;//double('W');
-        entry.tickDirection = 0;
-        entry.quoteCondition = 67;//double('C');
-        entry.aggressorSide = 2;
-        entry.matchEventIndicator = 1;//double('1');
-        entry.dummy1 = 1;
-        entry.dummy2 = 2;
+        entry.setMdUpdateAction(1);
+        entry.setMdPriceLevel(2);
+        entry.setMdEntryType(7);
+        entry.setOpenCloseSettleFlag(3);
+        entry.setSecurityID(99);
+        entry.setSecurityIDSource(9);
+        entry.setRptSeq(2);
+        entry.setMdEntryPx(100.0);
+        entry.setMdEntryTime(12345);
+        entry.setMdEntrySize(50);
+        entry.setNumberOfOrders(10);
+        entry.setTradingSessionID(2);
+        entry.setNetChgPrevDay(10.0);
+        entry.setTradeVolume(30);
+        entry.setTradeCondition(100.0);//double('W');
+        entry.setTickDirection(0);
+        entry.setQuoteCondition(67);//double('C');
+        entry.setAggressorSide(2);
+        entry.setMatchEventIndicator(1);//double('1');
+        entry.setDummy1(1);
+        entry.setDummy2(2);
         return entry;
     }
 
@@ -65,24 +66,26 @@ public static MarketData createMarketData() {
         req.setQuoteReqID(78);//double('R');
         req.setIsEcho(false);
         req.setCounter(0);
-        req.setRelated(new ArrayList<RelatedSym>());
-        req.getRelated().add(createRelatedSymData());
-        req.getRelated().add(createRelatedSymData());
-        req.getRelated().add(createRelatedSymData());
+        RelatedSym relatedSym[] = new RelatedSym[3];
+
+        relatedSym[0] = createRelatedSymData();
+        relatedSym[1] = createRelatedSymData();
+        relatedSym[2] = createRelatedSymData();
+        req.setRelated(relatedSym);
         return req;
     }
 
     private static RelatedSym createRelatedSymData() {
         RelatedSym sym = new RelatedSym();
-        sym.symbol = 321.0;
-        sym.orderQuantity = 25;
-        sym.side = 1;
-        sym.transactTime = 00162635;
-        sym.quoteType = 1;
-        sym.securityID = 99;
-        sym.securityIDSource = 9;
-        sym.dummy1 = 1;
-        sym.dummy2 = 2;
+        sym.setSymbol(321.0);
+        sym.setOrderQuantity(25);
+        sym.setSide(1);
+        sym.setTransactTime(00162635);
+        sym.setQuoteType(1);
+        sym.setSecurityID(99);
+        sym.setSecurityIDSource(9);
+        sym.setDummy1(1);
+        sym.setDummy2(2);
         return sym;
     }    
 }

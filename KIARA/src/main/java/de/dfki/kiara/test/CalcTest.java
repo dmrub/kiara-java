@@ -19,9 +19,11 @@ package de.dfki.kiara.test;
 
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
-import de.dfki.kiara.ContextFactory;
+import de.dfki.kiara.InterfaceGenerator;
 import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.Kiara;
+import de.dfki.kiara.MessageSerializer;
+import de.dfki.kiara.RemoteInterface;
 import java.lang.reflect.Method;
 
 /**
@@ -38,13 +40,16 @@ public class CalcTest {
     }
 
     public static void main(String[] args) throws Exception {
-        Context context = Kiara.createContext();
-        Connection connection = context.openConnection("http://localhost:8080/service");
+        try (Context context = Kiara.createContext();
+             Connection connection = context.openConnection("http://localhost:8080/service")) {
 
-        Calc calc = (Calc)connection.generateClientFunctions(MethodBinder.create(Calc.class).bind("calc.add", "add"));
-        calc.add(10, 12);
+            MethodBinder<Calc> b = new MethodBinder<>(Calc.class).bind("calc.add", "add");
 
-        connection.close();
-        context.close();
+            Calc calc = connection.generateClientFunctions(b);
+            RemoteInterface ri = (RemoteInterface)calc;
+            Class<? extends MessageSerializer> cls = ri.getMessageSerializerClass();
+
+            calc.add(10, 12);
+        }
     }
 }

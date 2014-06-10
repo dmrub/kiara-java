@@ -19,6 +19,7 @@ package de.dfki.kiara.impl;
 
 import com.google.common.reflect.AbstractInvocationHandler;
 import com.google.gson.Gson;
+import de.dfki.kiara.InterfaceMapping;
 import java.lang.reflect.Method;
 import java.util.Map;
 
@@ -26,23 +27,33 @@ import java.util.Map;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class SerializationInvocationHandler extends AbstractInvocationHandler {
+public class SerializationInvocationHandler extends BasicInvocationHandler {
 
     private final Gson gson = new Gson();
-    private final Map<String, Method> boundMethods;
 
-    public SerializationInvocationHandler(Map<String, Method> boundMethods) {
-        this.boundMethods = boundMethods;
+    public SerializationInvocationHandler(InterfaceMapping<?> interfaceMapping) {
+        super(interfaceMapping);
     }
 
     @Override
     protected Object handleInvocation(Object o, Method method, Object[] os) throws Throwable {
-        String out = gson.toJson(os[0]);
-        Object obj = gson.fromJson(out, method.getReturnType());
-        System.out.println("invoke: object: "+o+" Method: "+method+" Object[] "+os);
-        System.out.println("String: "+out);
-        System.out.println("Object: " + obj);
-        return null;
+        InterfaceMapping<?> mapping = getInterfaceMapping();
+
+        if (mapping.getIDLMethodName(method) != null) {
+            String out = gson.toJson(os[0]);
+            Object obj = gson.fromJson(out, method.getReturnType());
+            System.out.println("invoke: object: "+o+" Method: "+method+" Object[] "+os);
+            System.out.println("String: "+out);
+            System.out.println("Object: " + obj);
+
+            if (method.getReturnType().equals(int.class)) {
+                return 0;
+            }
+
+            return null;
+        }
+
+        return super.handleInvocation(o, method, os);
     }
 
 }

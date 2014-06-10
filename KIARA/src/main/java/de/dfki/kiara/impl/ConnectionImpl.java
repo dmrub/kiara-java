@@ -19,8 +19,12 @@ package de.dfki.kiara.impl;
 
 import com.google.common.reflect.Reflection;
 import de.dfki.kiara.Connection;
+import de.dfki.kiara.InterfaceGenerator;
+import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.MethodBinder;
+import de.dfki.kiara.RemoteInterface;
 import java.io.IOException;
+import java.lang.reflect.Proxy;
 import java.util.HashMap;
 
 /**
@@ -37,12 +41,14 @@ public class ConnectionImpl implements Connection {
     }
 
     @Override
-    public Object generateClientFunctions(MethodBinder methodBinder) {
-        Class<?> interfaceClass = methodBinder.getInterfaceClass();
-        Object impl = Reflection.newProxy(interfaceClass,
-                new SerializationInvocationHandler(
-                        new HashMap<>(methodBinder.getBoundMethods())));
-        return impl;
+    public <T> T generateClientFunctions(MethodBinder<T> methodBinder) {
+        InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinder);
+        Class<T> interfaceClass = mapping.getInterfaceClass();
+
+        Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
+                new Class<?>[] {interfaceClass, RemoteInterface.class},
+                new SerializationInvocationHandler(mapping));
+        return interfaceClass.cast(impl);
     }
 
 }

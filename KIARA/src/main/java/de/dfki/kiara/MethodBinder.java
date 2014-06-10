@@ -27,12 +27,12 @@ import java.util.HashSet;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public final class MethodBinder {
-    private final Class<?> interfaceClass;
+public final class MethodBinder<T> {
+    private final Class<T> interfaceClass;
     private final Map<String, Method> uniqueMethodMap;
     private final Map<String, Method> boundMethods; // maps IDL method to Java method
 
-    private MethodBinder(Class<?> interfaceClass) {
+    public MethodBinder(Class<T> interfaceClass) {
         if (interfaceClass == null)
             throw new NullPointerException("Interface class can't be null");
         if (!interfaceClass.isInterface())
@@ -54,10 +54,6 @@ public final class MethodBinder {
         }
     }
 
-    static public final MethodBinder create(Class<?> interfaceClass) {
-        return new MethodBinder(interfaceClass);
-    }
-
     public final MethodBinder bind(String idlMethodName, String methodName) throws NoSuchMethodException, SecurityException {
         Method method = uniqueMethodMap.get(methodName);
         if (method == null)
@@ -72,7 +68,7 @@ public final class MethodBinder {
         return this;
     }
 
-    public final Class<?> getInterfaceClass() {
+    public final Class<T> getInterfaceClass() {
         return interfaceClass;
     }
 

@@ -40,6 +40,11 @@ public class TypedefType extends Type {
     }
 
     @Override
+    public boolean equals(Object other) {
+        return this == other;
+    }
+
+    @Override
     public int hashCode() {
         return System.identityHashCode(this);
     }

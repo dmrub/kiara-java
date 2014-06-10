@@ -85,6 +85,7 @@ public class TypeTest {
         assertNotSame(t2, t3);
 
         assertSame(t1, t1.getCanonicalType());
+        assertEquals(t1, t1.getCanonicalType());
 
         ObjectType ot1 = ObjectType.get(world, String.class);
         ObjectType ot2 = ObjectType.get(world, String.class);
@@ -94,6 +95,14 @@ public class TypeTest {
 
         assertEquals(ot1, ot2);
         assertSame(ot1, ot2);
+
+        TypedefType tt1 = TypedefType.create("TT1", ot1);
+        TypedefType tt2 = TypedefType.create("TT2", ot2);
+
+        assertFalse(tt1.equals(tt2));
+        assertNotSame(tt1, tt2);
+        assertEquals(tt1.getCanonicalType(), tt2.getCanonicalType());
+        assertSame(tt1.getCanonicalType(), tt2.getCanonicalType());
 
         logger.log(Level.INFO, "Name of String class: {0}", ot1.getTypeName());
         logger.log(Level.INFO, "Name of List<String> class: {0}", ot3.getTypeName());

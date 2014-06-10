@@ -147,9 +147,10 @@ public class Type extends KTDObject implements ParameterInfo {
 
     @Override
     public boolean equals(Object other) {
-        if (!(other instanceof Type)) {
+        if (this == other)
+            return true;
+        if (!(other instanceof Type))
             return false;
-        }
         Type otherTy = (Type) other;
         if (getKind() != otherTy.getKind()) {
             return false;

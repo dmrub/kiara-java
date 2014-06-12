@@ -26,11 +26,12 @@ import java.util.HashSet;
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
+ * @param <T>
  */
 public final class MethodBinder<T> {
     private final Class<T> interfaceClass;
-    private final Map<String, Method> uniqueMethodMap;
-    private final Map<String, Method> boundMethods; // maps IDL method to Java method
+    private final Map<String, Method> uniqueMethodMap; // maps Java method name ot Method object
+    private final Map<Method, String> boundMethods; // maps Java method to IDL method name
 
     public MethodBinder(Class<T> interfaceClass) {
         if (interfaceClass == null)
@@ -58,13 +59,17 @@ public final class MethodBinder<T> {
         Method method = uniqueMethodMap.get(methodName);
         if (method == null)
             throw new NoSuchMethodException("No method '"+methodName+"' in class "+interfaceClass.getName());
-        boundMethods.put(idlMethodName, method);
+        if (boundMethods.containsKey(method))
+            throw new IllegalArgumentException("Method '"+methodName+"' was already bound");
+        boundMethods.put(method, idlMethodName);
         return this;
     }
 
     public final MethodBinder bind(String idlMethodName, String methodName, Class<?>... parameterTypes) throws NoSuchMethodException, SecurityException {
         Method method = interfaceClass.getMethod(methodName, parameterTypes);
-        boundMethods.put(idlMethodName, method);
+                if (boundMethods.containsKey(method))
+            throw new IllegalArgumentException("Method '"+methodName+"' was already bound");
+        boundMethods.put(method, idlMethodName);
         return this;
     }
 
@@ -72,7 +77,7 @@ public final class MethodBinder<T> {
         return interfaceClass;
     }
 
-    public final Map<String, Method> getBoundMethods() {
+    public final Map<Method, String> getBoundMethods() {
         return boundMethods;
     }
 }

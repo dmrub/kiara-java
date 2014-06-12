@@ -19,12 +19,10 @@ package de.dfki.kiara.test;
 
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
-import de.dfki.kiara.InterfaceGenerator;
-import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MessageSerializer;
+import de.dfki.kiara.Message;
+import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.RemoteInterface;
-import java.lang.reflect.Method;
 
 /**
  *
@@ -37,18 +35,27 @@ public class CalcTest {
         public float addFloat(float a, float b);
         public int stringToInt32(String s);
         public String int32ToString(int i);
+
+        public de.dfki.kiara.Message add_serializer(int a, int b);
+        public int add_deserializer(de.dfki.kiara.Message msg);
     }
 
     public static void main(String[] args) throws Exception {
         try (Context context = Kiara.createContext();
              Connection connection = context.openConnection("http://localhost:8080/service")) {
 
-            MethodBinder<Calc> b = new MethodBinder<>(Calc.class).bind("calc.add", "add");
+            MethodBinder<Calc> b =
+                    new MethodBinder<>(Calc.class)
+                            .bind("calc.add", "add")
+                            .bind("calc.add", "add_serializer")
+                            .bind("calc.add", "add_deserializer");
 
             Calc calc = connection.generateClientFunctions(b);
             RemoteInterface ri = (RemoteInterface)calc;
-            Class<? extends MessageSerializer> cls = ri.getMessageSerializerClass();
+            Connection c = ri.getConnection();
 
+            Message msg = calc.add_serializer(10, 12);
+            System.out.println("Message data: "+new String(msg.getMessageData().array()));
             calc.add(10, 12);
         }
     }

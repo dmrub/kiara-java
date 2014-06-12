@@ -27,25 +27,20 @@ public class TCPClient {
         try {
             Socket sender = new Socket("localhost", 8081);
             if (sender.isConnected()) {
-                int numMessages = 10000;                
-                DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(sender.getOutputStream()));
-                dos.flush();                
-                DataInputStream dis = new DataInputStream(new BufferedInputStream(sender.getInputStream()));
-                preprationMethod(dos, dis);        
-                long startTime = System.currentTimeMillis();
-                for (int i = 0; i < numMessages; i++) {
-                    // Send 10 MarketDatas for each QuoteRequest
-                    if (i % 10 == 5 ) {                        
-                        handleQuoteData(dos, dis);
-                    } else {
-                        handleMarketData(dos, dis);
-                    }
-                }                                    
-                long finishTime = System.currentTimeMillis();
-                dos.writeInt(-1);
-                dos.flush();
-                dos.close();
-                dis.close();
+                int numMessages = 10000;
+
+                long startTime;
+                long finishTime;
+                try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(sender.getOutputStream()));
+                        DataInputStream dis = new DataInputStream(new BufferedInputStream(sender.getInputStream()))) {
+                    dos.flush();
+                    sendMessages(20000,dos, dis);
+                    startTime = System.currentTimeMillis();
+                    sendMessages(numMessages, dos, dis);
+                    finishTime = System.currentTimeMillis();
+                    dos.writeInt(-1);
+                    dos.flush();
+                }
                 long difference = finishTime - startTime;
                 difference = difference * 1000;
                 double latency = (double) difference / (numMessages * 2.0);
@@ -58,18 +53,16 @@ public class TCPClient {
 
     }
 
-    private static void preprationMethod(DataOutputStream dos, DataInputStream dis) throws IOException {
-        for (int i = 0; i < 20000; i++) {
+    private static void sendMessages(int numberOfMessages,DataOutputStream dos, DataInputStream dis) throws IOException {
+        for (int i = 0; i < numberOfMessages; i++) {
             // Send 10 MarketDatas for each QuoteRequest
-            if (i % 10 == 5 ) {
+            if (i % 10 == 5) {
                 handleQuoteData(dos, dis);
             } else {
                 handleMarketData(dos, dis);
             }
         }
     }
-    
-        
 
     private static void handleQuoteData(DataOutputStream dos, DataInputStream dis) throws IOException {
         dos.writeInt(1);
@@ -100,7 +93,7 @@ public class TCPClient {
     }
 
     private static void readQuoteRequestObject(DataInputStream dis) throws IOException {
-        dis.readBoolean();        
+        dis.readBoolean();
         dis.readInt();
         dis.readInt();
         dis.readDouble();
@@ -110,7 +103,7 @@ public class TCPClient {
         dis.readInt();
         dis.readDouble();
         int loopEnd = dis.readInt();
-        for (int i=0 ; i < loopEnd ;i++) {
+        for (int i = 0; i < loopEnd; i++) {
             dis.readDouble();
             dis.readLong();
             dis.readInt();
@@ -121,7 +114,7 @@ public class TCPClient {
             dis.readDouble();
             dis.readInt();
         }
-    }    
+    }
 
     private static void handleMarketData(DataOutputStream dos, DataInputStream dis) throws IOException {
         dos.writeInt(2);
@@ -174,7 +167,7 @@ public class TCPClient {
         dis.readInt();
         dis.readInt();
         int loopEnd = dis.readInt();
-        for (int i=0 ;i < loopEnd ; i++) {
+        for (int i = 0; i < loopEnd; i++) {
             dis.readInt();
             dis.readInt();
             dis.readDouble();
@@ -196,6 +189,6 @@ public class TCPClient {
             dis.readDouble();
             dis.readDouble();
             dis.readInt();
-        }    
+        }
     }
 }

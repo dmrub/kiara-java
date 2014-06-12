@@ -215,16 +215,9 @@ public class RabbitMQClient {
         RabbitMQClient rpcClient = null;        
         try {
             rpcClient = new RabbitMQClient();
-            prepratoryCalls(rpcClient);
+            sendMessages(20000,rpcClient);
             long startTime = System.currentTimeMillis();
-            for (int i = 0; i < numMessages; i++) {
-                // Send 10 MarketDatas for each QuoteRequest
-                if (i % 10 == 5) {
-                    rpcClient.sendQuoteRequest(Util.createQuoteRequestData());
-                } else {
-                    rpcClient.sendMarketData(Util.createMarketData());
-                }
-            }
+            sendMessages(numMessages, rpcClient);
             long finishTime = System.currentTimeMillis();
             long difference = finishTime - startTime;
             difference = difference * 1000;
@@ -244,8 +237,8 @@ public class RabbitMQClient {
         }
     }
 
-    private static void prepratoryCalls(RabbitMQClient rpcClient) throws InterruptedException, IOException {
-        for (int i = 0; i < 20000; i++) {
+    private static void sendMessages(int numberOfMessages,RabbitMQClient rpcClient) throws InterruptedException, IOException {
+        for (int i = 0; i < numberOfMessages; i++) {
             // Send 10 MarketDatas for each QuoteRequest
             if (i % 10 == 5) {
                 rpcClient.sendQuoteRequest(Util.createQuoteRequestData());

@@ -27,35 +27,34 @@ public class TCPObjectServer {
             System.out.println("Server started: waiting for clienr on port 8081");
             Socket client = clientConnect.accept(); // blocks
             System.out.println("Client connected ....");
-            try (ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream( client.getOutputStream()))) {
+            try (ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream()));
+                    ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(client.getInputStream()))) {
                 oos.flush();
-                try (ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(client.getInputStream()))) {
-                    Object object;
-                    while (true) {
-                        object = ois.readObject();
-                        if(object instanceof MarketData){
-                            handleMarketData(ois,oos, (MarketData) object);
-                        } else if(object instanceof QuoteRequest) {
-                            handleQuoteRequest(ois,oos, (QuoteRequest) object);
-                        } else{
-                            break;
-                        }
+                Object object;
+                while (true) {
+                    object = ois.readObject();
+                    if (object instanceof MarketData) {
+                        handleMarketData(ois, oos, (MarketData) object);
+                    } else if (object instanceof QuoteRequest) {
+                        handleQuoteRequest(ois, oos, (QuoteRequest) object);
+                    } else {
+                        break;
                     }
-                    clientConnect.close();
                 }
+                clientConnect.close();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static void handleMarketData(ObjectInputStream ois,ObjectOutputStream oos, MarketData marketData) throws IOException, ClassNotFoundException {
+    private static void handleMarketData(ObjectInputStream ois, ObjectOutputStream oos, MarketData marketData) throws IOException, ClassNotFoundException {
         marketData.setIsEcho(true);
         oos.writeObject(marketData);
         oos.flush();
     }
-    
-    public static void handleQuoteRequest(ObjectInputStream ois,ObjectOutputStream oos, QuoteRequest returnRequest) throws IOException, ClassNotFoundException  {
+
+    public static void handleQuoteRequest(ObjectInputStream ois, ObjectOutputStream oos, QuoteRequest returnRequest) throws IOException, ClassNotFoundException {
         returnRequest.setIsEcho(true);
         oos.writeObject(returnRequest);
         oos.flush();

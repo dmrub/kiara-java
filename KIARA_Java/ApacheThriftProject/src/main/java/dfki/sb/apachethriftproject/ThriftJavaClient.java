@@ -26,16 +26,9 @@ public class ThriftJavaClient {
             TProtocol protocol = new TBinaryProtocol(transport);
             Benchmark.Client client = new Benchmark.Client(protocol);
             transport.open();
-            preprationMethod(client);
+            sendMessages(20000,client);
             long startTime = System.currentTimeMillis();
-            for (int i = 0; i < numMessages; i++) {
-                // Send 10 MarketDatas for each QuoteRequest
-                if (i % 10 == 5) {
-                    client.sendQuoteRequest(Util.createQuoteRequestData());
-                } else {
-                    client.sendMarketData(Util.createMarketData());
-                }
-            }
+            sendMessages(numMessages, client);
             long finishTime = System.currentTimeMillis();
             long difference = finishTime - startTime;
             difference = difference * 1000;
@@ -48,8 +41,8 @@ public class ThriftJavaClient {
         }
     }
 
-    private static void preprationMethod(Benchmark.Client client) throws TException {
-        for (int i = 0; i < 20000; i++) {
+    private static void sendMessages(int numberOfMessages,Benchmark.Client client) throws TException {
+        for (int i = 0; i < numberOfMessages; i++) {
             // Send 10 MarketDatas for each QuoteRequest
             if (i % 10 == 5) {
                 client.sendQuoteRequest(Util.createQuoteRequestData());

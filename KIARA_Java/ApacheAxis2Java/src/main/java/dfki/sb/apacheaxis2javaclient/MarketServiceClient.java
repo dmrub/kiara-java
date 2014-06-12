@@ -25,18 +25,9 @@ public class MarketServiceClient {
             MarketDataServiceStub stub = new MarketDataServiceStub();
             MarketDataServiceStub.SendQuoteRequest quoteData = new MarketDataServiceStub.SendQuoteRequest();
             MarketDataServiceStub.SendMarketData marketData = new MarketDataServiceStub.SendMarketData();                        
-            preprationMethod(quoteData, stub, marketData);
+            sendMessages(1000,quoteData, stub, marketData);
             long startTime = System.currentTimeMillis();
-            for (int i = 0; i < numMessages; i++) {
-                // Send 10 MarketDatas for each QuoteRequest
-                if (i % 10 == 5) {
-                    quoteData.setQuoteRequest(Util.createQuoteRequestData());            
-                    stub.sendQuoteRequest(quoteData);                                                            
-                } else {
-                    marketData.setMarketData(Util.createMarketData());                                  
-                    stub.sendMarketData(marketData);                                                            
-                }
-            }
+            sendMessages(numMessages, quoteData, stub, marketData);
             long finishTime = System.currentTimeMillis();
             long difference = finishTime - startTime;
             difference = difference * 1000;
@@ -50,8 +41,8 @@ public class MarketServiceClient {
         }
     }
 
-    private static void preprationMethod(SendQuoteRequest quoteData, MarketDataServiceStub stub, SendMarketData marketData) throws RemoteException {
-        for (int i = 0; i < 1000; i++) {
+    private static void sendMessages(int numberOfMessages,SendQuoteRequest quoteData, MarketDataServiceStub stub, SendMarketData marketData) throws RemoteException {
+        for (int i = 0; i < numberOfMessages; i++) {
             // Send 10 MarketDatas for each QuoteRequest
             if (i % 10 == 5) {
                 quoteData.setQuoteRequest(Util.createQuoteRequestData());

@@ -21,16 +21,9 @@ public class RMIJavaClient {
         Registry reg = LocateRegistry.getRegistry("127.0.0.1", 9989);
         System.out.println("Connecting to server.");
         RMIInterface client = (RMIInterface) reg.lookup("server");   
-        preprationMethod(client);
+        sendMessages(20000,client);
         long startTime = System.currentTimeMillis();
-        for (int i = 0; i < numMessages; i++) {
-            // Send 10 MarketDatas for each QuoteRequest
-            if (i % 10 == 5) {
-                client.sendQuoteRequest(Util.createQuoteRequestData());
-            } else {
-                client.sendMarketData(Util.createMarketData());
-            }
-        }
+        sendMessages(numMessages, client);
         long finishTime = System.currentTimeMillis();
         long difference = finishTime - startTime; 
         difference = difference * 1000;
@@ -40,8 +33,8 @@ public class RMIJavaClient {
 
     }
 
-    private static void preprationMethod(RMIInterface client) throws RemoteException {
-        for (int i = 0; i < 20000; i++) {
+    private static void sendMessages(int numberOfMessages,RMIInterface client) throws RemoteException {
+        for (int i = 0; i < numberOfMessages; i++) {
             // Send 10 MarketDatas for each QuoteRequest
             if (i % 10 == 5) {
                 client.sendQuoteRequest(Util.createQuoteRequestData());

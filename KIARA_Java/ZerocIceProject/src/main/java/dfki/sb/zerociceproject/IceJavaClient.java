@@ -23,16 +23,9 @@ public class IceJavaClient {
             ic = Ice.Util.initialize(new String[]{});
             Ice.ObjectPrx base = ic.stringToProxy("Benchmark:tcp -p 10000 -h "+host);
             BenchmarkPrx benchmark = BenchmarkPrxHelper.checkedCast(base);
-            preprationMethod(benchmark);
+            sendMessages(20000,benchmark);
             startTime = System.currentTimeMillis();
-            for (int i = 0; i < numMessages; i++) {
-                // Send 10 MarketDatas for each QuoteRequest
-                if (i % 10 == 5) {
-                    benchmark.sendQuoteRequest(Util.createQuoteRequestData());
-                } else {
-                    benchmark.sendMarketData(Util.createMarketData());
-                }
-            }
+            sendMessages(numMessages, benchmark);
         } catch (Ice.LocalException e) {
             e.printStackTrace();
         } catch (Exception e) {
@@ -55,8 +48,8 @@ public class IceJavaClient {
         System.out.println("\t\tFinished");
     }
 
-    private static void preprationMethod(BenchmarkPrx benchmark) {
-        for (int i = 0; i < 20000; i++) {
+    private static void sendMessages(int numberOfMessages,BenchmarkPrx benchmark) {
+        for (int i = 0; i < numberOfMessages; i++) {
             // Send 10 MarketDatas for each QuoteRequest
             if (i % 10 == 5) {
                 benchmark.sendQuoteRequest(Util.createQuoteRequestData());

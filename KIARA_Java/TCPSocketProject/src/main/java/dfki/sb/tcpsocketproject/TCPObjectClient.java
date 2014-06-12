@@ -24,31 +24,20 @@ public class TCPObjectClient {
             Socket sender = new Socket("localhost", 8081);
             if (sender.isConnected()) {
                 int numMessages = 10000;
-                ObjectInputStream ois;
                 long startTime;
                 long finishTime;
                 try (ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(sender.getOutputStream()))) {
                     oos.flush();
-                    ois = new ObjectInputStream(new BufferedInputStream(sender.getInputStream()));
-                    preprationMethod(oos, ois);
-                    startTime = System.currentTimeMillis();
-                    for (int i = 0; i < numMessages; i++) {
-                        // Send 10 MarketDatas for each QuoteRequest
-                        if (i % 10 == 5) {                            
-                            oos.writeObject(Util.createQuoteRequestData());
-                            oos.flush();
-                            ois.readObject();
-                        } else {                            
-                            oos.writeObject(Util.createMarketData());
-                            oos.flush();
-                            ois.readObject();
-                        }
+                    // if i open both streams in same try block it just blocks the streams.
+                    try (ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(sender.getInputStream()))) {
+                        sendMessages(20000, oos, ois);
+                        startTime = System.currentTimeMillis();
+                        sendMessages(numMessages, oos, ois);
+                        finishTime = System.currentTimeMillis();
+                        oos.writeObject(null);
+                        oos.flush();
                     }
-                    finishTime = System.currentTimeMillis();
-                    oos.writeObject(null);
-                    oos.flush();
                 }
-                ois.close();
                 long difference = finishTime - startTime;
                 difference = difference * 1000;
                 double latency = (double) difference / (numMessages * 2.0);
@@ -61,8 +50,8 @@ public class TCPObjectClient {
 
     }
 
-    private static void preprationMethod(ObjectOutputStream oos, ObjectInputStream ois) throws ClassNotFoundException, IOException {
-        for (int i = 0; i < 20000; i++) {
+    private static void sendMessages(int numberOfMessages, ObjectOutputStream oos, ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        for (int i = 0; i < numberOfMessages; i++) {
             // Send 10 MarketDatas for each QuoteRequest
             if (i % 10 == 5) {
                 oos.writeObject(Util.createQuoteRequestData());

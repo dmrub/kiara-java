@@ -29,27 +29,26 @@ public class TCPServer {
             System.out.println("Server started: waiting for clienr on port 8081");
             Socket client = clientConnect.accept(); // blocks
             System.out.println("Client connected ....");
-            try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(client.getOutputStream()))) {
+            try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(client.getOutputStream()));
+                    DataInputStream dis = new DataInputStream(new BufferedInputStream(client.getInputStream()))) {
                 dos.flush();
-                try (DataInputStream dis = new DataInputStream(new BufferedInputStream(client.getInputStream()))) {
-                    int type;
-                    while (true) {
-                        type = dis.readInt();
-                        if (type == 2) {
-                            handleMarketRequest(dis, dos);
-                        } else if (type == 1) {
-                            handleQuoteRequest(dis, dos);
-                        } else {
-                            break;
-                        }
+                int type;
+                while (true) {
+                    type = dis.readInt();
+                    if (type == 2) {
+                        handleMarketRequest(dis, dos);
+                    } else if (type == 1) {
+                        handleQuoteRequest(dis, dos);
+                    } else {
+                        break;
                     }
-                    clientConnect.close();
                 }
+                clientConnect.close();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }    
+    }
 
     private static void handleMarketRequest(DataInputStream dis, DataOutputStream dos) throws IOException, ClassNotFoundException {
         MarketData market = new MarketData();
@@ -63,7 +62,7 @@ public class TCPServer {
         market.setSendingTime(dis.readInt());
         market.setTradeDate(dis.readInt());
         MarketDataEntry[] marketEntry = new MarketDataEntry[dis.readInt()];
-        for (int i=0; i < marketEntry.length ; i++) {
+        for (int i = 0; i < marketEntry.length; i++) {
             marketEntry[i] = new MarketDataEntry();
             marketEntry[i].setMdUpdateAction(dis.readInt());
             marketEntry[i].setMdPriceLevel(dis.readInt());
@@ -88,7 +87,7 @@ public class TCPServer {
             marketEntry[i].setDummy2(dis.readInt());
         }
         market.setMdEntries(marketEntry);
-        writeMarketDataToOutputStream(dos, market); 
+        writeMarketDataToOutputStream(dos, market);
     }
 
     public static void handleQuoteRequest(DataInputStream dis, DataOutputStream dos) throws IOException, ClassNotFoundException {
@@ -104,7 +103,7 @@ public class TCPServer {
         quote.setQuoteReqID(dis.readDouble());
         quote.setIsEcho(false);
         RelatedSym[] sym = new RelatedSym[dis.readInt()];
-        for (int i = 0; i < sym.length ; i++) {
+        for (int i = 0; i < sym.length; i++) {
             sym[i] = new RelatedSym();
             sym[i].setSymbol(dis.readDouble());
             sym[i].setOrderQuantity(dis.readLong());
@@ -117,9 +116,9 @@ public class TCPServer {
             sym[i].setDummy2(dis.readInt());
         }
         quote.setRelated(sym);
-        writeQuoteDataToOutputStream(dos, quote);  
+        writeQuoteDataToOutputStream(dos, quote);
     }
-    
+
     private static void writeQuoteDataToOutputStream(DataOutputStream dos, QuoteRequest quote) throws IOException {
         dos.writeBoolean(quote.isIsEcho());
         dos.writeInt(quote.getCounter());

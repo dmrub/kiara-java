@@ -23,6 +23,8 @@ import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.impl.JsonRpcMessage;
+import java.nio.ByteBuffer;
 
 /**
  *
@@ -57,6 +59,12 @@ public class CalcTest {
             Message msg = calc.add_serializer(10, 12);
             System.out.println("Message data: "+new String(msg.getMessageData().array()));
             calc.add(10, 12);
+
+
+            String res = "{\"jsonrpc\":2.0, \"result\": 22}";
+            Message responseMsg = msg.getProtocol().createResponseMessageFromData(ByteBuffer.wrap(res.getBytes("UTF-8")));
+            int result = calc.add_deserializer(responseMsg);
+            System.out.println("Result: "+result);
         }
     }
 }

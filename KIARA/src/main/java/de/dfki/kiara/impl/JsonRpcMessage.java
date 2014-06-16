@@ -18,6 +18,7 @@
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.Message;
+import de.dfki.kiara.Protocol;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -25,14 +26,21 @@ import java.nio.ByteBuffer;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class DummyMessage implements Message {
+public class JsonRpcMessage implements Message {
 
+    private final Protocol protocol;
     private String methodName;
     private ByteBuffer data;
 
-    public DummyMessage(String methodName, ByteBuffer data) {
+    public JsonRpcMessage(Protocol protocol, String methodName, ByteBuffer data) {
+        this.protocol = protocol;
         this.methodName = methodName;
         this.data = data;
+    }
+
+    @Override
+    public Protocol getProtocol() {
+        return protocol;
     }
 
     @Override

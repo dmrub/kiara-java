@@ -34,6 +34,8 @@ public interface Protocol {
 
     public Message createRequestMessageFromData(ByteBuffer data);
 
+    public Message createResponseMessageFromData(ByteBuffer data);
+
     /** Create message for calling service method name.
      *
      * @param connection

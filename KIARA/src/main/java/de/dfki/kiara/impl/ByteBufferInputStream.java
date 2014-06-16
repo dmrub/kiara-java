@@ -15,27 +15,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara;
+package de.dfki.kiara.impl;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Message extends MessageIO {
+public class ByteBufferInputStream extends InputStream {
+    final private ByteBuffer buf;
 
-    public Protocol getProtocol();
+    public ByteBufferInputStream(ByteBuffer buf) {
+        this.buf = buf;
+    }
 
-    public String getMethodName();
+    @Override
+    public int read() throws IOException {
+        if (!buf.hasRemaining()) {
+            return -1;
+        }
+        return buf.get() & 0xFF;
+    }
 
-    /** Stores in buffer dest message representation that can be sent over network
-     *
-     * @return
-     */
-    public ByteBuffer getMessageData();
+    @Override
+    public int read(byte[] bytes, int off, int len)
+            throws IOException {
+        if (!buf.hasRemaining()) {
+            return -1;
+        }
 
-    public void setGenericError(int errorCode, String errorMessage);
-
-    public boolean isErrorResponse();
+        len = Math.min(len, buf.remaining());
+        buf.get(bytes, off, len);
+        return len;
+    }
 }

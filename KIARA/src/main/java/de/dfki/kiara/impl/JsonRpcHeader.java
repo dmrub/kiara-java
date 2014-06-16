@@ -39,11 +39,11 @@ public class JsonRpcHeader {
         this.id = id;
     }
 
-    public JsonRpcHeader(String result, JsonRpcError error, Object id) {
+    public JsonRpcHeader(Object result, Object id) {
         this.method = null;
         this.params = null;
         this.result = result;
-        this.error = error;
+        this.error = null;
         this.id = id;
     }
 

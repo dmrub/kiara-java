@@ -23,17 +23,47 @@ import java.nio.ByteBuffer;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Message extends MessageIO {
+public interface Message {
+
+    public static enum Kind {
+        REQUEST,
+        RESPONSE,
+        EXCEPTION
+    }
+
+    public static class RequestObject {
+        public final Object[] args;
+
+        public RequestObject(Object[] args) {
+            this.args = args;
+        }
+    }
+
+    public static class ResponseObject {
+        public final Object result;
+        public final boolean isException;
+
+        public ResponseObject(Object result, boolean isException) {
+            this.result = result;
+            this.isException = isException;
+        }
+    }
+
+    public Kind getMessageKind();
 
     public Protocol getProtocol();
 
     public String getMethodName();
 
-    /** Stores in buffer dest message representation that can be sent over network
+    /** Stores to the byte buffer message representation that can be sent over network.
      *
      * @return
      */
     public ByteBuffer getMessageData();
+
+    public RequestObject getRequestObject();
+
+    public ResponseObject getResponseObject();
 
     public void setGenericError(int errorCode, String errorMessage);
 

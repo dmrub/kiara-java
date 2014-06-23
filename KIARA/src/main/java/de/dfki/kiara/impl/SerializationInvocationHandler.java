@@ -17,37 +17,49 @@
 
 package de.dfki.kiara.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import de.dfki.kiara.jsonrpc.JsonRpcMessage;
+import de.dfki.kiara.jsonrpc.JsonRpcHeader;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.DoubleNode;
-import com.fasterxml.jackson.databind.node.FloatNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.reflect.AbstractInvocationHandler;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
+import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
+import de.dfki.kiara.Protocol;
 import de.dfki.kiara.Util;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class SerializationInvocationHandler extends BasicInvocationHandler {
+public class SerializationInvocationHandler extends AbstractInvocationHandler {
+    private final InterfaceMapping<?> interfaceMapping;
+    private final Protocol protocol;
 
-    private final JsonRpcProtocol protocol = new JsonRpcProtocol();
+    public SerializationInvocationHandler(InterfaceMapping<?> interfaceMapping, Protocol protocol) {
+        this.interfaceMapping = interfaceMapping;
+        this.protocol = protocol;
+    }
 
-    public SerializationInvocationHandler(InterfaceMapping<?> interfaceMapping) {
-        super(interfaceMapping);
+    public InterfaceMapping<?> getInterfaceMapping() {
+        return interfaceMapping;
+    }
+
+    public Connection getConnection() {
+        return null;
     }
 
     @Override
     protected Object handleInvocation(Object o, Method method, Object[] os) throws Throwable {
+        if (method.equals(SpecialMethods.riGetConnection)) {
+            return getConnection();
+        }
+
         InterfaceMapping<?> mapping = getInterfaceMapping();
 
         final String idlMethodName = mapping.getIDLMethodName(method);
@@ -112,7 +124,7 @@ public class SerializationInvocationHandler extends BasicInvocationHandler {
             return null;
         }
 
-        return super.handleInvocation(o, method, os);
+        throw new UnsupportedOperationException("Unknown method: "+method);
     }
 
 }

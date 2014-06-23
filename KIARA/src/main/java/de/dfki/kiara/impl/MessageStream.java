@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.impl;
 
-import de.dfki.kiara.Message;
-import de.dfki.kiara.Protocol;
+import de.dfki.kiara.MessageIO;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -26,41 +24,7 @@ import java.nio.ByteBuffer;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class JsonRpcMessage implements Message {
-
-    private final Protocol protocol;
-    private String methodName;
-    private ByteBuffer data;
-
-    public JsonRpcMessage(Protocol protocol, String methodName, ByteBuffer data) {
-        this.protocol = protocol;
-        this.methodName = methodName;
-        this.data = data;
-    }
-
-    @Override
-    public Protocol getProtocol() {
-        return protocol;
-    }
-
-    @Override
-    public String getMethodName() {
-        return methodName;
-    }
-
-    @Override
-    public ByteBuffer getMessageData() {
-        return data;
-    }
-
-    @Override
-    public void setGenericError(int errorCode, String errorMessage) {
-    }
-
-    @Override
-    public boolean isErrorResponse() {
-        return false;
-    }
+public class MessageStream implements MessageIO {
 
     @Override
     public void writeStructBegin(String name) throws IOException {

@@ -15,19 +15,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara.impl;
+package de.dfki.kiara.jsonrpc;
 
 import de.dfki.kiara.Connection;
+import de.dfki.kiara.InterfaceCodeGen;
+import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
+import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.impl.SerializationInvocationHandler;
 import java.io.IOException;
+import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class JsonRpcProtocol implements Protocol {
+public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
 
     @Override
     public String getMimeType() {
@@ -56,6 +61,19 @@ public class JsonRpcProtocol implements Protocol {
 
     @Override
     public void sendMessageSync(Connection connection, Message outMsg, Message inMsg) throws IOException {
+    }
+
+    @Override
+    public InterfaceCodeGen getInterfaceCodeGen() {
+        return this;
+    }
+
+    @Override
+    public <T> T generateInterfaceImpl(Class<T> interfaceClass, InterfaceMapping<T> mapping) {
+        Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
+        new Class<?>[] {interfaceClass, RemoteInterface.class},
+        new SerializationInvocationHandler(mapping, this));
+        return interfaceClass.cast(impl);
     }
 
 }

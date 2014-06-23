@@ -23,7 +23,7 @@ import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.RemoteInterface;
-import de.dfki.kiara.impl.JsonRpcMessage;
+import de.dfki.kiara.jsonrpc.JsonRpcMessage;
 import java.nio.ByteBuffer;
 
 /**

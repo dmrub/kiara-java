@@ -18,35 +18,26 @@
 package de.dfki.kiara;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Protocol {
+public class ConnectionException extends IOException {
 
-    /**
-     *
-     * @return MIME Type of the protocol
-     */
-    public String getMimeType();
+    public ConnectionException() {
+    }
 
-    public InterfaceCodeGen getInterfaceCodeGen();
+    public ConnectionException(String message) {
+        super(message);
+    }
 
-    public Message createRequestMessageFromData(ByteBuffer data);
+    public ConnectionException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-    public Message createResponseMessageFromData(ByteBuffer data);
+    public ConnectionException(Throwable cause) {
+        super(cause);
+    }
 
-    /** Create message for calling service method name.
-     *
-     * @param connection
-     * @param methodName
-     * @return
-     */
-    public Message createRequestMessage(Connection connection, String methodName);
-
-    public Message createResponseMessage(Connection connection, Message requestMessage);
-
-    public void sendMessageSync(Connection connection, Message outMsg, Message inMsg) throws IOException;
 }

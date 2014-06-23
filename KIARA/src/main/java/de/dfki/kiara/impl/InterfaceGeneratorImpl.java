@@ -17,10 +17,10 @@
 
 package de.dfki.kiara.impl;
 
+import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import com.google.common.reflect.Reflection;
 import de.dfki.kiara.InterfaceGenerator;
 import de.dfki.kiara.InterfaceMapping;
-import java.util.HashMap;
 
 /**
  *
@@ -39,7 +39,7 @@ public class InterfaceGeneratorImpl<T> implements InterfaceGenerator<T> {
     public T generateClientFunctions() {
         Class<T> interfaceClass = interfaceMapping.getInterfaceClass();
         T impl = Reflection.newProxy(interfaceClass,
-                new SerializationInvocationHandler(interfaceMapping));
+                new SerializationInvocationHandler(interfaceMapping, new JsonRpcProtocol()));
         return impl;
     }
 

@@ -17,15 +17,18 @@
 
 package de.dfki.kiara.impl;
 
-import com.google.common.reflect.Reflection;
 import de.dfki.kiara.Connection;
-import de.dfki.kiara.InterfaceGenerator;
+import de.dfki.kiara.ConnectionException;
+import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.MethodBinder;
+import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -33,7 +36,21 @@ import java.util.HashMap;
  */
 public class ConnectionImpl implements Connection {
 
-    ConnectionImpl(String url) {
+    private static final Map<String, Protocol> protocolRegistry = new HashMap<>();
+    private final Protocol protocol;
+
+    static {
+        // initialize protocols
+        protocolRegistry.put("jsonrpc", new JsonRpcProtocol());
+    }
+
+    ConnectionImpl(String url) throws ConnectionException {
+        // 1. perform negotiation
+        // 2. select implementation
+        String protocolName = "jsonrpc";
+        protocol = protocolRegistry.get(protocolName);
+        if (protocol == null)
+            throw new ConnectionException("Unsupported protocol '"+protocolName+"'");
     }
 
     @Override
@@ -45,10 +62,8 @@ public class ConnectionImpl implements Connection {
         InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinder);
         Class<T> interfaceClass = mapping.getInterfaceClass();
 
-        Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
-                new Class<?>[] {interfaceClass, RemoteInterface.class},
-                new SerializationInvocationHandler(mapping));
-        return interfaceClass.cast(impl);
+        InterfaceCodeGen codegen = protocol.getInterfaceCodeGen();
+        return codegen.generateInterfaceImpl(interfaceClass, mapping);
     }
 
 }

@@ -20,7 +20,6 @@ package de.dfki.kiara.jsonrpc;
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
-import de.dfki.kiara.jos.JosProtocol;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -35,13 +34,24 @@ public class JsonRpcMessage implements Message {
     private Message.Kind kind;
     private ResponseObject response;
     private RequestObject request;
+    private Object id;
 
-    public JsonRpcMessage(JsonRpcProtocol protocol, String methodName) {
+    public JsonRpcMessage(JsonRpcProtocol protocol, String methodName, Object id) {
         this.protocol = protocol;
         this.methodName = methodName;
         this.kind = Kind.REQUEST;
         this.request = null;
         this.response = null;
+        this.id = id;
+    }
+
+    public JsonRpcMessage(JsonRpcMessage requestMessage, boolean isException) {
+        this.protocol = requestMessage.protocol;
+        this.methodName = null;
+        this.kind = isException ? Kind.EXCEPTION : Kind.RESPONSE;
+        this.request = null;
+        this.response = null;
+        this.id = requestMessage.id;
     }
 
     public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind) {
@@ -50,6 +60,7 @@ public class JsonRpcMessage implements Message {
         this.kind = kind;
         this.request = null;
         this.response = null;
+        this.id = null;
     }
 
     public JsonRpcMessage(JsonRpcProtocol protocol, ResponseObject response) {
@@ -58,14 +69,20 @@ public class JsonRpcMessage implements Message {
         this.kind = Kind.RESPONSE;
         this.request = null;
         this.response = response;
+        this.id = null;
     }
 
-    public JsonRpcMessage(JsonRpcProtocol protocol, RequestObject request) {
+    public JsonRpcMessage(JsonRpcProtocol protocol, RequestObject request, Object id) {
         this.protocol = protocol;
         this.methodName = request.methodName;
         this.kind = Kind.REQUEST;
         this.request = request;
         this.response = null;
+        this.id = id;
+    }
+
+    public Object getId() {
+        return id;
     }
 
     @Override

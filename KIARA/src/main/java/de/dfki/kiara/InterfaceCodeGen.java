@@ -22,5 +22,5 @@ package de.dfki.kiara;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public interface InterfaceCodeGen {
-    <T> T generateInterfaceImpl(Connection connection, Class<T> interfaceClass, InterfaceMapping<T> mapping);
+    <T> T generateInterfaceImpl(Class<T> interfaceClass, InterfaceMapping<T> mapping);
 }

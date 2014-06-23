@@ -41,6 +41,26 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     private final static int JOS_RESPONSE = 1;
     private final static int JOS_EXCEPTION = 2;
 
+    private Connection connection;
+
+    public JosProtocol() {
+        this.connection = null;
+    }
+
+    @Override
+    public void initConnection(Connection connection) {
+        if (connection == null)
+            throw new IllegalArgumentException("connection can't be null");
+        if (this.connection != null)
+            throw new IllegalStateException("connection was already initialized");
+        this.connection = connection;
+    }
+
+    @Override
+    public Connection getConnection() {
+        return connection;
+    }
+
     @Override
     public String getMimeType() {
         return "application/octet-stream";
@@ -92,12 +112,12 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createRequestMessage(Connection connection, String methodName) {
+    public Message createRequestMessage(String methodName) {
         return new JosMessage(this, methodName);
     }
 
     @Override
-    public Message createResponseMessage(Connection connection, Message requestMessage) {
+    public Message createResponseMessage(Message requestMessage) {
         return new JosMessage(this, Message.Kind.RESPONSE);
     }
 
@@ -130,11 +150,11 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public void sendMessageSync(Connection connection, Message outMsg, Message inMsg) throws IOException {
+    public void sendMessageSync(Message outMsg, Message inMsg) throws IOException {
     }
 
     @Override
-    public <T> T generateInterfaceImpl(Connection connection, Class<T> interfaceClass, InterfaceMapping<T> mapping) {
+    public <T> T generateInterfaceImpl(Class<T> interfaceClass, InterfaceMapping<T> mapping) {
         Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
                 new Class<?>[]{interfaceClass, RemoteInterface.class},
                 new JosInvocationHandler(connection, mapping, this));
@@ -142,12 +162,12 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createRequestMessage(Connection connection, Message.RequestObject request) {
+    public Message createRequestMessage(Message.RequestObject request) {
         return new JosMessage(this, request);
     }
 
     @Override
-    public Message createResponseMessage(Connection connection, Message.ResponseObject response) {
+    public Message createResponseMessage(Message.ResponseObject response) {
         return new JosMessage(this, response);
     }
 

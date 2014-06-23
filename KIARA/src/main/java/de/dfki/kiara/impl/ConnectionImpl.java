@@ -28,6 +28,8 @@ import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -35,24 +37,35 @@ import java.util.Map;
  */
 public class ConnectionImpl implements Connection {
 
-    private static final Map<String, Protocol> protocolRegistry = new HashMap<>();
+    private static final Map<String, Class<? extends Protocol>> protocolRegistry = new HashMap<>();
     private final Protocol protocol;
 
     static {
         // initialize protocols
-        protocolRegistry.put("jsonrpc", new JsonRpcProtocol());
-        protocolRegistry.put("javaobjectstream", new JosProtocol());
+        protocolRegistry.put("jsonrpc", JsonRpcProtocol.class);
+        protocolRegistry.put("javaobjectstream", JosProtocol.class);
     }
 
     ConnectionImpl(String url) throws ConnectionException {
         // 1. perform negotiation
-        // 2. select implementation
+        // TODO
 
+        // 2. select implementation
         String protocolName = "jsonrpc";
         //String protocolName = "javaobjectstream";
-        protocol = protocolRegistry.get(protocolName);
-        if (protocol == null)
+        Class<? extends Protocol> protocolClass = protocolRegistry.get(protocolName);
+        if (protocolClass == null)
             throw new ConnectionException("Unsupported protocol '"+protocolName+"'");
+
+        try {
+            protocol = protocolClass.newInstance();
+        } catch (InstantiationException ex) {
+            throw new ConnectionException("Could not instantiate protocol", ex);
+        } catch (IllegalAccessException ex) {
+            throw new ConnectionException("Could not instantiate protocol", ex);
+        }
+
+        protocol.initConnection(this);
     }
 
     @Override
@@ -65,7 +78,7 @@ public class ConnectionImpl implements Connection {
         Class<T> interfaceClass = mapping.getInterfaceClass();
 
         InterfaceCodeGen codegen = protocol.getInterfaceCodeGen();
-        return codegen.generateInterfaceImpl(this, interfaceClass, mapping);
+        return codegen.generateInterfaceImpl(interfaceClass, mapping);
     }
 
 }

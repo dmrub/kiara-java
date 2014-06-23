@@ -27,6 +27,10 @@ import java.nio.ByteBuffer;
  */
 public interface Protocol {
 
+    public void initConnection(Connection connection);
+
+    public Connection getConnection();
+
     /**
      *
      * @return MIME Type of the protocol
@@ -44,14 +48,15 @@ public interface Protocol {
      * @param connection
      * @param methodName
      * @return
+     * @throws java.io.IOException
      */
-    public Message createRequestMessage(Connection connection, String methodName) throws IOException;
+    public Message createRequestMessage(String methodName) throws IOException;
 
-    public Message createRequestMessage(Connection connection, Message.RequestObject request) throws IOException;
+    public Message createRequestMessage(Message.RequestObject request) throws IOException;
 
-    public Message createResponseMessage(Connection connection, Message requestMessage);
+    public Message createResponseMessage(Message requestMessage);
 
-    public Message createResponseMessage(Connection connection, Message.ResponseObject response) throws IOException;
+    public Message createResponseMessage(Message.ResponseObject response) throws IOException;
 
-    public void sendMessageSync(Connection connection, Message outMsg, Message inMsg) throws IOException;
+    public void sendMessageSync(Message outMsg, Message inMsg) throws IOException;
 }

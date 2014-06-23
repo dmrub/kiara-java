@@ -58,6 +58,10 @@ public class CalcTest {
 
             Message msg = calc.add_serializer(10, 12);
             System.out.println("Message data: "+new String(msg.getMessageData().array()));
+
+            msg = calc.add_serializer(2, 30);
+            System.out.println("Message data: "+new String(msg.getMessageData().array()));
+
             calc.add(10, 12);
 
             String res = "{\"jsonrpc\":2.0, \"result\": 22}";

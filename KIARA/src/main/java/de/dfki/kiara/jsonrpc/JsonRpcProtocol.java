@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -39,11 +40,43 @@ import java.nio.ByteBuffer;
  */
 public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
 
+    private Connection connection;
+    private AtomicLong nextId = new AtomicLong(1);
+
+    public JsonRpcProtocol() {
+        this.connection = null;
+    }
+
+    public long getNextId() {
+        return nextId.getAndIncrement();
+    }
+
+    @Override
+    public void initConnection(Connection connection) {
+        if (connection == null)
+            throw new IllegalArgumentException("connection can't be null");
+        if (this.connection != null)
+            throw new IllegalStateException("connection was already initialized");
+        this.connection = connection;
+    }
+
+    @Override
+    public Connection getConnection() {
+        return connection;
+    }
+
     @Override
     public String getMimeType() {
         return "application/json";
     }
 
+    /**
+     *
+     * @param data
+     * @param method
+     * @return
+     * @throws IOException
+     */
     @Override
     public Message createRequestMessageFromData(ByteBuffer data, Method method) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
@@ -83,8 +116,20 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
                 throw new UnsupportedOperationException("Object is not supported as 'params' member");
             }
         }
+
+        JsonNode idNode = node.get("id");
+        Object id = null;
+        if (idNode != null) {
+            if (!idNode.isTextual() && !idNode.isNumber() && !idNode.isNull())
+                throw new IOException("Invalid 'id' member");
+            if (idNode.isTextual())
+                id = idNode.textValue();
+            else if (idNode.isNumber())
+                id = idNode.numberValue();
+        }
+
         return new JsonRpcMessage(this,
-                new Message.RequestObject(methodNode.textValue(), args));
+                new Message.RequestObject(methodNode.textValue(), args), id);
     }
 
     @Override
@@ -120,27 +165,27 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createRequestMessage(Connection connection, String methodName) {
-        return new JsonRpcMessage(this, methodName);
+    public Message createRequestMessage(String methodName) {
+        return new JsonRpcMessage(this, methodName, getNextId());
     }
 
     @Override
-    public Message createResponseMessage(Connection connection, Message requestMessage) {
-        return new JsonRpcMessage(this, Message.Kind.RESPONSE);
+    public Message createResponseMessage(Message requestMessage) {
+        return new JsonRpcMessage((JsonRpcMessage)requestMessage, false);
     }
 
     @Override
-    public Message createRequestMessage(Connection connection, Message.RequestObject request) throws IOException {
-        return new JsonRpcMessage(this, request);
+    public Message createRequestMessage(Message.RequestObject request) throws IOException {
+        return new JsonRpcMessage(this, request, getNextId());
     }
 
     @Override
-    public Message createResponseMessage(Connection connection, Message.ResponseObject response) {
+    public Message createResponseMessage(Message.ResponseObject response) {
         return new JsonRpcMessage(this, response);
     }
 
     @Override
-    public void sendMessageSync(Connection connection, Message outMsg, Message inMsg) throws IOException {
+    public void sendMessageSync(Message outMsg, Message inMsg) throws IOException {
     }
 
     @Override
@@ -149,7 +194,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public <T> T generateInterfaceImpl(Connection connection, Class<T> interfaceClass, InterfaceMapping<T> mapping) {
+    public <T> T generateInterfaceImpl(Class<T> interfaceClass, InterfaceMapping<T> mapping) {
         Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
                 new Class<?>[]{interfaceClass, RemoteInterface.class},
                 new JsonRpcInvocationHandler(connection, mapping, this));
@@ -161,7 +206,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         switch (message.getMessageKind()) {
             case REQUEST: {
                 Message.RequestObject ro = message.getRequestObject();
-                JsonRpcHeader header = new JsonRpcHeader(message.getMethodName(), ro.args, 1);
+                JsonRpcHeader header = new JsonRpcHeader(message.getMethodName(), ro.args, message.getId());
 
                 ObjectMapper mapper = new ObjectMapper();
                 buf = ByteBuffer.wrap(mapper.writeValueAsBytes(header));
@@ -169,7 +214,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
             break;
             case RESPONSE: {
                 Message.ResponseObject ro = message.getResponseObject();
-                JsonRpcHeader header = new JsonRpcHeader(ro.result, 1);
+                JsonRpcHeader header = new JsonRpcHeader(ro.result, message.getId());
 
                 ObjectMapper mapper = new ObjectMapper();
                 buf = ByteBuffer.wrap(mapper.writeValueAsBytes(header));
@@ -178,7 +223,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
             case EXCEPTION: {
                 Message.ResponseObject ro = message.getResponseObject();
                 // FIXME process errors correctly
-                JsonRpcHeader header = new JsonRpcHeader(ro.result, 1);
+                JsonRpcHeader header = new JsonRpcHeader(ro.result, message.getId());
 
                 ObjectMapper mapper = new ObjectMapper();
                 buf = ByteBuffer.wrap(mapper.writeValueAsBytes(header));

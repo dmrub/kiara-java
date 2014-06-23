@@ -18,22 +18,13 @@
 package de.dfki.kiara.jos;
 
 import de.dfki.kiara.impl.*;
-import de.dfki.kiara.jsonrpc.JsonRpcMessage;
-import de.dfki.kiara.jsonrpc.JsonRpcHeader;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.DoubleNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.reflect.AbstractInvocationHandler;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
-import de.dfki.kiara.Protocol;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.WrappedRemoteException;
-import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
 
 /**
  *
@@ -70,7 +61,7 @@ public class JosInvocationHandler extends AbstractInvocationHandler {
         if (idlMethodName != null) {
 
             if (Util.isSerializer(method)) {
-                return protocol.createRequestMessage(connection, new Message.RequestObject(idlMethodName, os));
+                return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
             } else if (Util.isDeserializer(method)) {
                 Message msg = (Message)os[0];
 

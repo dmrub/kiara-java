@@ -21,6 +21,26 @@ package de.dfki.kiara;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface InterfaceCodeGen {
-    <T> T generateInterfaceImpl(Connection connection, Class<T> interfaceClass, InterfaceMapping<T> mapping);
+public class GenericRemoteException extends RemoteException {
+    private final int errorCode;
+
+    public GenericRemoteException() {
+        super();
+        errorCode = 0;
+    }
+
+    public GenericRemoteException(int errorCode, String message) {
+        super(message);
+        this.errorCode = errorCode;
+    }
+
+    public GenericRemoteException(int errorCode, String message, Throwable cause) {
+        super(message, cause);
+        this.errorCode = errorCode;
+    }
+
+    public int getErrorCode() {
+        return errorCode;
+    }
+
 }

@@ -34,9 +34,9 @@ public interface Protocol {
 
     public InterfaceCodeGen getInterfaceCodeGen();
 
-    public Message createRequestMessageFromData(ByteBuffer data);
+    public Message createRequestMessageFromData(ByteBuffer data) throws IOException;
 
-    public Message createResponseMessageFromData(ByteBuffer data);
+    public Message createResponseMessageFromData(ByteBuffer data) throws IOException;
 
     /** Create message for calling service method name.
      *
@@ -46,7 +46,11 @@ public interface Protocol {
      */
     public Message createRequestMessage(Connection connection, String methodName);
 
+    public Message createRequestMessage(Connection connection, Message.RequestObject request);
+
     public Message createResponseMessage(Connection connection, Message requestMessage);
+
+    public Message createResponseMessage(Connection connection, Message.ResponseObject response);
 
     public void sendMessageSync(Connection connection, Message outMsg, Message inMsg) throws IOException;
 }

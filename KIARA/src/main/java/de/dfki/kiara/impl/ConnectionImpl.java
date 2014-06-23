@@ -24,6 +24,7 @@ import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.jos.JosProtocol;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
@@ -42,12 +43,15 @@ public class ConnectionImpl implements Connection {
     static {
         // initialize protocols
         protocolRegistry.put("jsonrpc", new JsonRpcProtocol());
+        protocolRegistry.put("javaobjectstream", new JosProtocol());
     }
 
     ConnectionImpl(String url) throws ConnectionException {
         // 1. perform negotiation
         // 2. select implementation
-        String protocolName = "jsonrpc";
+
+        // String protocolName = "jsonrpc";
+        String protocolName = "javaobjectstream";
         protocol = protocolRegistry.get(protocolName);
         if (protocol == null)
             throw new ConnectionException("Unsupported protocol '"+protocolName+"'");
@@ -63,7 +67,7 @@ public class ConnectionImpl implements Connection {
         Class<T> interfaceClass = mapping.getInterfaceClass();
 
         InterfaceCodeGen codegen = protocol.getInterfaceCodeGen();
-        return codegen.generateInterfaceImpl(interfaceClass, mapping);
+        return codegen.generateInterfaceImpl(this, interfaceClass, mapping);
     }
 
 }

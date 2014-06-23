@@ -60,11 +60,12 @@ public class CalcTest {
             System.out.println("Message data: "+new String(msg.getMessageData().array()));
             calc.add(10, 12);
 
-
+/*
             String res = "{\"jsonrpc\":2.0, \"result\": 22}";
             Message responseMsg = msg.getProtocol().createResponseMessageFromData(ByteBuffer.wrap(res.getBytes("UTF-8")));
             int result = calc.add_deserializer(responseMsg);
             System.out.println("Result: "+result);
+*/
         }
     }
 }

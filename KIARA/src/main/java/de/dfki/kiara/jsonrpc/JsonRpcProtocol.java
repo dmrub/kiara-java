@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.jsonrpc;
 
 import de.dfki.kiara.Connection;
@@ -69,11 +68,21 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public <T> T generateInterfaceImpl(Class<T> interfaceClass, InterfaceMapping<T> mapping) {
+    public <T> T generateInterfaceImpl(Connection connection, Class<T> interfaceClass, InterfaceMapping<T> mapping) {
         Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
-        new Class<?>[] {interfaceClass, RemoteInterface.class},
-        new SerializationInvocationHandler(mapping, this));
+                new Class<?>[]{interfaceClass, RemoteInterface.class},
+                new SerializationInvocationHandler(connection, mapping, this));
         return interfaceClass.cast(impl);
+    }
+
+    @Override
+    public Message createRequestMessage(Connection connection, Message.RequestObject request) {
+        return null;
+    }
+
+    @Override
+    public Message createResponseMessage(Connection connection, Message.ResponseObject response) {
+        return null;
     }
 
 }

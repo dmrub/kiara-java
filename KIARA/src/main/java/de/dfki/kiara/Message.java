@@ -17,6 +17,7 @@
 
 package de.dfki.kiara;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -32,9 +33,11 @@ public interface Message {
     }
 
     public static class RequestObject {
+        public final String methodName;
         public final Object[] args;
 
-        public RequestObject(Object[] args) {
+        public RequestObject(String methodName, Object[] args) {
+            this.methodName = methodName;
             this.args = args;
         }
     }
@@ -59,7 +62,7 @@ public interface Message {
      *
      * @return
      */
-    public ByteBuffer getMessageData();
+    public ByteBuffer getMessageData() throws IOException;
 
     public RequestObject getRequestObject();
 

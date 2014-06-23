@@ -14,13 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface InterfaceCodeGen {
-    <T> T generateInterfaceImpl(Connection connection, Class<T> interfaceClass, InterfaceMapping<T> mapping);
+public class RemoteException extends Exception {
+
+    public RemoteException() {
+    }
+
+    public RemoteException(String message) {
+        super(message);
+    }
+
+    public RemoteException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public RemoteException(Throwable cause) {
+        super(cause);
+    }
+
 }

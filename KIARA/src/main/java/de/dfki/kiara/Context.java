@@ -24,5 +24,5 @@ import java.io.Closeable;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public interface Context extends Closeable {
-    public Connection openConnection(String url);
+    public Connection openConnection(String url) throws ConnectionException;
 }

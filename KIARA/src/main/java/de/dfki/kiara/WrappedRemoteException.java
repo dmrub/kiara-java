@@ -21,6 +21,27 @@ package de.dfki.kiara;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface InterfaceCodeGen {
-    <T> T generateInterfaceImpl(Connection connection, Class<T> interfaceClass, InterfaceMapping<T> mapping);
+public class WrappedRemoteException extends RemoteException {
+    private final Object errorObject;
+
+    public WrappedRemoteException(Object errorObject) {
+        super();
+        this.errorObject = errorObject;
+    }
+
+    public WrappedRemoteException(Object errorObject, String message) {
+        super(message);
+        this.errorObject = errorObject;
+    }
+
+    public WrappedRemoteException(Object errorObject, String message, Throwable cause) {
+        super(message, cause);
+        this.errorObject = errorObject;
+    }
+
+    public WrappedRemoteException(Object errorObject, Throwable cause) {
+        super(cause);
+        this.errorObject = errorObject;
+    }
+
 }

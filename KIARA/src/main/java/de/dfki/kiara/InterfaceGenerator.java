@@ -23,5 +23,5 @@ package de.dfki.kiara;
  * @param <T>
  */
 public interface InterfaceGenerator<T> {
-    public T generateClientFunctions();
+    public T generateClientFunctions(Connection connection);
 }

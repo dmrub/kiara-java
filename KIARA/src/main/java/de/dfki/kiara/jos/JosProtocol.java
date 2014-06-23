@@ -1,0 +1,153 @@
+/*
+ * Copyright (C) 2014 German Research Center for Artificial Intelligence (DFKI)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package de.dfki.kiara.jos;
+
+import de.dfki.kiara.Connection;
+import de.dfki.kiara.InterfaceCodeGen;
+import de.dfki.kiara.InterfaceMapping;
+import de.dfki.kiara.Message;
+import de.dfki.kiara.Protocol;
+import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.impl.ByteBufferInputStream;
+import de.dfki.kiara.impl.NoCopyByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Proxy;
+import java.nio.ByteBuffer;
+
+/**
+ *
+ * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
+ */
+public class JosProtocol implements Protocol, InterfaceCodeGen {
+
+    private final static int JOS_REQUEST = 0;
+    private final static int JOS_RESPONSE = 1;
+    private final static int JOS_EXCEPTION = 2;
+
+    @Override
+    public String getMimeType() {
+        return "application/octet-stream";
+    }
+
+    @Override
+    public InterfaceCodeGen getInterfaceCodeGen() {
+        return this;
+    }
+
+    @Override
+    public Message createRequestMessageFromData(ByteBuffer data) throws IOException {
+        ByteBufferInputStream is = new ByteBufferInputStream(data);
+        ObjectInputStream ois = new ObjectInputStream(is);
+        byte requestCode = ois.readByte();
+        if (requestCode != JOS_REQUEST) {
+            throw new IOException("Invalid request code: " + requestCode);
+        }
+        String methodName;
+        Object[] args;
+        try {
+            methodName = ois.readUTF();
+            args = (Object[]) ois.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Could not read response message", e);
+        } catch (ClassCastException e) {
+            throw new IOException("Could not read response message", e);
+        }
+        return new JosMessage(this, new Message.RequestObject(methodName, args));
+    }
+
+    @Override
+    public Message createResponseMessageFromData(ByteBuffer data) throws IOException {
+        ByteBufferInputStream is = new ByteBufferInputStream(data);
+        ObjectInputStream ois = new ObjectInputStream(is);
+        byte responseCode = ois.readByte();
+        if (responseCode != JOS_RESPONSE || responseCode != JOS_EXCEPTION) {
+            throw new IOException("Invalid response code: " + responseCode);
+        }
+        Object result;
+        try {
+            result = ois.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Could not read response message", e);
+        }
+        return new JosMessage(this,
+                new Message.ResponseObject(result,
+                        responseCode == JOS_EXCEPTION));
+    }
+
+    @Override
+    public Message createRequestMessage(Connection connection, String methodName) {
+        return new JosMessage(this, methodName);
+    }
+
+    @Override
+    public Message createResponseMessage(Connection connection, Message requestMessage) {
+        return new JosMessage(this, Message.Kind.RESPONSE);
+    }
+
+    public ByteBuffer convertMessageToData(Message message) throws IOException {
+        NoCopyByteArrayOutputStream os = new NoCopyByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(os);
+        switch (message.getMessageKind()) {
+            case REQUEST: {
+                oos.writeByte(JOS_REQUEST);
+                oos.writeUTF(message.getMethodName());
+                Message.RequestObject ro = message.getRequestObject();
+                oos.writeObject(ro.args);
+            }
+            break;
+            case RESPONSE: {
+                oos.writeByte(JOS_RESPONSE);
+                Message.ResponseObject ro = message.getResponseObject();
+                oos.writeObject(ro.result);
+            }
+            break;
+            case EXCEPTION: {
+                oos.writeByte(JOS_EXCEPTION);
+                Message.ResponseObject ro = message.getResponseObject();
+                oos.writeObject(ro.result);
+            }
+            break;
+        }
+        oos.flush();
+        return ByteBuffer.wrap(os.toByteArray(), 0, os.size());
+    }
+
+    @Override
+    public void sendMessageSync(Connection connection, Message outMsg, Message inMsg) throws IOException {
+    }
+
+    @Override
+    public <T> T generateInterfaceImpl(Connection connection, Class<T> interfaceClass, InterfaceMapping<T> mapping) {
+        Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
+                new Class<?>[]{interfaceClass, RemoteInterface.class},
+                new JosInvocationHandler(connection, mapping, this));
+        return interfaceClass.cast(impl);
+    }
+
+    @Override
+    public Message createRequestMessage(Connection connection, Message.RequestObject request) {
+        return new JosMessage(this, request);
+    }
+
+    @Override
+    public Message createResponseMessage(Connection connection, Message.ResponseObject response) {
+        return new JosMessage(this, response);
+    }
+
+}

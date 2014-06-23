@@ -15,12 +15,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara;
+package de.dfki.kiara.impl;
+
+import java.io.ByteArrayOutputStream;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface InterfaceCodeGen {
-    <T> T generateInterfaceImpl(Connection connection, Class<T> interfaceClass, InterfaceMapping<T> mapping);
+public class NoCopyByteArrayOutputStream extends ByteArrayOutputStream {
+
+    public NoCopyByteArrayOutputStream() {
+    }
+
+    public NoCopyByteArrayOutputStream(int size) {
+        super(size);
+    }
+
+    /**
+     * Retrieves the underlying byte array used as this stream's buffer.
+     * Unlike ByteArrayOutputStream.toByteArray(), this method does not create a copy of the buffer,
+     * but return reference to the underlying byte array.
+     *
+     * @return     Underlying byte array by reference.
+     */
+    @Override
+    public byte[] toByteArray() {
+        return buf;
+    }
 }

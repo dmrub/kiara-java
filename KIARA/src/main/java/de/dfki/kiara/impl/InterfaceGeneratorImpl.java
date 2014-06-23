@@ -17,6 +17,7 @@
 
 package de.dfki.kiara.impl;
 
+import de.dfki.kiara.jsonrpc.JsonRpcInvocationHandler;
 import com.google.common.reflect.Reflection;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceGenerator;
@@ -40,7 +41,7 @@ public class InterfaceGeneratorImpl<T> implements InterfaceGenerator<T> {
     public T generateClientFunctions(Connection connection) {
         Class<T> interfaceClass = interfaceMapping.getInterfaceClass();
         T impl = Reflection.newProxy(interfaceClass,
-                new SerializationInvocationHandler(connection, interfaceMapping, new JsonRpcProtocol()));
+                new JsonRpcInvocationHandler(connection, interfaceMapping, new JsonRpcProtocol()));
         return impl;
     }
 

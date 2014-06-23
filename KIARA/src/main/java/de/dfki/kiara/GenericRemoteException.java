@@ -23,24 +23,37 @@ package de.dfki.kiara;
  */
 public class GenericRemoteException extends RemoteException {
     private final int errorCode;
+    private final Object errorData;
 
     public GenericRemoteException() {
         super();
         errorCode = 0;
+        errorData = null;
     }
 
-    public GenericRemoteException(int errorCode, String message) {
+    public GenericRemoteException(String message, int errorCode) {
         super(message);
         this.errorCode = errorCode;
+        this.errorData = null;
     }
 
-    public GenericRemoteException(int errorCode, String message, Throwable cause) {
+    public GenericRemoteException(String message, int errorCode, Object errorData) {
+        super(message);
+        this.errorCode = errorCode;
+        this.errorData = errorData;
+    }
+
+    public GenericRemoteException(String message, int errorCode, Object errorData, Throwable cause) {
         super(message, cause);
         this.errorCode = errorCode;
+        this.errorData = errorData;
     }
 
     public int getErrorCode() {
         return errorCode;
     }
 
+    public Object getErrorData() {
+        return errorData;
+    }
 }

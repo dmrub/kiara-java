@@ -17,6 +17,7 @@
 
 package de.dfki.kiara.jos;
 
+import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
 import java.io.IOException;
@@ -30,7 +31,7 @@ public class JosMessage implements Message {
 
     private final JosProtocol protocol;
     private final String methodName;
-    private final Message.Kind kind;
+    private Message.Kind kind;
     private ResponseObject response;
     private RequestObject request;
 
@@ -98,11 +99,8 @@ public class JosMessage implements Message {
 
     @Override
     public void setGenericError(int errorCode, String errorMessage) {
-    }
-
-    @Override
-    public boolean isErrorResponse() {
-        return false;
+        this.kind = Kind.EXCEPTION;
+        this.response = new ResponseObject(new GenericRemoteException(errorMessage, errorCode), true);
     }
 
 }

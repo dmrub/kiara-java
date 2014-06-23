@@ -27,6 +27,7 @@ import de.dfki.kiara.impl.NoCopyByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 
@@ -51,7 +52,7 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createRequestMessageFromData(ByteBuffer data) throws IOException {
+    public Message createRequestMessageFromData(ByteBuffer data, Method method) throws IOException {
         ByteBufferInputStream is = new ByteBufferInputStream(data);
         ObjectInputStream ois = new ObjectInputStream(is);
         byte requestCode = ois.readByte();
@@ -72,7 +73,7 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createResponseMessageFromData(ByteBuffer data) throws IOException {
+    public Message createResponseMessageFromData(ByteBuffer data, Method method) throws IOException {
         ByteBufferInputStream is = new ByteBufferInputStream(data);
         ObjectInputStream ois = new ObjectInputStream(is);
         byte responseCode = ois.readByte();

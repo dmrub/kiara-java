@@ -81,8 +81,11 @@ public class JosInvocationHandler extends AbstractInvocationHandler {
                         throw (Exception)ro.result;
                     throw new WrappedRemoteException(ro.result);
                 }
+
+                return ro.result;
             }
 
+            // FIXME this is a hack
             if (method.getReturnType().equals(int.class)) {
                 return 0;
             }

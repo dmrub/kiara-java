@@ -47,6 +47,14 @@ public class JsonRpcHeader {
         this.id = id;
     }
 
+    public JsonRpcHeader(JsonRpcError error, Object id) {
+        this.method = null;
+        this.params = null;
+        this.result = null;
+        this.error = error;
+        this.id = id;
+    }
+
     public String getMethod() {
         return method;
     }

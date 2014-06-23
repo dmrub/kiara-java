@@ -61,6 +61,7 @@ public interface Message {
     /** Stores to the byte buffer message representation that can be sent over network.
      *
      * @return
+     * @throws java.io.IOException
      */
     public ByteBuffer getMessageData() throws IOException;
 
@@ -69,6 +70,4 @@ public interface Message {
     public ResponseObject getResponseObject();
 
     public void setGenericError(int errorCode, String errorMessage);
-
-    public boolean isErrorResponse();
 }

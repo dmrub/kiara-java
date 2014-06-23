@@ -18,6 +18,7 @@
 package de.dfki.kiara;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
 /**
@@ -34,9 +35,9 @@ public interface Protocol {
 
     public InterfaceCodeGen getInterfaceCodeGen();
 
-    public Message createRequestMessageFromData(ByteBuffer data) throws IOException;
+    public Message createRequestMessageFromData(ByteBuffer data, Method method) throws IOException;
 
-    public Message createResponseMessageFromData(ByteBuffer data) throws IOException;
+    public Message createResponseMessageFromData(ByteBuffer data, Method method) throws IOException;
 
     /** Create message for calling service method name.
      *
@@ -44,13 +45,13 @@ public interface Protocol {
      * @param methodName
      * @return
      */
-    public Message createRequestMessage(Connection connection, String methodName);
+    public Message createRequestMessage(Connection connection, String methodName) throws IOException;
 
-    public Message createRequestMessage(Connection connection, Message.RequestObject request);
+    public Message createRequestMessage(Connection connection, Message.RequestObject request) throws IOException;
 
     public Message createResponseMessage(Connection connection, Message requestMessage);
 
-    public Message createResponseMessage(Connection connection, Message.ResponseObject response);
+    public Message createResponseMessage(Connection connection, Message.ResponseObject response) throws IOException;
 
     public void sendMessageSync(Connection connection, Message outMsg, Message inMsg) throws IOException;
 }

@@ -17,8 +17,11 @@
 
 package de.dfki.kiara.jsonrpc;
 
+import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
+import de.dfki.kiara.jos.JosProtocol;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -27,14 +30,47 @@ import java.nio.ByteBuffer;
  */
 public class JsonRpcMessage implements Message {
 
-    private final Protocol protocol;
+    private final JsonRpcProtocol protocol;
     private final String methodName;
-    private final ByteBuffer data;
+    private Message.Kind kind;
+    private ResponseObject response;
+    private RequestObject request;
 
-    public JsonRpcMessage(Protocol protocol, String methodName, ByteBuffer data) {
+    public JsonRpcMessage(JsonRpcProtocol protocol, String methodName) {
         this.protocol = protocol;
         this.methodName = methodName;
-        this.data = data;
+        this.kind = Kind.REQUEST;
+        this.request = null;
+        this.response = null;
+    }
+
+    public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind) {
+        this.protocol = protocol;
+        this.methodName = null;
+        this.kind = kind;
+        this.request = null;
+        this.response = null;
+    }
+
+    public JsonRpcMessage(JsonRpcProtocol protocol, ResponseObject response) {
+        this.protocol = protocol;
+        this.methodName = null;
+        this.kind = Kind.RESPONSE;
+        this.request = null;
+        this.response = response;
+    }
+
+    public JsonRpcMessage(JsonRpcProtocol protocol, RequestObject request) {
+        this.protocol = protocol;
+        this.methodName = request.methodName;
+        this.kind = Kind.REQUEST;
+        this.request = request;
+        this.response = null;
+    }
+
+    @Override
+    public Kind getMessageKind() {
+        return this.kind;
     }
 
     @Override
@@ -48,32 +84,24 @@ public class JsonRpcMessage implements Message {
     }
 
     @Override
-    public ByteBuffer getMessageData() {
-        return data;
-    }
-
-    @Override
-    public void setGenericError(int errorCode, String errorMessage) {
-    }
-
-    @Override
-    public boolean isErrorResponse() {
-        return false;
-    }
-
-    @Override
-    public Kind getMessageKind() {
-        return Kind.RESPONSE;
+    public ByteBuffer getMessageData() throws IOException {
+        return protocol.convertMessageToData(this);
     }
 
     @Override
     public RequestObject getRequestObject() {
-        return null;
+        return this.request;
     }
 
     @Override
     public ResponseObject getResponseObject() {
-        return null;
+        return this.response;
+    }
+
+    @Override
+    public void setGenericError(int errorCode, String errorMessage) {
+        this.kind = Kind.EXCEPTION;
+        this.response = new ResponseObject(new GenericRemoteException(errorMessage, errorCode), true);
     }
 
 }

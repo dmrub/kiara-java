@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara.impl;
+package de.dfki.kiara.jsonrpc;
 
 import de.dfki.kiara.jsonrpc.JsonRpcMessage;
 import de.dfki.kiara.jsonrpc.JsonRpcHeader;
@@ -29,6 +29,9 @@ import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.Util;
+import de.dfki.kiara.WrappedRemoteException;
+import de.dfki.kiara.impl.ByteBufferInputStream;
+import de.dfki.kiara.impl.SpecialMethods;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
@@ -37,12 +40,12 @@ import java.nio.ByteBuffer;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class SerializationInvocationHandler extends AbstractInvocationHandler {
+public class JsonRpcInvocationHandler extends AbstractInvocationHandler {
     private final Connection connection;
     private final InterfaceMapping<?> interfaceMapping;
-    private final Protocol protocol;
+    private final JsonRpcProtocol protocol;
 
-    public SerializationInvocationHandler(Connection connection, InterfaceMapping<?> interfaceMapping, Protocol protocol) {
+    public JsonRpcInvocationHandler(Connection connection, InterfaceMapping<?> interfaceMapping, JsonRpcProtocol protocol) {
         this.connection = connection;
         this.interfaceMapping = interfaceMapping;
         this.protocol = protocol;
@@ -68,48 +71,18 @@ public class SerializationInvocationHandler extends AbstractInvocationHandler {
         if (idlMethodName != null) {
 
             if (Util.isSerializer(method)) {
-                JsonRpcHeader header = new JsonRpcHeader(idlMethodName, os, 1);
-
-                ObjectMapper mapper = new ObjectMapper();
-                ByteBuffer buf = ByteBuffer.wrap(mapper.writeValueAsBytes(header));
-
-                return new JsonRpcMessage(protocol, idlMethodName, buf);
+                return protocol.createRequestMessage(connection, new Message.RequestObject(idlMethodName, os));
             } else if (Util.isDeserializer(method)) {
                 Message msg = (Message)os[0];
-                ByteBuffer buf = msg.getMessageData();
+                Message.ResponseObject ro = msg.getResponseObject();
 
-                JsonRpcHeader header = new JsonRpcHeader(idlMethodName, os, 1);
-
-                ObjectMapper mapper = new ObjectMapper();
-
-                JsonNode node = mapper.readTree(new ByteBufferInputStream(buf));
-
-                DoubleNode jsonrpcNode = ((DoubleNode)node.get("jsonrpc"));
-                if (jsonrpcNode == null)
-                    throw new IOException("Not a jsonrpc protocol");
-
-                double version = jsonrpcNode.doubleValue();
-                if (version != 2.0)
-                    throw new IOException("Not a jsonrpc 2.0");
-
-                TextNode methodNode = (TextNode)node.get("method");
-                if (methodNode != null) {
-                    return null;
+                if (ro.isException) {
+                    if (ro.result instanceof Exception)
+                        throw (Exception)ro.result;
+                    throw new WrappedRemoteException(ro.result);
                 }
 
-                JsonNode resultNode = node.get("result");
-
-                if (resultNode != null) {
-                    return mapper.treeToValue(resultNode, method.getReturnType());
-                }
-
-                JsonNode errorNode = node.get("error");
-
-                if (errorNode != null) {
-                    return null;
-                }
-
-                return mapper.readValue(new ByteBufferInputStream(buf), method.getReturnType());
+                return ro.result;
             }
 
             /*

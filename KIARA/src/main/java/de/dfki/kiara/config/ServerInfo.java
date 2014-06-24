@@ -15,15 +15,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara;
+package de.dfki.kiara.config;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Context extends Closeable {
-    public Connection openConnection(String url) throws IOException;
+public class ServerInfo {
+    public List<String> services = new ArrayList<>();
+    public ProtocolInfo protocol = new ProtocolInfo();
+    public TransportInfo transport = new TransportInfo();
+
+    public void clear() {
+        if (services != null)
+            services.clear();
+        if (protocol != null)
+            protocol.clear();
+    }
 }

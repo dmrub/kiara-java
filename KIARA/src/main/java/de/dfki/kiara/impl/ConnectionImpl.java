@@ -23,11 +23,29 @@ import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.Protocol;
+import de.dfki.kiara.config.ServerConfiguration;
+import de.dfki.kiara.idl.IDLWriter;
+import de.dfki.kiara.idl.KiaraKTDConstructor;
+import de.dfki.kiara.idl.KiaraLexer;
+import de.dfki.kiara.idl.KiaraParser;
 import de.dfki.kiara.jos.JosProtocol;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
+import de.dfki.kiara.ktd.Module;
+import de.dfki.kiara.ktd.World;
+import de.dfki.kiara.util.URILoader;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 /**
  *
@@ -37,6 +55,8 @@ public class ConnectionImpl implements Connection {
 
     private static final Map<String, Class<? extends Protocol>> protocolRegistry = new HashMap<>();
     private final Protocol protocol;
+    private final World world;
+    private final Module module;
 
     static {
         // initialize protocols
@@ -44,11 +64,48 @@ public class ConnectionImpl implements Connection {
         protocolRegistry.put("javaobjectstream", JosProtocol.class);
     }
 
-    ConnectionImpl(String url) throws ConnectionException {
-        // 1. perform negotiation
-        // TODO
+    ConnectionImpl(String configUri) throws IOException {
+        world = new World();
+        module = new Module(world, "kiara");
 
-        // 2. select implementation
+        // 1. load server configuration
+
+        String configText;
+        try {
+            byte[] serverConfigData = URILoader.load(configUri);
+            configText = new String(serverConfigData, "UTF-8");
+        } catch (URISyntaxException ex) {
+            throw new ConnectionException("Invalid configuration URI", ex);
+        } catch (IOException ex) {
+            throw new ConnectionException("Could not load server configuration", ex);
+        }
+
+        ServerConfiguration serverConfig;
+        try {
+            serverConfig = ServerConfiguration.fromJSON(configText);
+        } catch (IOException ex) {
+            throw new ConnectionException("Could not parse server configuration", ex);
+        }
+
+        try {
+            System.err.println(serverConfig.toJSON());
+        } catch (IOException ex) {
+            throw new ConnectionException("Could not convert to JSON", ex);
+        }
+
+        // load IDL
+
+        if (serverConfig.idlContents != null && !serverConfig.idlContents.isEmpty()) {
+            loadIDL(new ByteArrayInputStream(serverConfig.idlContents.getBytes("UTF-8")), configUri);
+        }
+
+        //???DEBUG
+        IDLWriter idlWriter = new IDLWriter(module);
+        idlWriter.write(System.err);
+
+        // 2. perform negotation
+
+        // 3. select implementation
         String protocolName = "jsonrpc";
         //String protocolName = "javaobjectstream";
         Class<? extends Protocol> protocolClass = protocolRegistry.get(protocolName);
@@ -64,6 +121,33 @@ public class ConnectionImpl implements Connection {
         }
 
         protocol.initConnection(this);
+    }
+
+    public void loadIDL(InputStream stream, String fileName) throws IOException {
+        // create a CharStream that reads from standard input
+        ANTLRInputStream input = new ANTLRInputStream(stream);
+        // create a lexer that feeds off of input CharStream
+        KiaraLexer lexer = new KiaraLexer(input);
+        // create a buffer of tokens pulled from the lexer
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        // create a parser that feeds off the tokens buffer
+        KiaraParser parser = new KiaraParser(tokens);
+        ParseTree tree = parser.program(); // begin parsing at program rule
+
+        ParseTreeWalker walker = new ParseTreeWalker();
+
+        KiaraKTDConstructor ktdConstructor = new KiaraKTDConstructor(module, fileName);
+        walker.walk(ktdConstructor, tree);
+
+        if (!ktdConstructor.getParserErrors().isEmpty()) {
+            StringBuilder b = new StringBuilder("IDL parser errors:");
+            b.append(System.lineSeparator());
+            for (String error : ktdConstructor.getParserErrors()) {
+                b.append(error);
+                b.append(System.lineSeparator());
+            }
+            throw new IOException(b.toString());
+        }
     }
 
     @Override

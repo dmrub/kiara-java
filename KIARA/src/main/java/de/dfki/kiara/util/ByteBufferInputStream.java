@@ -15,31 +15,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara.impl;
+package de.dfki.kiara.util;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ByteBufferOutputStream extends OutputStream {
-    private final ByteBuffer buf;
+public class ByteBufferInputStream extends InputStream {
+    final private ByteBuffer buf;
 
-    public ByteBufferOutputStream(ByteBuffer buf) {
+    public ByteBufferInputStream(ByteBuffer buf) {
         this.buf = buf;
     }
 
     @Override
-    public void write(int b) throws IOException {
-        buf.put((byte) b);
+    public int read() throws IOException {
+        if (!buf.hasRemaining()) {
+            return -1;
+        }
+        return buf.get() & 0xFF;
     }
 
     @Override
-    public void write(byte[] bytes, int off, int len)
+    public int read(byte[] bytes, int off, int len)
             throws IOException {
-        buf.put(bytes, off, len);
+        if (!buf.hasRemaining()) {
+            return -1;
+        }
+
+        len = Math.min(len, buf.remaining());
+        buf.get(bytes, off, len);
+        return len;
     }
 }

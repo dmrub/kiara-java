@@ -15,40 +15,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara.impl;
+package de.dfki.kiara.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
+import java.io.ByteArrayOutputStream;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ByteBufferInputStream extends InputStream {
-    final private ByteBuffer buf;
+public class NoCopyByteArrayOutputStream extends ByteArrayOutputStream {
 
-    public ByteBufferInputStream(ByteBuffer buf) {
-        this.buf = buf;
+    public NoCopyByteArrayOutputStream() {
     }
 
-    @Override
-    public int read() throws IOException {
-        if (!buf.hasRemaining()) {
-            return -1;
-        }
-        return buf.get() & 0xFF;
+    public NoCopyByteArrayOutputStream(int size) {
+        super(size);
     }
 
+    /**
+     * Retrieves the underlying byte array used as this stream's buffer.
+     * Unlike ByteArrayOutputStream.toByteArray(), this method does not create a copy of the buffer,
+     * but return reference to the underlying byte array.
+     *
+     * @return     Underlying byte array by reference.
+     */
     @Override
-    public int read(byte[] bytes, int off, int len)
-            throws IOException {
-        if (!buf.hasRemaining()) {
-            return -1;
-        }
-
-        len = Math.min(len, buf.remaining());
-        buf.get(bytes, off, len);
-        return len;
+    public byte[] toByteArray() {
+        return buf;
     }
 }

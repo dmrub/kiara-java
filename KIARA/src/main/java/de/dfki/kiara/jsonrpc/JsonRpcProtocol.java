@@ -27,7 +27,7 @@ import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RemoteInterface;
-import de.dfki.kiara.impl.ByteBufferInputStream;
+import de.dfki.kiara.util.ByteBufferInputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;

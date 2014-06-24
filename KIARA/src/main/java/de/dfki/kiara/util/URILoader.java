@@ -32,7 +32,6 @@
  */
 package de.dfki.kiara.util;
 
-import de.dfki.kiara.impl.NoCopyByteArrayOutputStream;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;

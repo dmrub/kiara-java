@@ -17,10 +17,12 @@
 
 package de.dfki.kiara.test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.reflect.AbstractInvocationHandler;
-import com.google.gson.Gson;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /**
  *
@@ -39,10 +41,10 @@ public class TestInvocationHandler extends AbstractInvocationHandler {
 
     @Override
     protected Object handleInvocation(Object o, Method method, Object[] os) throws Throwable {
-        Gson gson = new Gson();
-        String out = gson.toJson(os[0]);
-        Object obj = gson.fromJson(out, method.getReturnType());
-        System.out.println("invoke: object: "+o+" Method: "+method+" Object[] "+os);
+        ObjectMapper mapper = new ObjectMapper();
+        String out = mapper.writeValueAsString(os[0]);
+        Object obj = mapper.readValue(out, method.getReturnType());
+        System.out.println("invoke: object: "+o+" Method: "+method+" Object[] "+Arrays.toString(os));
         System.out.println("String: "+out);
         System.out.println("Object: " + obj);
         return null;

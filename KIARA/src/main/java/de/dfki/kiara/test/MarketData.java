@@ -25,14 +25,14 @@ import java.util.List;
  */
 public class MarketData implements Serializable {
 
-    boolean isEcho;
-    int counter;
-    int securityID;
-    double applVersionID;
-    double messageType;
-    double senderCompID;
-    int msgSeqNum;
-    int sendingTime;
-    int tradeDate;
-    List<MarketDataEntry> mdEntries;
+    public boolean isEcho;
+    public int counter;
+    public int securityID;
+    public double applVersionID;
+    public double messageType;
+    public double senderCompID;
+    public int msgSeqNum;
+    public int sendingTime;
+    public int tradeDate;
+    public List<MarketDataEntry> mdEntries;
 }

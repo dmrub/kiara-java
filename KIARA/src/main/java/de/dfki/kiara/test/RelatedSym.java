@@ -24,13 +24,13 @@ import java.io.Serializable;
  */
 public class RelatedSym implements Serializable {
 
-    double symbol;
-    long orderQuantity;
-    int side;
-    long transactTime;
-    int quoteType;
-    int securityID;
-    int securityIDSource;
-    double dummy1;
-    int dummy2;
+    public double symbol;
+    public long orderQuantity;
+    public int side;
+    public long transactTime;
+    public int quoteType;
+    public int securityID;
+    public int securityIDSource;
+    public double dummy1;
+    public int dummy2;
 }

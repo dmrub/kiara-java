@@ -20,25 +20,25 @@ import java.io.Serializable;
 
 public class MarketDataEntry implements Serializable {
 
-    int mdUpdateAction;
-    int mdPriceLevel;
-    double mdEntryType;
-    int openCloseSettleFlag;
-    int securityIDSource;
-    int securityID;
-    int rptSeq;
-    double mdEntryPx;
-    int mdEntryTime;
-    int mdEntrySize;  // in original i32
-    int numberOfOrders;
-    double tradingSessionID;
-    double netChgPrevDay;
-    int tradeVolume;
-    double tradeCondition;
-    double tickDirection;
-    double quoteCondition;
-    int aggressorSide;
-    double matchEventIndicator;
-    double dummy1;
-    int dummy2;
+    public int mdUpdateAction;
+    public int mdPriceLevel;
+    public double mdEntryType;
+    public int openCloseSettleFlag;
+    public int securityIDSource;
+    public int securityID;
+    public int rptSeq;
+    public double mdEntryPx;
+    public int mdEntryTime;
+    public int mdEntrySize;  // in original i32
+    public int numberOfOrders;
+    public double tradingSessionID;
+    public double netChgPrevDay;
+    public int tradeVolume;
+    public double tradeCondition;
+    public double tickDirection;
+    public double quoteCondition;
+    public int aggressorSide;
+    public double matchEventIndicator;
+    public double dummy1;
+    public int dummy2;
 }

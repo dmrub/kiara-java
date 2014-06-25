@@ -46,12 +46,16 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class KiaraKTDConstructor implements KiaraListener {
+
+    private static final Logger logger = LoggerFactory.getLogger(KiaraKTDConstructor.class);
 
     private final ParseTreeProperty<Object> values;
     private final Module module;
@@ -235,15 +239,6 @@ public class KiaraKTDConstructor implements KiaraListener {
         setValue(destNode, getValue(srcNode));
     }
 
-    private final boolean DEBUG_MODE = false;
-
-    public void pdebug(String msg) {
-        if (DEBUG_MODE) {
-            System.err.print("DEBUG: ");
-            System.err.println(msg);
-        }
-    }
-
     public void perror(ParserRuleContext ctx, String msg) {
         parserErrors.add(fileName+":"+ctx.getStart().getLine()+":"+ctx.getStart().getCharPositionInLine()+": "+msg);
     }
@@ -254,7 +249,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitProgram(KiaraParser.ProgramContext ctx) {
-        pdebug("Program -> Headers DefinitionList");
+        logger.debug("Program -> Headers DefinitionList");
     }
 
     @Override
@@ -263,12 +258,12 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitHeader_list(KiaraParser.Header_listContext ctx) {
-        pdebug("Header_list -> header*");
+        logger.debug("Header_list -> header*");
     }
 
     @Override
     public void enterHeaderInclude(KiaraParser.HeaderIncludeContext ctx) {
-        pdebug("INCLUDE "+ctx.LITERAL().getText());
+        logger.debug("INCLUDE {}", ctx.LITERAL().getText());
     }
 
     @Override
@@ -353,14 +348,14 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitTypedef(KiaraParser.TypedefContext ctx) {
-        pdebug("TypeDef -> TYPEDEF FieldType IDENTIFIER:"+ctx.IDENTIFIER().getText());
+        logger.debug("TypeDef -> TYPEDEF FieldType IDENTIFIER: {}", ctx.IDENTIFIER().getText());
         KiaraParser.FieldTypeContext fieldTypeCtx = ctx.fieldType();
         Type fieldType = null;
         if (fieldTypeCtx != null) {
             fieldType = (Type)getValue(fieldTypeCtx);
 
             TypedefType typedefType = TypedefType.create(ctx.IDENTIFIER().getText(), fieldType);
-            pdebug("BIND "+getModule().getTypeName(fieldType)+" TO "+ctx.IDENTIFIER().getText());
+            logger.debug("BIND {} TO {}", getModule().getTypeName(fieldType));
             getModule().bindType(ctx.IDENTIFIER().getText(), fieldType);
             getModule().addTypeDeclaration(typedefType);
         }
@@ -381,7 +376,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitEnum_t(KiaraParser.Enum_tContext ctx) {
-        pdebug("Enum -> ENUM IDENTIFIER { enumDef* }");
+        logger.debug("Enum -> ENUM IDENTIFIER { enumDef* }");
 
         String ename = ctx.IDENTIFIER().getText();
 
@@ -444,7 +439,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitConstDefinition(KiaraParser.ConstDefinitionContext ctx) {
-        pdebug("CONST ft=fieldType id=IDENTIFIER EQ cv=constValue commaOrSemicolon?");
+        logger.debug("CONST ft=fieldType id=IDENTIFIER EQ cv=constValue commaOrSemicolon?");
     }
 
     @Override
@@ -521,7 +516,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitStruct(KiaraParser.StructContext ctx) {
-        pdebug("Struct -> tok_struct tok_identifier { FieldList }");
+        logger.debug("Struct -> tok_struct tok_identifier { FieldList }");
 
         String structName = ctx.IDENTIFIER().getText();
         List<KiaraParser.FieldContext> fieldCtxList = ctx.field();
@@ -585,7 +580,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitXception(KiaraParser.XceptionContext ctx) {
-        pdebug("Xception -> XCEPTION IDENTIFIER { FieldList }");
+        logger.debug("Xception -> XCEPTION IDENTIFIER { FieldList }");
 
         String exceptionName = ctx.IDENTIFIER().getText();
         List<KiaraParser.FieldContext> fieldCtxList = ctx.field();
@@ -612,7 +607,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitAnnotationDef(KiaraParser.AnnotationDefContext ctx) {
-        pdebug("AnnotationDef -> ANNOTATION IDENTIFIER { FieldList }");
+        logger.debug("AnnotationDef -> ANNOTATION IDENTIFIER { FieldList }");
 
         String annotationName = ctx.IDENTIFIER().getText();
         List<KiaraParser.FieldContext> fieldCtxList = ctx.field();
@@ -639,7 +634,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitService(KiaraParser.ServiceContext ctx) {
-        pdebug("Service -> SERVICE IDENTIFIER { FunctionList }");
+        logger.debug("Service -> SERVICE IDENTIFIER { FunctionList }");
         String serviceName = ctx.sname.getText();
         List<KiaraParser.FunctionContext> functionCtxList = ctx.function();
         ServiceType s = ServiceType.create(getWorld(), serviceName, functionCtxList.size());
@@ -667,7 +662,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitFunction(KiaraParser.FunctionContext ctx) {
-        pdebug("Function");
+        logger.debug("Function");
         String funcName = ctx.IDENTIFIER().getText();
         Type retType = (Type)getValue(ctx.retType);
         Function f = null;
@@ -820,7 +815,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
     @Override
     public void exitGenericType(KiaraParser.GenericTypeContext ctx) {
-        pdebug("GenericType -> SimpleGenericType");
+        logger.debug("GenericType -> SimpleGenericType");
         copyValue(ctx, ctx.simpleGenericType());
     }
 
@@ -904,7 +899,7 @@ public class KiaraKTDConstructor implements KiaraListener {
     public void exitAnnotationList(KiaraParser.AnnotationListContext ctx) {
         List<Annotation> al = null;
         if (ctx.getChildCount() > 0) {
-            pdebug("AnnotationList: number of children "+ctx.getChildCount());
+            logger.debug("AnnotationList: number of children {}", ctx.getChildCount());
             al = new ArrayList<>();
             for (KiaraParser.AnnotationContext annotation : ctx.annotation()) {
                 al.add((Annotation)getValue(annotation));
@@ -921,7 +916,7 @@ public class KiaraKTDConstructor implements KiaraListener {
     @Override
     public void exitAnnotation(KiaraParser.AnnotationContext ctx) {
         final String typeId = ctx.IDENTIFIER().getText();
-        pdebug("Annotation -> IDENTIFIER:"+typeId);
+        logger.debug("Annotation -> IDENTIFIER: {}", typeId);
 
         final Type ty = this.module.lookupType(typeId);
         if (ty == null) {
@@ -971,7 +966,7 @@ public class KiaraKTDConstructor implements KiaraListener {
         } else {
             setValue(ctx, Integer.valueOf(ctx.HEXCONSTANT().getText().substring(2), 16));
         }
-        pdebug("intConstant : "+getValue(ctx));
+        logger.debug("intConstant : {}", getValue(ctx));
     }
 
     @Override

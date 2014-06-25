@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.ConnectException;
@@ -33,27 +32,26 @@ import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.World;
 import de.dfki.kiara.util.URILoader;
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class ConnectionImpl implements Connection {
+
+    private static final Logger logger = LoggerFactory.getLogger(ConnectionImpl.class);
 
     private static final Map<String, Class<? extends Protocol>> protocolRegistry = new HashMap<>();
     private final Protocol protocol;
@@ -70,7 +68,6 @@ public class ConnectionImpl implements Connection {
         world = new World();
         module = new Module(world, "kiara");
 
-
         URI configUri;
         try {
             configUri = new URI(configUriStr);
@@ -79,7 +76,6 @@ public class ConnectionImpl implements Connection {
         }
 
         // 1. load server configuration
-
         String configText;
         try {
             configText = URILoader.load(configUri, "UTF-8");
@@ -87,7 +83,7 @@ public class ConnectionImpl implements Connection {
             throw new ConnectException("Could not load server configuration", ex);
         }
 
-        System.err.println("Config text"+configText); //???DEBUG
+        logger.debug("Config text: {}", configText);
 
         ServerConfiguration serverConfig;
         try {
@@ -97,37 +93,42 @@ public class ConnectionImpl implements Connection {
         }
 
         //???DEBUG BEGIN
-        try {
-            System.err.println(serverConfig.toJson());
-        } catch (IOException ex) {
-            throw new ConnectException("Could not convert to JSON", ex);
+        if (logger.isDebugEnabled()) {
+            try {
+                logger.debug(serverConfig.toJson());
+                System.err.println(serverConfig.toJson());
+            } catch (IOException ex) {
+                throw new ConnectException("Could not convert to JSON", ex);
+            }
         }
         //???DEBUG END
 
         // load IDL
-
         if (serverConfig.idlContents != null && !serverConfig.idlContents.isEmpty()) {
-            loadIDL(new ByteArrayInputStream(serverConfig.idlContents.getBytes("UTF-8")), configUri.toString());
+            loadIDL(serverConfig.idlContents, configUri.toString());
         } else if (serverConfig.idlURL != null && !serverConfig.idlURL.isEmpty()) {
             URI idlUri = configUri.resolve(serverConfig.idlURL);
             String idlContents = URILoader.load(idlUri, "UTF-8");
-            System.err.println("IDL CONTENTS: "+idlContents); //???DEBUG
+
+            logger.debug("IDL CONTENTS: {}", idlContents); //???DEBUG
 
             loadIDL(idlContents, idlUri.toString());
         }
 
         //???DEBUG
-        IDLWriter idlWriter = new IDLWriter(module);
-        idlWriter.write(System.err);
+        if (logger.isDebugEnabled()) {
+            IDLWriter idlWriter = new IDLWriter(module);
+            idlWriter.write(System.err);
+        }
 
         // 2. perform negotation
-
         // 3. select implementation
         String protocolName = "jsonrpc";
         //String protocolName = "javaobjectstream";
         Class<? extends Protocol> protocolClass = protocolRegistry.get(protocolName);
-        if (protocolClass == null)
-            throw new ConnectException("Unsupported protocol '"+protocolName+"'");
+        if (protocolClass == null) {
+            throw new ConnectException("Unsupported protocol '" + protocolName + "'");
+        }
 
         try {
             protocol = protocolClass.newInstance();
@@ -139,7 +140,6 @@ public class ConnectionImpl implements Connection {
 
         protocol.initConnection(this);
     }
-
 
     private void loadIDL(InputStream stream, String fileName) throws IOException {
         loadIDL(new ANTLRInputStream(stream), fileName);

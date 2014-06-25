@@ -17,8 +17,8 @@
 
 package de.dfki.kiara.impl;
 
-import de.dfki.kiara.Connection;
 import de.dfki.kiara.ConnectException;
+import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.MethodBinder;
@@ -37,6 +37,8 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,39 +66,54 @@ public class ConnectionImpl implements Connection {
         protocolRegistry.put("javaobjectstream", JosProtocol.class);
     }
 
-    ConnectionImpl(String configUri) throws IOException {
+    ConnectionImpl(String configUriStr) throws IOException {
         world = new World();
         module = new Module(world, "kiara");
+
+
+        URI configUri;
+        try {
+            configUri = new URI(configUriStr);
+        } catch (URISyntaxException ex) {
+            throw new ConnectException("Invalid configuration URI", ex);
+        }
 
         // 1. load server configuration
 
         String configText;
         try {
-            byte[] serverConfigData = URILoader.load(configUri);
-            configText = new String(serverConfigData, "UTF-8");
-        } catch (URISyntaxException ex) {
-            throw new ConnectException("Invalid configuration URI", ex);
+            configText = URILoader.load(configUri, "UTF-8");
         } catch (IOException ex) {
             throw new ConnectException("Could not load server configuration", ex);
         }
 
+        System.err.println("Config text"+configText); //???DEBUG
+
         ServerConfiguration serverConfig;
         try {
-            serverConfig = ServerConfiguration.fromJSON(configText);
+            serverConfig = ServerConfiguration.fromJson(configText);
         } catch (IOException ex) {
             throw new ConnectException("Could not parse server configuration", ex);
         }
 
+        //???DEBUG BEGIN
         try {
-            System.err.println(serverConfig.toJSON());
+            System.err.println(serverConfig.toJson());
         } catch (IOException ex) {
             throw new ConnectException("Could not convert to JSON", ex);
         }
+        //???DEBUG END
 
         // load IDL
 
         if (serverConfig.idlContents != null && !serverConfig.idlContents.isEmpty()) {
-            loadIDL(new ByteArrayInputStream(serverConfig.idlContents.getBytes("UTF-8")), configUri);
+            loadIDL(new ByteArrayInputStream(serverConfig.idlContents.getBytes("UTF-8")), configUri.toString());
+        } else if (serverConfig.idlURL != null && !serverConfig.idlURL.isEmpty()) {
+            URI idlUri = configUri.resolve(serverConfig.idlURL);
+            String idlContents = URILoader.load(idlUri, "UTF-8");
+            System.err.println("IDL CONTENTS: "+idlContents); //???DEBUG
+
+            loadIDL(idlContents, idlUri.toString());
         }
 
         //???DEBUG
@@ -123,9 +140,16 @@ public class ConnectionImpl implements Connection {
         protocol.initConnection(this);
     }
 
-    public void loadIDL(InputStream stream, String fileName) throws IOException {
-        // create a CharStream that reads from standard input
-        ANTLRInputStream input = new ANTLRInputStream(stream);
+
+    private void loadIDL(InputStream stream, String fileName) throws IOException {
+        loadIDL(new ANTLRInputStream(stream), fileName);
+    }
+
+    private void loadIDL(String idlContents, String fileName) throws IOException {
+        loadIDL(new ANTLRInputStream(idlContents), fileName);
+    }
+
+    private void loadIDL(ANTLRInputStream input, String fileName) throws IOException {
         // create a lexer that feeds off of input CharStream
         KiaraLexer lexer = new KiaraLexer(input);
         // create a buffer of tokens pulled from the lexer

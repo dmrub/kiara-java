@@ -17,7 +17,10 @@
 
 package de.dfki.kiara.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,14 +43,23 @@ public class ServerConfiguration {
             servers.clear();
     }
 
-    public static ServerConfiguration fromJSON(String json) throws IOException {
+    private final static ObjectReader jsonReader;
+    private final static ObjectWriter jsonWriter;
+
+    static {
         ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(json, ServerConfiguration.class);
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        //mapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, true);
+        jsonWriter = mapper.writer();
+        jsonReader = mapper.reader(ServerConfiguration.class);
     }
 
-    public String toJSON() throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.writeValueAsString(this);
+    public static ServerConfiguration fromJson(String json) throws IOException {
+        return jsonReader.<ServerConfiguration>readValue(json);
+    }
+
+    public String toJson() throws IOException {
+        return jsonWriter.writeValueAsString(this);
     }
 
 }

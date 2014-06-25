@@ -60,6 +60,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 
 /**
  *
@@ -81,6 +82,10 @@ public class URILoader {
 
         public byte[] getContent() {
             return bout.toByteArray();
+        }
+
+        public int getContentSize() {
+            return bout.size();
         }
 
         public HttpResponseStatus getStatus() {
@@ -161,8 +166,24 @@ public class URILoader {
         }
     }
 
+    public static String load(String uriStr, String charsetName) throws URISyntaxException, IOException {
+        ByteBuffer buf = load(new URI(uriStr));
+        return new String(buf.array(), buf.arrayOffset(), buf.remaining(), charsetName);
+    }
+
+    public static String load(URI uri, String charsetName) throws IOException {
+        ByteBuffer buf = load(uri);
+        return new String(buf.array(), buf.arrayOffset(), buf.remaining(), charsetName);
+    }
+
     public static byte[] load(String uriStr) throws URISyntaxException, IOException {
-        URI uri = new URI(uriStr);
+        ByteBuffer buf = load(new URI(uriStr));
+        byte[] bytes = new byte[buf.remaining()];
+        buf.get(bytes, 0, bytes.length);
+        return bytes;
+    }
+
+    public static ByteBuffer load(URI uri) throws IOException {
         String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
         String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         int port = uri.getPort();
@@ -225,6 +246,6 @@ public class URILoader {
         if (!HttpResponseStatus.OK.equals(handler.getStatus()))
             throw new IOException("HTTP response error: " + handler.getStatus());
 
-        return handler.getContent();
+        return ByteBuffer.wrap(handler.getContent(), 0, handler.getContentSize());
     }
 }

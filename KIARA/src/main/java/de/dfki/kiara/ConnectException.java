@@ -23,20 +23,20 @@ import java.io.IOException;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ConnectionException extends IOException {
+public class ConnectException extends IOException {
 
-    public ConnectionException() {
+    public ConnectException() {
     }
 
-    public ConnectionException(String message) {
+    public ConnectException(String message) {
         super(message);
     }
 
-    public ConnectionException(String message, Throwable cause) {
+    public ConnectException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public ConnectionException(Throwable cause) {
+    public ConnectException(Throwable cause) {
         super(cause);
     }
 

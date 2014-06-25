@@ -18,7 +18,7 @@
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.Connection;
-import de.dfki.kiara.ConnectionException;
+import de.dfki.kiara.ConnectException;
 import de.dfki.kiara.Context;
 import java.io.IOException;
 
@@ -29,7 +29,7 @@ import java.io.IOException;
 public class ContextImpl implements Context {
 
     @Override
-    public Connection openConnection(String url) throws ConnectionException {
+    public Connection openConnection(String url) throws IOException {
         return new ConnectionImpl(url);
     }
 

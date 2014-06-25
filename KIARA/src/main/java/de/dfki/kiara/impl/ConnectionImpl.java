@@ -18,7 +18,7 @@
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.Connection;
-import de.dfki.kiara.ConnectionException;
+import de.dfki.kiara.ConnectException;
 import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.MethodBinder;
@@ -75,22 +75,22 @@ public class ConnectionImpl implements Connection {
             byte[] serverConfigData = URILoader.load(configUri);
             configText = new String(serverConfigData, "UTF-8");
         } catch (URISyntaxException ex) {
-            throw new ConnectionException("Invalid configuration URI", ex);
+            throw new ConnectException("Invalid configuration URI", ex);
         } catch (IOException ex) {
-            throw new ConnectionException("Could not load server configuration", ex);
+            throw new ConnectException("Could not load server configuration", ex);
         }
 
         ServerConfiguration serverConfig;
         try {
             serverConfig = ServerConfiguration.fromJSON(configText);
         } catch (IOException ex) {
-            throw new ConnectionException("Could not parse server configuration", ex);
+            throw new ConnectException("Could not parse server configuration", ex);
         }
 
         try {
             System.err.println(serverConfig.toJSON());
         } catch (IOException ex) {
-            throw new ConnectionException("Could not convert to JSON", ex);
+            throw new ConnectException("Could not convert to JSON", ex);
         }
 
         // load IDL
@@ -110,14 +110,14 @@ public class ConnectionImpl implements Connection {
         //String protocolName = "javaobjectstream";
         Class<? extends Protocol> protocolClass = protocolRegistry.get(protocolName);
         if (protocolClass == null)
-            throw new ConnectionException("Unsupported protocol '"+protocolName+"'");
+            throw new ConnectException("Unsupported protocol '"+protocolName+"'");
 
         try {
             protocol = protocolClass.newInstance();
         } catch (InstantiationException ex) {
-            throw new ConnectionException("Could not instantiate protocol", ex);
+            throw new ConnectException("Could not instantiate protocol", ex);
         } catch (IllegalAccessException ex) {
-            throw new ConnectionException("Could not instantiate protocol", ex);
+            throw new ConnectException("Could not instantiate protocol", ex);
         }
 
         protocol.initConnection(this);

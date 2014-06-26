@@ -22,13 +22,15 @@ import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.Protocol;
+import de.dfki.kiara.ProtocolRegistry;
+import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportRegistry;
 import de.dfki.kiara.config.ServerConfiguration;
+import de.dfki.kiara.config.ServerInfo;
 import de.dfki.kiara.idl.IDLWriter;
 import de.dfki.kiara.idl.KiaraKTDConstructor;
 import de.dfki.kiara.idl.KiaraLexer;
 import de.dfki.kiara.idl.KiaraParser;
-import de.dfki.kiara.jos.JosProtocol;
-import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.World;
 import de.dfki.kiara.util.URILoader;
@@ -36,8 +38,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -53,16 +53,9 @@ public class ConnectionImpl implements Connection {
 
     private static final Logger logger = LoggerFactory.getLogger(ConnectionImpl.class);
 
-    private static final Map<String, Class<? extends Protocol>> protocolRegistry = new HashMap<>();
     private final Protocol protocol;
     private final World world;
     private final Module module;
-
-    static {
-        // initialize protocols
-        protocolRegistry.put("jsonrpc", JsonRpcProtocol.class);
-        protocolRegistry.put("javaobjectstream", JosProtocol.class);
-    }
 
     ConnectionImpl(String configUriStr) throws IOException {
         world = new World();
@@ -104,6 +97,7 @@ public class ConnectionImpl implements Connection {
         //???DEBUG END
 
         // load IDL
+
         if (serverConfig.idlContents != null && !serverConfig.idlContents.isEmpty()) {
             loadIDL(serverConfig.idlContents, configUri.toString());
         } else if (serverConfig.idlURL != null && !serverConfig.idlURL.isEmpty()) {
@@ -113,6 +107,8 @@ public class ConnectionImpl implements Connection {
             logger.debug("IDL CONTENTS: {}", idlContents); //???DEBUG
 
             loadIDL(idlContents, idlUri.toString());
+        } else {
+            throw new ConnectException("No IDL specified in server configuration");
         }
 
         //???DEBUG
@@ -122,21 +118,46 @@ public class ConnectionImpl implements Connection {
         }
 
         // 2. perform negotation
-        // 3. select implementation
-        String protocolName = "jsonrpc";
-        //String protocolName = "javaobjectstream";
-        Class<? extends Protocol> protocolClass = protocolRegistry.get(protocolName);
-        if (protocolClass == null) {
-            throw new ConnectException("Unsupported protocol '" + protocolName + "'");
+
+        // find matching endpoint
+        ServerInfo serverInfo = null;
+        Transport transport = null;
+
+        for (ServerInfo si : serverConfig.servers) {
+            Transport t = TransportRegistry.getTransportByName(si.transport.name);
+            if (t != null) {
+                // we change selected endpoint only if priority is higher
+                // i.e. when priority value is less than current one
+                if (transport != null && transport.getPriority() < t.getPriority())
+                    continue;
+
+                serverInfo = si;
+                transport = t;
+            }
         }
 
+        if (serverInfo == null)
+            throw new ConnectException("No matching endpoint found");
+
+        logger.debug("Selected transport: {}", transport.getName());
+        logger.debug("Selected protocol: {}", serverInfo.protocol.name);
+
+        // FIXME load plugin classes ?
+
+        // load required protocol
+        String protocolName = "jsonrpc";
+        //String protocolName = "javaobjectstream";
+
         try {
-            protocol = protocolClass.newInstance();
+            protocol = ProtocolRegistry.newProtocolByName(protocolName);
         } catch (InstantiationException ex) {
             throw new ConnectException("Could not instantiate protocol", ex);
         } catch (IllegalAccessException ex) {
             throw new ConnectException("Could not instantiate protocol", ex);
         }
+
+        if (protocol == null)
+            throw new ConnectException("Unsupported protocol '" + protocolName + "'");
 
         protocol.initConnection(this);
     }

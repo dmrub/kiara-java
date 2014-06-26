@@ -17,23 +17,31 @@
 
 package de.dfki.kiara;
 
-import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public final class Util {
-    private Util() {
+public final class ProtocolRegistry {
+    private ProtocolRegistry() { }
 
+    private static final Map<String, Class<? extends Protocol>> protocols = new HashMap<>();
+
+    public static synchronized Class<? extends Protocol> getProtocolClassByName(String protocolName) {
+        return protocols.get(protocolName);
     }
 
-    public static boolean isSerializer(Method method) {
-        return method.getReturnType().equals(de.dfki.kiara.Message.class);
+    public static synchronized Protocol newProtocolByName(String protocolName) throws InstantiationException, IllegalAccessException {
+        Class<? extends Protocol> cls = getProtocolClassByName(protocolName);
+        if (cls == null)
+            return null;
+        return cls.newInstance();
     }
 
-    public static boolean isDeserializer(Method method) {
-        final Class<?>[] paramTypes = method.getParameterTypes();
-        return paramTypes.length == 1 && paramTypes[0].equals(de.dfki.kiara.Message.class);
+    public static synchronized void registerProtocol(String protocolName, Class<? extends Protocol> protocolClass) {
+        protocols.put(protocolName, protocolClass);
     }
+
 }

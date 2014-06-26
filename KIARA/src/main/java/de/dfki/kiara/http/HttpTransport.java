@@ -15,25 +15,39 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara;
+package de.dfki.kiara.http;
 
-import java.lang.reflect.Method;
+import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportAddress;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public final class Util {
-    private Util() {
-
+public class HttpTransport implements Transport {
+    @Override
+    public String getName() {
+        return "http";
     }
 
-    public static boolean isSerializer(Method method) {
-        return method.getReturnType().equals(de.dfki.kiara.Message.class);
+    @Override
+    public int getPriority() {
+        return 20;
     }
 
-    public static boolean isDeserializer(Method method) {
-        final Class<?>[] paramTypes = method.getParameterTypes();
-        return paramTypes.length == 1 && paramTypes[0].equals(de.dfki.kiara.Message.class);
+    @Override
+    public boolean isHttpTransport() {
+        return true;
     }
+
+    @Override
+    public boolean isSecureTransport() {
+        return false;
+    }
+
+    @Override
+    public TransportAddress createAddress(String uri) {
+        return null;
+    }
+
 }

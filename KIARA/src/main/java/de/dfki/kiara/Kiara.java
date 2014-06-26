@@ -17,13 +17,28 @@
 
 package de.dfki.kiara;
 
+import de.dfki.kiara.http.HttpTransport;
 import de.dfki.kiara.impl.ContextImpl;
+import de.dfki.kiara.jos.JosProtocol;
+import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
+import de.dfki.kiara.tcp.TcpBlockTransport;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class Kiara {
+
+    static {
+        // initialize protocols
+        ProtocolRegistry.registerProtocol("jsonrpc", JsonRpcProtocol.class);
+        ProtocolRegistry.registerProtocol("javaobjectstream", JosProtocol.class);
+
+        // initialize transports
+        TransportRegistry.registerTransport(new TcpBlockTransport());
+        TransportRegistry.registerTransport(new HttpTransport());
+    }
+
     public static Context createContext() {
         return new ContextImpl();
     }

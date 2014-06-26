@@ -17,23 +17,10 @@
 
 package de.dfki.kiara;
 
-import java.lang.reflect.Method;
-
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public final class Util {
-    private Util() {
+public interface TransportAddress {
 
-    }
-
-    public static boolean isSerializer(Method method) {
-        return method.getReturnType().equals(de.dfki.kiara.Message.class);
-    }
-
-    public static boolean isDeserializer(Method method) {
-        final Class<?>[] paramTypes = method.getParameterTypes();
-        return paramTypes.length == 1 && paramTypes[0].equals(de.dfki.kiara.Message.class);
-    }
 }

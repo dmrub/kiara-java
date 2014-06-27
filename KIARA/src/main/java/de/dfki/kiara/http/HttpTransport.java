@@ -102,6 +102,12 @@ public class HttpTransport implements Transport, Service {
 
         private final NoCopyByteArrayOutputStream bout = new NoCopyByteArrayOutputStream(1024);
 
+        private HttpTransportConnection connection;
+
+        public HttpClientHandler(HttpTransportConnection connection) {
+            this.connection = connection;
+        }
+
         public Throwable getError() {
             return error;
         }
@@ -151,6 +157,7 @@ public class HttpTransport implements Transport, Service {
                 if (content instanceof LastHttpContent) {
                     ctx.close();
                     bout.flush();
+                    this.connection.onContent(bout.toByteArray(), 0, bout.size());
                 }
             }
         }
@@ -217,14 +224,16 @@ public class HttpTransport implements Transport, Service {
             sslCtx = null;
         }
 
+        HttpTransportConnection connection = new HttpTransportConnection(uri);
         // Configure the client.
-        HttpClientHandler handler = new HttpClientHandler();
+        HttpClientHandler handler = new HttpClientHandler(connection);
         Bootstrap b = new Bootstrap();
         b.group(group)
                 .channel(NioSocketChannel.class)
                 .handler(new HttpClientInitializer(sslCtx, handler));
         // Make the connection attempt.
-        return new HttpTransportConnection(b.connect(host, port));
+        connection.init(b.connect(host, port));
+        return connection;
     }
 
 }

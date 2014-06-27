@@ -20,8 +20,14 @@ import de.dfki.kiara.TransportConnection;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpVersion;
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.net.URI;
 
 /**
  *
@@ -30,16 +36,24 @@ import java.net.SocketAddress;
 public class HttpTransportConnection implements TransportConnection {
 
     static enum State {
+        UNINITIALIZED,
         WAIT_CONNECT,
         CONNECTED,
         WAIT_CLOSE,
         CLOSED
     }
 
+    private final URI uri;
     private Channel channel;
     private State state;
 
-    HttpTransportConnection(ChannelFuture connectFuture) {
+    HttpTransportConnection(URI uri) {
+        this.uri = uri;
+        channel = null;
+        state = State.UNINITIALIZED;
+    }
+
+    public void init(ChannelFuture connectFuture) {
         if (connectFuture == null) {
             throw new NullPointerException();
         }
@@ -51,6 +65,20 @@ public class HttpTransportConnection implements TransportConnection {
                 if (state == State.WAIT_CONNECT) {
                     state = State.CONNECTED;
                     channel = future.channel();
+
+                    // HACK
+
+                    // Prepare the HTTP request.
+                    String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
+                    HttpRequest request = new DefaultFullHttpRequest(
+                            HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getRawPath());
+                    request.headers().set(HttpHeaders.Names.HOST, host);
+                    request.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
+                    request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
+
+                    // Send the HTTP request.
+                    channel.writeAndFlush(request);
+
                 } else if (state == State.WAIT_CLOSE) {
                     closeChannel();
                 }
@@ -77,6 +105,10 @@ public class HttpTransportConnection implements TransportConnection {
             throw new IllegalStateException();
         }
         return channel.remoteAddress();
+    }
+
+    public void onContent(byte[] content, int offset, int size) {
+        System.err.println("CONTENT: "+new String(content, offset, size));
     }
 
     public void closeChannel() {

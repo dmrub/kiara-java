@@ -32,9 +32,9 @@ public class TransportTest {
         try {
             Transport http = TransportRegistry.getTransportByName("http");
             TransportConnection c = http.openConnection("http://localhost:8080/service", null);
-            c.close();
+            //c.close();
         } finally {
-            Kiara.shutdownGracefully();
+            //Kiara.shutdownGracefully();
         }
     }
 }

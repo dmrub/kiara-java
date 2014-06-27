@@ -15,50 +15,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara.tcp;
+package de.dfki.kiara.test;
 
 import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Map;
+import de.dfki.kiara.TransportRegistry;
+import de.dfki.kiara.Kiara;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class TcpBlockTransport implements Transport {
-
-    @Override
-    public String getName() {
-        return "tcp";
+public class TransportTest {
+    public static void main(String[] args) throws Exception {
+        Kiara.init();
+        try {
+            Transport http = TransportRegistry.getTransportByName("http");
+            TransportConnection c = http.openConnection("http://localhost:8080/service", null);
+            c.close();
+        } finally {
+            Kiara.shutdownGracefully();
+        }
     }
-
-    @Override
-    public int getPriority() {
-        return 10;
-    }
-
-    @Override
-    public boolean isHttpTransport() {
-        return false;
-    }
-
-    @Override
-    public boolean isSecureTransport() {
-        return false;
-    }
-
-    @Override
-    public TransportAddress createAddress(String uri) {
-        return null;
-    }
-
-    @Override
-    public TransportConnection openConnection(String uri, Map<String, Object> settings) throws URISyntaxException, IOException {
-        return null;
-    }
-
-
 }

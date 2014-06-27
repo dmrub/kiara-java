@@ -17,26 +17,14 @@
 
 package de.dfki.kiara;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Map;
+import java.io.Closeable;
+import java.net.SocketAddress;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Transport {
-
-    public String getName();
-
-    public int getPriority();
-
-    public boolean isHttpTransport();
-
-    public boolean isSecureTransport();
-
-    public TransportAddress createAddress(String uri);
-
-    public TransportConnection openConnection(String uri, Map<String, Object> settings) throws URISyntaxException, IOException;
-
+public interface TransportConnection extends Closeable {
+    public SocketAddress getLocalAddress();
+    public SocketAddress getRemoteAddress();
 }

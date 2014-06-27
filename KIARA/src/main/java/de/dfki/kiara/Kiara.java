@@ -22,12 +22,16 @@ import de.dfki.kiara.impl.ContextImpl;
 import de.dfki.kiara.jos.JosProtocol;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import de.dfki.kiara.tcp.TcpBlockTransport;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class Kiara {
+
+    private static final List<Service> runningServices = new ArrayList<>();
 
     static {
         // initialize protocols
@@ -39,7 +43,33 @@ public class Kiara {
         TransportRegistry.registerTransport(new HttpTransport());
     }
 
+    public static void init() {
+    }
+
     public static Context createContext() {
         return new ContextImpl();
     }
+
+    public static void addRunningService(Service service) {
+        synchronized(runningServices) {
+            runningServices.add(service);
+        }
+    }
+
+    public static void removeRunningService(Service service) {
+        synchronized(runningServices) {
+            runningServices.remove(service);
+        }
+    }
+
+    public static void shutdownGracefully() {
+        List<Service> tmp;
+        synchronized(runningServices) {
+            tmp = new ArrayList<>(runningServices);
+        }
+        for (Service s : tmp) {
+            s.shutdownGracefully();
+        }
+    }
+
 }

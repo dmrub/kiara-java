@@ -41,7 +41,7 @@ public class TCPObjectClient {
                 long difference = finishTime - startTime;
                 difference = difference * 1000;
                 double latency = (double) difference / (numMessages * 2.0);
-                System.out.println("\n\nAverage latency is " + String.format("%.3f", latency) + " microseconds using ObjectStream\n\n\n");
+                System.out.println(String.format("\n\nAverage latency in microseconds %.3f using ObjectStream\n\n\n", latency));
                 System.out.println("Finished");
             }
         } catch (IOException | ClassNotFoundException e) {

@@ -77,108 +77,27 @@ if [ -n "$1" ]; then
 fi
 
 if true; then
-runBenchmark "perl tools/boost_test.pl Boost 1000 $NUM_MESSAGES"
-runBenchmark "perl tools/boost_test.pl Boost 472 $NUM_MESSAGES"
-runBenchmark "perl tools/boost_test.pl BoostTyped $NUM_MESSAGES"
-runBenchmark "perl tools/boost_test.pl BoostTyped2 $NUM_MESSAGES"
+	CLASSPATH=$HOME/.m2/repository/org/apache/thrift/libthrift/0.9.1/libthrift-0.9.1.jar:\
+$HOME/.m2/repository/org/slf4j/slf4j-log4j12/1.5.6/slf4j-log4j12-1.5.6.jar:\
+$HOME/.m2/repository/commons-codec/commons-codec/1.6/commons-codec-1.6.jar:\
+$HOME/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar:\
+$HOME/.m2/repository/org/apache/commons/commons-lang3/3.1/commons-lang3-3.1.jar:\
+$HOME/.m2/repository/log4j/log4j/1.2.14/log4j-1.2.14.jar:\
+$HOME/.m2/repository/org/slf4j/slf4j-api/1.5.8/slf4j-api-1.5.8.jar:\
+$HOME/.m2/repository/com/zeroc/ice/3.5.1/ice-3.5.1.jar:.:\
+$HOME/.m2/repository/com/rabbitmq/amqp-client/3.3.1/amqp-client-3.3.1.jar:\
+$HOME/.m2/repository/commons-lang/commons-lang/2.6/commons-lang-2.6.jar:\
+ApacheThriftProject/target/classes/:\
+TCPSocketProject/target/classes/:\
+RMIJavaProject/target/classes/:\
+ZerocIceProject/target/classes/:\
+RabbitMQJava/target/classes/
+	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPClient"
+	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectClient"
+	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaServer" "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaClient"		
+	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaServer" "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaClient"
+	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaServer" "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaClient"
+	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQServer" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQClient"
+	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamServer" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamClient"
 fi
 
-runServerClientBenchmark "KiaraTypedSubscriber 8080 ortecdr" KiaraTypedPublisher
-
-runServerClientBenchmark "KiaraTypedSubscriber 8080 dummy" KiaraTypedPublisher
-
-THRIFT_SERVER=$PWD/ThriftTest/ThriftServer
-THRIFT_CLIENT=$PWD/ThriftTest/ThriftClient
-
-if ! [ -e "$THRIFT_SERVER" -a -e "$THRIFT_CLIENT" ]; then
-    THRIFT_SERVER=$PWD/ThriftTest/x64/Release/ThriftServer.exe
-    THRIFT_CLIENT=$PWD/ThriftTest/x64/Release/ThriftClient.exe
-fi
-
-if [ -e "$THRIFT_SERVER" -a -e "$THRIFT_CLIENT" ]; then
-    runServerClientBenchmark "$THRIFT_SERVER" "$THRIFT_CLIENT $NUM_MESSAGES localhost"
-else
-    echo "No Thrift server/client found !"
-fi
-
-# Ice
-
-ICE_SERVER=$PWD/IceTest/IceServer
-ICE_CLIENT=$PWD/IceTest/IceClient
-
-if ! [ -e "$ICE_SERVER" -a -e "$ICE_CLIENT" ]; then
-    ICE_SERVER=$PWD/IceTest/x64/Release/IceServer.exe
-    ICE_CLIENT=$PWD/IceTest/x64/Release/IceClient.exe
-fi
-
-if [ -e "$ICE_SERVER" -a -e "$ICE_CLIENT" ]; then
-    runServerClientBenchmark "$ICE_SERVER" "$ICE_CLIENT $NUM_MESSAGES localhost"
-else
-    echo "No Ice server/client found !"
-fi
-
-# echo "Starting KIARA server with ortecdr"
-# KiaraTypedSubscriber 8080 ortecdr > server_result.txt &
-# ppid=$!
-
-# while ! grep "Starting" server_result.txt >/dev/null  2>&1; do
-#   sleep 1
-# done
-# sleep 2
-
-# echo "Running KIARA clients"
-
-# runBenchmark "KiaraTypedPublisher"
-# kill -s SIGTERM $ppid
-
-# Thrift
-
-# THRIFT_SERVER=$PWD/ThriftTest/Server
-# THRIFT_CLIENT=$PWD/ThriftTest/Client
-
-# if ! [ -e "$THRIFT_SERVER" -a -e "$THRIFT_CLIENT" ]; then
-#     THRIFT_SERVER=$PWD/ThriftTest/x64/Release/ThriftServer.exe
-#     THRIFT_CLIENT=$PWD/ThriftTest/x64/Release/ThriftClient.exe
-# fi
-
-# if [ -e "$THRIFT_SERVER" -a -e "$THRIFT_CLIENT" ]; then
-#     echo "Starting Thrift server"
-#     "$THRIFT_SERVER" > server_result.txt 2>&1 &
-#     ppid=$!
-
-#     while ! grep "Starting" server_result.txt >/dev/null  2>&1; do
-#         sleep 1
-#     done
-#     sleep 2
-
-#     echo "Running Thrift clients"
-
-#     runBenchmark "$THRIFT_CLIENT 1000 localhost"
-#     kill -s SIGTERM $ppid
-# fi
-
-# # ICE
-
-# ICE_SERVER=$PWD/IceTest/Server
-# ICE_CLIENT=$PWD/IceTest/Client
-
-# if ! [ -e "$ICE_SERVER" -a -e "$ICE_CLIENT" ]; then
-#     ICE_SERVER=$PWD/IceTest/x64/Release/IceServer.exe
-#     ICE_CLIENT=$PWD/IceTest/x64/Release/IceClient.exe
-# fi
-
-# if [ -e "$ICE_SERVER" -a -e "$ICE_CLIENT" ]; then
-#     echo "Starting Ice server"
-#     "$ICE_SERVER" > server_result.txt 2>&1 &
-#     ppid=$!
-
-#     while ! grep "Starting" server_result.txt >/dev/null  2>&1; do
-#         sleep 1
-#     done
-#     sleep 2
-
-#     echo "Running Ice clients"
-
-#     runBenchmark "$ICE_CLIENT 1000 localhost"
-#     kill -s SIGTERM $ppid
-# fi

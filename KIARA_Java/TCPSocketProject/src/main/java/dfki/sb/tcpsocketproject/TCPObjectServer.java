@@ -24,27 +24,37 @@ public class TCPObjectServer {
     public static void main(String args[]) throws IOException, ClassNotFoundException {
         try {
             ServerSocket clientConnect = new ServerSocket(8081);
-            System.out.println("Server started: waiting for clienr on port 8081");
-            Socket client = clientConnect.accept(); // blocks
-            System.out.println("Client connected ....");
-            try (ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream()));
-                    ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(client.getInputStream()))) {
-                oos.flush();
-                Object object;
+            System.out.println("Starting server: waiting for client on port 8081");
+            serveClient(clientConnect);
+            if (args != null && args.length > 0 && args[0].equalsIgnoreCase("infinite")) {
                 while (true) {
-                    object = ois.readObject();
-                    if (object instanceof MarketData) {
-                        handleMarketData(ois, oos, (MarketData) object);
-                    } else if (object instanceof QuoteRequest) {
-                        handleQuoteRequest(ois, oos, (QuoteRequest) object);
-                    } else {
-                        break;
-                    }
+                    System.out.println("waiting for next client on port 8081");
+                    serveClient(clientConnect);
                 }
-                clientConnect.close();
             }
+            clientConnect.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void serveClient(ServerSocket clientConnect) throws IOException, ClassNotFoundException {
+        Socket client = clientConnect.accept(); // blocks
+        System.out.println("Client connected ....");
+        try (ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream()));
+                ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(client.getInputStream()))) {
+            oos.flush();
+            Object object;
+            while (true) {
+                object = ois.readObject();
+                if (object instanceof MarketData) {
+                    handleMarketData(ois, oos, (MarketData) object);
+                } else if (object instanceof QuoteRequest) {
+                    handleQuoteRequest(ois, oos, (QuoteRequest) object);
+                } else {
+                    break;
+                }
+            }
         }
     }
 

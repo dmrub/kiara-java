@@ -52,7 +52,7 @@ public class RabbitMQObjectStreamServer {
             channel.basicQos(1);
             QueueingConsumer consumer = new QueueingConsumer(channel);
             channel.basicConsume(RPC_QUEUE_NAME, false, consumer);
-            System.out.println("Server started waiting for client requests:");            
+            System.out.println("Starting server waiting for client requests:");            
             while (true) {
                 QueueingConsumer.Delivery delivery = consumer.nextDelivery();
                 BasicProperties props = delivery.getProperties();

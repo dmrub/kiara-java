@@ -28,7 +28,7 @@ public class RMIJavaServer extends UnicastRemoteObject implements RMIInterface {
         try {
             Registry reg = LocateRegistry.createRegistry(9989);
             reg.rebind("server", new RMIJavaServer());
-            System.out.println("Server Started on port 9989.");
+            System.out.println("Starting server on port 9989.");
         } catch (RemoteException ex) {
             Logger.getLogger(RMIJavaServer.class.getName()).log(Level.SEVERE, null, ex);
         }

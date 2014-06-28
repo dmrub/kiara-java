@@ -116,7 +116,7 @@ public class RabbitMQObjectStreamClient {
             difference = difference * 1000;
             double latency = (double) difference / (numMessages * 2.0);
             rpcClient.sendDesiconnectSignal();
-            System.out.println("\n\nAverage latency is " + String.format("%.3f", latency) + " microseconds with ObjectStream\n\n\n");
+            System.out.println(String.format("\n\nAverage latency in microseconds %.3f\n\n\n", latency));
             System.out.println("Finished");
 
         } catch (Exception e) {

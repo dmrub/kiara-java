@@ -26,27 +26,37 @@ public class TCPServer {
     public static void main(String args[]) throws IOException, ClassNotFoundException {
         try {
             ServerSocket clientConnect = new ServerSocket(8081);
-            System.out.println("Server started: waiting for clienr on port 8081");
-            Socket client = clientConnect.accept(); // blocks
-            System.out.println("Client connected ....");
-            try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(client.getOutputStream()));
-                    DataInputStream dis = new DataInputStream(new BufferedInputStream(client.getInputStream()))) {
-                dos.flush();
-                int type;
+            System.out.println("Starting Server: waiting for client on port 8081");
+            serveClient(clientConnect);
+            if (args != null && args.length > 0 && args[0].equalsIgnoreCase("infinite")) {
                 while (true) {
-                    type = dis.readInt();
-                    if (type == 2) {
-                        handleMarketRequest(dis, dos);
-                    } else if (type == 1) {
-                        handleQuoteRequest(dis, dos);
-                    } else {
-                        break;
-                    }
+                    System.out.println("waiting for next client on port 8081");
+                    serveClient(clientConnect);
                 }
-                clientConnect.close();
             }
+            clientConnect.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void serveClient(ServerSocket clientConnect) throws IOException, ClassNotFoundException {
+        Socket client = clientConnect.accept(); // blocks
+        System.out.println("Client connected ....");
+        try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(client.getOutputStream()));
+                DataInputStream dis = new DataInputStream(new BufferedInputStream(client.getInputStream()))) {
+            dos.flush();
+            int type;
+            while (true) {
+                type = dis.readInt();
+                if (type == 2) {
+                    handleMarketRequest(dis, dos);
+                } else if (type == 1) {
+                    handleQuoteRequest(dis, dos);
+                } else {
+                    break;
+                }
+            }
         }
     }
 

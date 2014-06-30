@@ -44,7 +44,6 @@ public class RabbitMQObjectStreamClient {
     }
     
     private void sendDesiconnectSignal() throws IOException, InterruptedException {
-        QuoteRequest response = null;
         String corrId = UUID.randomUUID().toString();
         BasicProperties props = new BasicProperties.Builder()
                 .correlationId(corrId)
@@ -101,16 +100,9 @@ public class RabbitMQObjectStreamClient {
         String response = null;
         try {
             rpcClient = new RabbitMQObjectStreamClient();
-            prepratoryCalls(rpcClient);
+            sendMessages(20000,rpcClient);
             long startTime = System.currentTimeMillis();
-            for (int i = 0; i < numMessages; i++) {
-                // Send 10 MarketDatas for each QuoteRequest
-                if (i % 10 == 5) {
-                    rpcClient.sendQuoteRequest(Util.createQuoteRequestData());
-                } else {
-                    rpcClient.sendMarketData(Util.createMarketData());
-                }
-            }
+            sendMessages(numMessages, rpcClient);
             long finishTime = System.currentTimeMillis();
             long difference = finishTime - startTime;
             difference = difference * 1000;
@@ -131,8 +123,8 @@ public class RabbitMQObjectStreamClient {
         }
     }
 
-    private static void prepratoryCalls(RabbitMQObjectStreamClient rpcClient) throws InterruptedException, IOException {
-        for (int i = 0; i < 20000; i++) {
+    private static void sendMessages(int numberOfMessages,RabbitMQObjectStreamClient rpcClient) throws InterruptedException, IOException {
+        for (int i = 0; i < numberOfMessages; i++) {
             // Send 10 MarketDatas for each QuoteRequest
             if (i % 10 == 5) {
                 rpcClient.sendQuoteRequest(Util.createQuoteRequestData());

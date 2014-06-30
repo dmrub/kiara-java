@@ -98,6 +98,6 @@ RabbitMQJava/target/classes/
 	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaServer" "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaClient"
 	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaServer" "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaClient"
 	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQServer" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQClient"
-	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamServer" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamClient"
+	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamServer infinite" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamClient"
 fi
 

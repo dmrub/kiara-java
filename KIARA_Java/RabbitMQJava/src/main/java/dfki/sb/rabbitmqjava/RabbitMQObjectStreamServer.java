@@ -40,8 +40,7 @@ public class RabbitMQObjectStreamServer {
         return returnRequest;
     }
 
-    public static void main(String[] argv) {
-        
+    public static void main(String[] argv) {        
         Channel channel = null;
         try {
             ConnectionFactory factory = new ConnectionFactory();
@@ -53,34 +52,14 @@ public class RabbitMQObjectStreamServer {
             QueueingConsumer consumer = new QueueingConsumer(channel);
             channel.basicConsume(RPC_QUEUE_NAME, false, consumer);
             System.out.println("Starting server waiting for client requests:");            
-            while (true) {
-                QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-                BasicProperties props = delivery.getProperties();
-                BasicProperties replyProps = new BasicProperties.Builder()
-                        .correlationId(props.getCorrelationId())
-                        .build();
-
-                try {
-                    byte[] body = delivery.getBody();
-                    if(body.length==0){                        
-                        break;
-                    }else{
-                        Object obj = SerializationUtils.deserialize(body);
-                        if (obj instanceof MarketData) {
-                            MarketData response = sendMarketData((MarketData) obj);
-                            channel.basicPublish("", props.getReplyTo(), replyProps, SerializationUtils.serialize(response));
-                        } else {
-                            QuoteRequest response = sendQuoteRequest((QuoteRequest) obj);
-                            channel.basicPublish("", props.getReplyTo(), replyProps, SerializationUtils.serialize(response));
-                        }
-                    }
-                } catch (IOException e) {
-                    System.out.println(" [.] " + e.toString());
-                } finally {
-                    channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+            processSendAndRecivePackets(consumer, channel);
+            if(argv!=null && argv.length > 0 && argv[0].equalsIgnoreCase("infinite")){
+                while(true){
+                    System.out.println("Waiting for next client");  
+                    processSendAndRecivePackets(consumer, channel);
                 }
             }
-        } catch (IOException | InterruptedException | ShutdownSignalException | ConsumerCancelledException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         } finally {
             if (connection != null) {
@@ -91,4 +70,33 @@ public class RabbitMQObjectStreamServer {
             }
         }
     }    
+
+    private static void processSendAndRecivePackets(QueueingConsumer consumer, Channel channel) throws InterruptedException, IOException {
+        while (true) {
+            QueueingConsumer.Delivery delivery = consumer.nextDelivery();
+            BasicProperties props = delivery.getProperties();
+            BasicProperties replyProps = new BasicProperties.Builder()
+                    .correlationId(props.getCorrelationId())
+                    .build();            
+            try {
+                byte[] body = delivery.getBody();
+                if(body.length==0){
+                    break;
+                }else{
+                    Object obj = SerializationUtils.deserialize(body);
+                    if (obj instanceof MarketData) {
+                        MarketData response = sendMarketData((MarketData) obj);
+                        channel.basicPublish("", props.getReplyTo(), replyProps, SerializationUtils.serialize(response));
+                    } else {
+                        QuoteRequest response = sendQuoteRequest((QuoteRequest) obj);
+                        channel.basicPublish("", props.getReplyTo(), replyProps, SerializationUtils.serialize(response));
+                    }
+                }
+            } catch (IOException e) {
+                System.out.println(" [.] " + e.toString());
+            } finally {
+                channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+            }
+        }
+    }
 }

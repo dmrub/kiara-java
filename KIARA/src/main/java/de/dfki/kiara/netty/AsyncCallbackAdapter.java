@@ -15,14 +15,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara;
+package de.dfki.kiara.netty;
+
+import de.dfki.kiara.AsyncHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.util.concurrent.GenericFutureListener;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
- * @param <T>
  */
-public interface AsyncCallback<T> {
-    public void onSuccess(T result);
-    public void onError(Throwable error);
+public class AsyncCallbackAdapter implements GenericFutureListener<ChannelFuture> {
+    private final AsyncHandler<Void> callback;
+
+    public AsyncCallbackAdapter(AsyncHandler<Void> callback) {
+        if (callback == null)
+            throw new NullPointerException("callback");
+        this.callback = callback;
+    }
+
+    @Override
+    public void operationComplete(ChannelFuture future) throws Exception {
+        if (future.isSuccess())
+            callback.onSuccess(null);
+        else if (future.cause() != null)
+            callback.onError(future.cause());
+        else {
+            callback.onError(null);
+        }
+    }
+
 }

@@ -16,12 +16,10 @@
  */
 package de.dfki.kiara.http;
 
-import de.dfki.kiara.AsyncCallback;
+import de.dfki.kiara.AsyncHandler;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.util.FutureResult;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import de.dfki.kiara.netty.AsyncCallbackAdapter;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -32,14 +30,14 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpVersion;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -47,7 +45,10 @@ import java.util.logging.Logger;
  */
 public class HttpTransportConnection implements TransportConnection {
 
+    private static final Logger logger = LoggerFactory.getLogger(HttpTransportConnection.class);
+
     static enum State {
+
         UNINITIALIZED,
         WAIT_CONNECT,
         CONNECTED,
@@ -60,6 +61,7 @@ public class HttpTransportConnection implements TransportConnection {
     private Channel channel;
     private State state;
     private Throwable error;
+    private final List<AsyncHandler<TransportMessage>> handlers = new ArrayList<>();
 
     HttpTransportConnection(URI uri, HttpMethod method) {
         this.uri = uri;
@@ -122,17 +124,19 @@ public class HttpTransportConnection implements TransportConnection {
     }
 
     @Override
-    public Future<TransportMessage> receive(AsyncCallback<TransportMessage> callback) {
+    public Future<TransportMessage> receive(AsyncHandler<TransportMessage> callback) {
         return null;
     }
 
     @Override
-    public Future<Void> send(TransportMessage msg, AsyncCallback<Void> callback) {
-        if (msg == null)
+    public Future<Void> send(TransportMessage msg, AsyncHandler<Void> callback) {
+        if (msg == null) {
             throw new NullPointerException("msg");
-        if (!(msg instanceof HttpRequestMessage))
+        }
+        if (!(msg instanceof HttpRequestMessage)) {
             throw new IllegalArgumentException("msg is not of type HttpRequestMessage");
-        HttpRequestMessage httpMsg = (HttpRequestMessage)msg;
+        }
+        HttpRequestMessage httpMsg = (HttpRequestMessage) msg;
 
         if (state != State.CONNECTED || channel == null) {
             throw new IllegalStateException("state=" + state.toString() + " channel=" + channel);
@@ -140,16 +144,14 @@ public class HttpTransportConnection implements TransportConnection {
 
         FullHttpRequest request = httpMsg.finalizeRequest();
 
-        System.err.println("POST CONTENT: "+request.content().toString(StandardCharsets.UTF_8));
-
-        try {
-            // Send the HTTP request.
-            channel.writeAndFlush(request).sync();
-        } catch (InterruptedException ex) {
-            callback.onError(ex);
-            return new FutureResult<>(true, true);
+        if (logger.isDebugEnabled()) {
+            logger.debug("SEND CONTENT: {}", request.content().toString(StandardCharsets.UTF_8));
         }
-        return null;
+
+        ChannelFuture result = channel.writeAndFlush(request);
+        if (callback != null)
+            result.addListener(new AsyncCallbackAdapter(callback));
+        return result;
     }
 
     public void doGET() {
@@ -188,8 +190,17 @@ public class HttpTransportConnection implements TransportConnection {
         return channel.remoteAddress();
     }
 
-    public void onContent(byte[] content, int offset, int size) {
-        System.err.println("CONTENT: " + new String(content, offset, size));
+    public void onResponse(HttpResponseMessage response) {
+        System.err.println("CONTENT: " + new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
+        for (AsyncHandler<TransportMessage> handler : handlers) {
+            handler.onSuccess(response);
+        }
+    }
+
+    public void onErrorResponse(Throwable error) {
+        for (AsyncHandler<TransportMessage> handler : handlers) {
+            handler.onError(error);
+        }
     }
 
     public void closeChannel() {
@@ -218,6 +229,16 @@ public class HttpTransportConnection implements TransportConnection {
 
         state = State.WAIT_CLOSE;
         closeChannel();
+    }
+
+    @Override
+    public void addResponseHandler(AsyncHandler<TransportMessage> handler) {
+        handlers.add(handler);
+    }
+
+    @Override
+    public void removeResponseHandler(AsyncHandler<TransportMessage> handler) {
+        handlers.remove(handler);
     }
 
 }

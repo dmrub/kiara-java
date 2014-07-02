@@ -36,6 +36,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpContentDecompressor;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpResponse;
@@ -50,6 +51,7 @@ import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
@@ -105,9 +107,8 @@ public class HttpTransport implements Transport, Service {
 
     static class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> {
 
-        private Throwable error = null;
         private HttpResponseStatus status = null;
-        private String contentType = null;
+        private HttpHeaders headers = null;
 
         private final NoCopyByteArrayOutputStream bout = new NoCopyByteArrayOutputStream(1024);
 
@@ -117,36 +118,17 @@ public class HttpTransport implements Transport, Service {
             this.connection = connection;
         }
 
-        public Throwable getError() {
-            return error;
-        }
-
-        public byte[] getContent() {
-            return bout.toByteArray();
-        }
-
-        public int getContentSize() {
-            return bout.size();
-        }
-
-        public HttpResponseStatus getStatus() {
-            return status;
-        }
-
-        public String getContentType() {
-            return contentType;
-        }
-
         @Override
         public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
             if (msg instanceof HttpResponse) {
                 HttpResponse response = (HttpResponse) msg;
 
                 status = response.getStatus();
+                headers = response.headers();
 
-                if (!response.headers().isEmpty()) {
-                    contentType = response.headers().get("Content-Type");
-                }
+                //if (!response.headers().isEmpty()) {
+                //    contentType = response.headers().get("Content-Type");
+                //}
             }
             if (msg instanceof HttpContent) {
                 HttpContent content = (HttpContent) msg;
@@ -164,17 +146,20 @@ public class HttpTransport implements Transport, Service {
                 }
 
                 if (content instanceof LastHttpContent) {
-                    ctx.close();
+                    //ctx.close();
                     bout.flush();
-                    this.connection.onContent(bout.toByteArray(), 0, bout.size());
+                    HttpResponseMessage response = new HttpResponseMessage(connection, headers);
+                    response.setPayload(ByteBuffer.wrap(bout.toByteArray(), 0, bout.size()));
+                    this.connection.onResponse(response);
+                    bout.reset();
                 }
             }
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            error = cause;
             ctx.close();
+            this.connection.onErrorResponse(cause);
         }
     }
 

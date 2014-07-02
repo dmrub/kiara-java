@@ -17,22 +17,12 @@
 
 package de.dfki.kiara;
 
-import java.io.Closeable;
-import java.net.SocketAddress;
-import java.util.concurrent.Future;
-
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
+ * @param <T>
  */
-public interface TransportConnection extends Closeable {
-    public SocketAddress getLocalAddress();
-    public SocketAddress getRemoteAddress();
-
-    public TransportMessage createRequest();
-    public void addResponseHandler(AsyncHandler<TransportMessage> handler);
-    public void removeResponseHandler(AsyncHandler<TransportMessage> handler);
-
-    public Future<Void> send(TransportMessage buf, AsyncHandler<Void> callback);
-    public Future<TransportMessage> receive(AsyncHandler<TransportMessage> callback);
+public interface AsyncHandler<T> {
+    public void onSuccess(T result);
+    public void onError(Throwable error);
 }

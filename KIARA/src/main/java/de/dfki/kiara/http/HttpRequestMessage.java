@@ -16,13 +16,11 @@
  */
 package de.dfki.kiara.http;
 
-import com.sun.xml.internal.ws.message.source.PayloadSourceMessage;
 import de.dfki.kiara.TransportMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaders;
-import java.nio.ByteBuffer;
 
 /**
  *
@@ -50,9 +48,14 @@ public class HttpRequestMessage extends TransportMessage {
     }
 
     public FullHttpRequest finalizeRequest() {
+        System.err.println("finalizeRequest: "+System.identityHashCode(request));
         request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, getPayload().remaining());
         ByteBuf bbuf = Unpooled.wrappedBuffer(getPayload());
-        request.content().clear().writeBytes(bbuf);
+        System.err.println("BBUF RC="+bbuf.refCnt());
+        System.err.println("CONTENT BBUF RC="+request.content().refCnt());
+        ByteBuf content = request.content().clear();
+        System.err.println("CONTENT BBUF RC="+content.refCnt());
+        content.writeBytes(bbuf);
         bbuf.release();
         return request;
     }

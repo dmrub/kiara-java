@@ -20,6 +20,7 @@ import de.dfki.kiara.AsyncHandler;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.netty.AsyncCallbackAdapter;
+import de.dfki.kiara.netty.NettyTransportConnection;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -43,7 +44,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class HttpTransportConnection implements TransportConnection {
+public class HttpTransportConnection extends NettyTransportConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpTransportConnection.class);
 
@@ -69,26 +70,6 @@ public class HttpTransportConnection implements TransportConnection {
         this.channel = null;
         this.state = State.UNINITIALIZED;
         this.error = null;
-    }
-
-    public void init(ChannelFuture connectFuture) {
-        if (connectFuture == null) {
-            throw new NullPointerException();
-        }
-        state = State.WAIT_CONNECT;
-        connectFuture.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                future.removeListener(this);
-                if (future.isSuccess()) {
-                    init(future.channel());
-                } else {
-                    error = future.cause();
-                    state = State.CLOSED;
-                }
-            }
-
-        });
     }
 
     public void init(Channel channel) {
@@ -149,8 +130,9 @@ public class HttpTransportConnection implements TransportConnection {
         }
 
         ChannelFuture result = channel.writeAndFlush(request);
-        if (callback != null)
+        if (callback != null) {
             result.addListener(new AsyncCallbackAdapter(callback));
+        }
         return result;
     }
 
@@ -191,7 +173,9 @@ public class HttpTransportConnection implements TransportConnection {
     }
 
     public void onResponse(HttpResponseMessage response) {
-        System.err.println("CONTENT: " + new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
+        if (logger.isDebugEnabled()) {
+            logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
+        }
         for (AsyncHandler<TransportMessage> handler : handlers) {
             handler.onSuccess(response);
         }

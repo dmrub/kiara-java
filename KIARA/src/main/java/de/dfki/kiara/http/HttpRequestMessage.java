@@ -48,13 +48,9 @@ public class HttpRequestMessage extends TransportMessage {
     }
 
     public FullHttpRequest finalizeRequest() {
-        System.err.println("finalizeRequest: "+System.identityHashCode(request));
         request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, getPayload().remaining());
         ByteBuf bbuf = Unpooled.wrappedBuffer(getPayload());
-        System.err.println("BBUF RC="+bbuf.refCnt());
-        System.err.println("CONTENT BBUF RC="+request.content().refCnt());
         ByteBuf content = request.content().clear();
-        System.err.println("CONTENT BBUF RC="+content.refCnt());
         content.writeBytes(bbuf);
         bbuf.release();
         return request;

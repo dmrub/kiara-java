@@ -17,12 +17,14 @@
 
 package de.dfki.kiara.tcp;
 
+import de.dfki.kiara.AsyncHandler;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 /**
  *
@@ -56,7 +58,7 @@ public class TcpBlockTransport implements Transport {
     }
 
     @Override
-    public TransportConnection openConnection(String uri, Map<String, Object> settings) throws URISyntaxException, IOException {
+    public Future<TransportConnection> openConnection(String uri, Map<String, Object> settings, AsyncHandler<TransportConnection> handler) throws URISyntaxException {
         return null;
     }
 

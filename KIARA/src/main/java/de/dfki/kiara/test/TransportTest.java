@@ -40,7 +40,7 @@ public class TransportTest {
         Transport http = TransportRegistry.getTransportByName("http");
         // GET http://localhost:8080/service
         // POST http://localhost:8080/rpc/calc
-        final TransportConnection c = http.openConnection("http://localhost:8080/rpc/calc", null);
+        final TransportConnection c = http.openConnection("http://localhost:8080/rpc/calc", null, null).get();
 
         c.addResponseHandler(new AsyncHandler<TransportMessage>() {
 

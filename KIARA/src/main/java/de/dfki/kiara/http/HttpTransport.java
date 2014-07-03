@@ -16,15 +16,18 @@
  */
 package de.dfki.kiara.http;
 
+import de.dfki.kiara.AsyncHandler;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Service;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.netty.ChannelFutureAndConnection;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -53,6 +56,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  *
@@ -101,8 +108,8 @@ public class HttpTransport implements Transport, Service {
     }
 
     @Override
-    public TransportConnection openConnection(String uri, Map<String, Object> settings) throws IOException, URISyntaxException {
-        return openConnection(new URI(uri), settings);
+    public Future<TransportConnection> openConnection(String uri, Map<String, Object> settings, AsyncHandler<TransportConnection> handler) throws IOException, URISyntaxException {
+        return openConnection(new URI(uri), settings, handler);
     }
 
     static class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> {
@@ -194,7 +201,7 @@ public class HttpTransport implements Transport, Service {
         }
     }
 
-    public TransportConnection openConnection(URI uri, Map<String, Object> settings) throws IOException {
+    public ChannelFutureAndConnection connect(URI uri, Map<String, Object> settings) throws IOException {
         String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
         String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         int port = uri.getPort();
@@ -219,22 +226,88 @@ public class HttpTransport implements Transport, Service {
             sslCtx = null;
         }
 
-        HttpTransportConnection connection = new HttpTransportConnection(uri, HttpMethod.POST);
+        final HttpTransportConnection connection = new HttpTransportConnection(uri, HttpMethod.POST);
         // Configure the client.
-        HttpClientHandler handler = new HttpClientHandler(connection);
+        HttpClientHandler httpClientHandler = new HttpClientHandler(connection);
         Bootstrap b = new Bootstrap();
         b.group(group)
                 .channel(NioSocketChannel.class)
-                .handler(new HttpClientInitializer(sslCtx, handler));
+                .handler(new HttpClientInitializer(sslCtx, httpClientHandler));
+        return new ChannelFutureAndConnection(b.connect(host, port), connection);
+    }
+
+    public Future<TransportConnection> openConnection(URI uri, Map<String, Object> settings, final AsyncHandler<TransportConnection> handler) throws IOException {
+        final ChannelFutureAndConnection cfc = connect(uri, settings);
+
+        cfc.future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (future.isSuccess()) {
+                    cfc.connection.init(future.channel());
+                    if (handler != null)
+                        handler.onSuccess(cfc.connection);
+                } else if (future.isCancelled()) {
+                    if (handler != null)
+                        handler.onError(null);
+                } else {
+                    if (handler != null)
+                        handler.onError(future.cause());
+                }
+            }
+        });
+
+        return new Future<TransportConnection>() {
+
+            @Override
+            public boolean cancel(boolean bln) {
+                return cfc.future.cancel(bln);
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return cfc.future.isCancelled();
+            }
+
+            @Override
+            public boolean isDone() {
+                return cfc.future.isDone();
+            }
+
+            @Override
+            public TransportConnection get() throws InterruptedException, ExecutionException {
+                cfc.future.get();
+                return cfc.connection;
+            }
+
+            @Override
+            public TransportConnection get(long l, TimeUnit tu) throws InterruptedException, ExecutionException, TimeoutException {
+                cfc.future.get(l, tu);
+                return cfc.connection;
+            }
+        };
+    }
+
+    public TransportConnection openConnection(URI uri, Map<String, Object> settings) throws IOException {
+        /*
+        final ChannelFutureAndConnection cfc = connect(uri, settings);
         // Make the connection attempt.
         Channel ch;
         try {
-            ch = b.connect(host, port).sync().channel();
+            ch = cfc.future.sync().channel();
         } catch (InterruptedException ex) {
             throw new IOException(ex);
         }
-        connection.init(ch);
-        return connection;
+        cfc.connection.init(ch);
+        return cfc.connection;
+        */
+        Future<TransportConnection> c = openConnection(uri, settings, null);
+        try {
+            return c.get();
+        } catch (InterruptedException ex) {
+            throw new IOException(ex);
+        } catch (ExecutionException ex) {
+            throw new IOException(ex);
+        }
     }
 
 }

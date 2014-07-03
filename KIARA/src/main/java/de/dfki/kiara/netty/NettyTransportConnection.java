@@ -15,28 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara;
+package de.dfki.kiara.netty;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Map;
-import java.util.concurrent.Future;
+import de.dfki.kiara.TransportConnection;
+import io.netty.channel.Channel;
+
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Transport {
-
-    public String getName();
-
-    public int getPriority();
-
-    public boolean isHttpTransport();
-
-    public boolean isSecureTransport();
-
-    public TransportAddress createAddress(String uri);
-
-    public Future<TransportConnection> openConnection(String uri, Map<String, Object> settings, AsyncHandler<TransportConnection> handler) throws URISyntaxException, IOException;
-
+public abstract class NettyTransportConnection implements TransportConnection {
+    public abstract void init(Channel channel);
 }

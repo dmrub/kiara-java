@@ -26,9 +26,9 @@ import io.netty.channel.ChannelFuture;
 public final class ChannelFutureAndConnection {
 
     public final ChannelFuture future;
-    public final NettyTransportConnection connection;
+    public final AbstractTransportConnection connection;
 
-    public ChannelFutureAndConnection(ChannelFuture future, NettyTransportConnection connection) {
+    public ChannelFutureAndConnection(ChannelFuture future, AbstractTransportConnection connection) {
         this.future = future;
         this.connection = connection;
     }

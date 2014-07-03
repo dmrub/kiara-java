@@ -16,13 +16,12 @@
  */
 
 package de.dfki.kiara;
+import com.google.common.util.concurrent.FutureCallback;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  * @param <T>
  */
-public interface AsyncHandler<T> {
-    public void onSuccess(T result);
-    public void onError(Throwable error);
+public interface AsyncHandler<T> extends FutureCallback<T> {
 }

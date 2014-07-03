@@ -39,9 +39,9 @@ public class AsyncCallbackAdapter implements GenericFutureListener<ChannelFuture
         if (future.isSuccess())
             callback.onSuccess(null);
         else if (future.cause() != null)
-            callback.onError(future.cause());
+            callback.onFailure(future.cause());
         else {
-            callback.onError(null);
+            callback.onFailure(null);
         }
     }
 

@@ -16,11 +16,13 @@
  */
 package de.dfki.kiara.http;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.AsyncHandler;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.netty.AsyncCallbackAdapter;
-import de.dfki.kiara.netty.NettyTransportConnection;
+import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
+import de.dfki.kiara.netty.AbstractTransportConnection;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -36,7 +38,11 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +50,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class HttpTransportConnection extends NettyTransportConnection {
+public class HttpTransportConnection extends AbstractTransportConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpTransportConnection.class);
 
@@ -110,7 +116,7 @@ public class HttpTransportConnection extends NettyTransportConnection {
     }
 
     @Override
-    public Future<Void> send(TransportMessage msg, AsyncHandler<Void> callback) {
+    public ListenableFuture<Void> send(TransportMessage msg) {
         if (msg == null) {
             throw new NullPointerException("msg");
         }
@@ -130,10 +136,7 @@ public class HttpTransportConnection extends NettyTransportConnection {
         }
 
         ChannelFuture result = channel.writeAndFlush(request);
-        if (callback != null) {
-            result.addListener(new AsyncCallbackAdapter(callback));
-        }
-        return result;
+        return new ListenableConstantFutureAdapter<>(result, null);
     }
 
     public void doGET() {
@@ -183,7 +186,7 @@ public class HttpTransportConnection extends NettyTransportConnection {
 
     public void onErrorResponse(Throwable error) {
         for (AsyncHandler<TransportMessage> handler : handlers) {
-            handler.onError(error);
+            handler.onFailure(error);
         }
     }
 

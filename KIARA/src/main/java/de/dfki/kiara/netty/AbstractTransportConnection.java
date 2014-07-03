@@ -24,6 +24,6 @@ import io.netty.channel.Channel;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public abstract class NettyTransportConnection implements TransportConnection {
+public abstract class AbstractTransportConnection implements TransportConnection {
     public abstract void init(Channel channel);
 }

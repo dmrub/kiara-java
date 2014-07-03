@@ -16,6 +16,7 @@
  */
 package de.dfki.kiara.http;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.AsyncHandler;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Service;
@@ -57,6 +58,7 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -108,8 +110,8 @@ public class HttpTransport implements Transport, Service {
     }
 
     @Override
-    public Future<TransportConnection> openConnection(String uri, Map<String, Object> settings, AsyncHandler<TransportConnection> handler) throws IOException, URISyntaxException {
-        return openConnection(new URI(uri), settings, handler);
+    public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws IOException, URISyntaxException {
+        return openConnection(new URI(uri), settings);
     }
 
     static class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> {
@@ -236,7 +238,7 @@ public class HttpTransport implements Transport, Service {
         return new ChannelFutureAndConnection(b.connect(host, port), connection);
     }
 
-    public Future<TransportConnection> openConnection(URI uri, Map<String, Object> settings, final AsyncHandler<TransportConnection> handler) throws IOException {
+    public ListenableFuture<TransportConnection> openConnection(URI uri, Map<String, Object> settings) throws IOException {
         final ChannelFutureAndConnection cfc = connect(uri, settings);
 
         cfc.future.addListener(new ChannelFutureListener() {
@@ -244,19 +246,23 @@ public class HttpTransport implements Transport, Service {
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
                     cfc.connection.init(future.channel());
-                    if (handler != null)
-                        handler.onSuccess(cfc.connection);
                 } else if (future.isCancelled()) {
-                    if (handler != null)
-                        handler.onError(null);
                 } else {
-                    if (handler != null)
-                        handler.onError(future.cause());
                 }
             }
         });
 
-        return new Future<TransportConnection>() {
+        return new ListenableFuture<TransportConnection>() {
+
+            @Override
+            public void addListener(final Runnable r, final Executor exctr) {
+                cfc.future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        exctr.execute(r);
+                    }
+                });
+            }
 
             @Override
             public boolean cancel(boolean bln) {
@@ -285,29 +291,6 @@ public class HttpTransport implements Transport, Service {
                 return cfc.connection;
             }
         };
-    }
-
-    public TransportConnection openConnection(URI uri, Map<String, Object> settings) throws IOException {
-        /*
-        final ChannelFutureAndConnection cfc = connect(uri, settings);
-        // Make the connection attempt.
-        Channel ch;
-        try {
-            ch = cfc.future.sync().channel();
-        } catch (InterruptedException ex) {
-            throw new IOException(ex);
-        }
-        cfc.connection.init(ch);
-        return cfc.connection;
-        */
-        Future<TransportConnection> c = openConnection(uri, settings, null);
-        try {
-            return c.get();
-        } catch (InterruptedException ex) {
-            throw new IOException(ex);
-        } catch (ExecutionException ex) {
-            throw new IOException(ex);
-        }
     }
 
 }

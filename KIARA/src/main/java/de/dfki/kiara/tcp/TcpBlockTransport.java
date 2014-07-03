@@ -17,6 +17,7 @@
 
 package de.dfki.kiara.tcp;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.AsyncHandler;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
@@ -58,9 +59,8 @@ public class TcpBlockTransport implements Transport {
     }
 
     @Override
-    public Future<TransportConnection> openConnection(String uri, Map<String, Object> settings, AsyncHandler<TransportConnection> handler) throws URISyntaxException {
+    public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws URISyntaxException, IOException {
         return null;
     }
-
 
 }

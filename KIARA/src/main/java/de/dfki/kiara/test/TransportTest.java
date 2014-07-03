@@ -16,6 +16,9 @@
  */
 package de.dfki.kiara.test;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.AsyncHandler;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Transport;
@@ -40,7 +43,7 @@ public class TransportTest {
         Transport http = TransportRegistry.getTransportByName("http");
         // GET http://localhost:8080/service
         // POST http://localhost:8080/rpc/calc
-        final TransportConnection c = http.openConnection("http://localhost:8080/rpc/calc", null, null).get();
+        final TransportConnection c = http.openConnection("http://localhost:8080/rpc/calc", null).get();
 
         c.addResponseHandler(new AsyncHandler<TransportMessage>() {
 
@@ -65,7 +68,7 @@ public class TransportTest {
             }
 
             @Override
-            public void onError(Throwable error) {
+            public void onFailure(Throwable error) {
             }
         });
         TransportMessage msg = c.createRequest();
@@ -73,19 +76,20 @@ public class TransportTest {
         msg.setPayload(ByteBuffer.wrap(request.getBytes("UTF-8")));
         msg.setContentType("application/json");
         msg.setSessionId("SID1");
-        Future<Void> send = c.send(msg, new AsyncHandler<Void>() {
+        ListenableFuture<Void> send = c.send(msg);
+        Futures.addCallback(send, new FutureCallback<Void>() {
             @Override
-            public void onSuccess(Void result) {
+            public void onSuccess(Void v) {
                 TransportMessage msg = c.createRequest();
                 String request = "{\"jsonrpc\":\"2.0\",\"method\":\"calc.add\",\"params\":[3,4],\"id\":1}";
                 try {
                     msg.setPayload(ByteBuffer.wrap(request.getBytes("UTF-8")));
                 } catch (UnsupportedEncodingException ex) {
-                    onError(null);
+                    onFailure(null);
                 }
                 msg.setContentType("application/json");
 
-                Future<Void> send1 = c.send(msg, null);
+                Future<Void> send1 = c.send(msg);
                 /*
                  try {
                  c.close();
@@ -98,8 +102,9 @@ public class TransportTest {
             }
 
             @Override
-            public void onError(Throwable error) {
+            public void onFailure(Throwable thrwbl) {
             }
+
         });
     }
 }

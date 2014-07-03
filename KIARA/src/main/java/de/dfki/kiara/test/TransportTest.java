@@ -17,10 +17,13 @@
 
 package de.dfki.kiara.test;
 
+import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportRegistry;
-import de.dfki.kiara.Kiara;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
 /**
  *
@@ -31,10 +34,17 @@ public class TransportTest {
         Kiara.init();
         try {
             Transport http = TransportRegistry.getTransportByName("http");
-            TransportConnection c = http.openConnection("http://localhost:8080/service", null);
-            //c.close();
+            // GET http://localhost:8080/service
+            // POST http://localhost:8080/rpc/calc
+            TransportConnection c = http.openConnection("http://localhost:8080/rpc/calc", null);
+            TransportMessage msg = c.createRequest();
+            String request = "{\"jsonrpc\":\"2.0\",\"method\":\"calc.add\",\"params\":[7,11],\"id\":1}";
+            msg.setPayload(ByteBuffer.wrap(request.getBytes("UTF-8")));
+            msg.setContentType("application/json");
+            Future<Void> send = c.send(msg, null);
+            c.close();
         } finally {
-            //Kiara.shutdownGracefully();
+            Kiara.shutdownGracefully();
         }
     }
 }

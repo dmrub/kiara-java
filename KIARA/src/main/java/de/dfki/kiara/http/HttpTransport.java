@@ -36,12 +36,17 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpContentDecompressor;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -54,6 +59,10 @@ import java.util.Map;
 public class HttpTransport implements Transport, Service {
 
     private final EventLoopGroup group = new NioEventLoopGroup();
+
+    static {
+        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
+    }
 
     public HttpTransport() {
         Kiara.addRunningService(this);
@@ -188,6 +197,7 @@ public class HttpTransport implements Transport, Service {
                 p.addLast(sslCtx.newHandler(ch.alloc()));
             }
 
+            p.addLast("logger", new LoggingHandler(LogLevel.DEBUG));
             p.addLast(new HttpClientCodec());
 
             // Remove the following line if you don't want automatic content decompression.
@@ -224,7 +234,7 @@ public class HttpTransport implements Transport, Service {
             sslCtx = null;
         }
 
-        HttpTransportConnection connection = new HttpTransportConnection(uri);
+        HttpTransportConnection connection = new HttpTransportConnection(uri, HttpMethod.POST);
         // Configure the client.
         HttpClientHandler handler = new HttpClientHandler(connection);
         Bootstrap b = new Bootstrap();
@@ -232,7 +242,13 @@ public class HttpTransport implements Transport, Service {
                 .channel(NioSocketChannel.class)
                 .handler(new HttpClientInitializer(sslCtx, handler));
         // Make the connection attempt.
-        connection.init(b.connect(host, port));
+        Channel ch;
+        try {
+            ch = b.connect(host, port).sync().channel();
+        } catch (InterruptedException ex) {
+            throw new IOException(ex);
+        }
+        connection.init(ch);
         return connection;
     }
 

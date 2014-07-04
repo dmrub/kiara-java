@@ -28,7 +28,7 @@ public class HttpResponseMessage extends TransportMessage {
 
     private final HttpHeaders headers;
 
-    HttpResponseMessage(HttpTransportConnection connection, HttpHeaders headers) {
+    HttpResponseMessage(HttpClientHandler connection, HttpHeaders headers) {
         super(connection);
         this.headers = headers;
     }

@@ -35,7 +35,7 @@ public class HttpRequestMessage extends TransportMessage {
      * @param transport
      * @param request
      */
-    public HttpRequestMessage(HttpTransportConnection connection, FullHttpRequest request) {
+    public HttpRequestMessage(HttpClientHandler connection, FullHttpRequest request) {
         super(connection);
         if (request == null) {
             throw new NullPointerException("request");

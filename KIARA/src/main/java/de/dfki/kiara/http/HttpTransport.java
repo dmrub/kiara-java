@@ -17,37 +17,18 @@
 package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import de.dfki.kiara.AsyncHandler;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Service;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.netty.ChannelFutureAndConnection;
-import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
+import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.HttpClientCodec;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpContentDecompressor;
-import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObject;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.internal.logging.InternalLoggerFactory;
@@ -55,13 +36,7 @@ import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  *
@@ -139,69 +114,18 @@ public class HttpTransport implements Transport, Service {
             sslCtx = null;
         }
 
-        final HttpTransportConnection connection = new HttpTransportConnection(uri, HttpMethod.POST);
         // Configure the client.
-        HttpClientHandler httpClientHandler = new HttpClientHandler(connection);
+        final HttpClientHandler httpClientHandler = new HttpClientHandler(uri, HttpMethod.POST);
         Bootstrap b = new Bootstrap();
         b.group(group)
                 .channel(NioSocketChannel.class)
                 .handler(new HttpClientInitializer(sslCtx, httpClientHandler));
-        return new ChannelFutureAndConnection(b.connect(host, port), connection);
+        return new ChannelFutureAndConnection(b.connect(host, port), httpClientHandler);
     }
 
     public ListenableFuture<TransportConnection> openConnection(URI uri, Map<String, Object> settings) throws IOException {
         final ChannelFutureAndConnection cfc = connect(uri, settings);
-
-        cfc.future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (future.isSuccess()) {
-                    cfc.connection.init(future.channel());
-                } else if (future.isCancelled()) {
-                } else {
-                }
-            }
-        });
-
-        return new ListenableFuture<TransportConnection>() {
-
-            @Override
-            public void addListener(final Runnable r, final Executor exctr) {
-                cfc.future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        exctr.execute(r);
-                    }
-                });
-            }
-
-            @Override
-            public boolean cancel(boolean bln) {
-                return cfc.future.cancel(bln);
-            }
-
-            @Override
-            public boolean isCancelled() {
-                return cfc.future.isCancelled();
-            }
-
-            @Override
-            public boolean isDone() {
-                return cfc.future.isDone();
-            }
-
-            @Override
-            public TransportConnection get() throws InterruptedException, ExecutionException {
-                cfc.future.get();
-                return cfc.connection;
-            }
-
-            @Override
-            public TransportConnection get(long l, TimeUnit tu) throws InterruptedException, ExecutionException, TimeoutException {
-                cfc.future.get(l, tu);
-                return cfc.connection;
-            }
-        };
+        return new ListenableConstantFutureAdapter<>(cfc.future, cfc.connection);
     }
 
 }

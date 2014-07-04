@@ -18,6 +18,7 @@
 package de.dfki.kiara;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import java.io.Closeable;
 import java.net.SocketAddress;
 import java.util.concurrent.Future;
@@ -34,6 +35,6 @@ public interface TransportConnection extends Closeable {
     public void addResponseHandler(AsyncHandler<TransportMessage> handler);
     public void removeResponseHandler(AsyncHandler<TransportMessage> handler);
 
-    public ListenableFuture<Void> send(TransportMessage buf);
-    public Future<TransportMessage> receive(AsyncHandler<TransportMessage> callback);
+    public ListenableFuture<Void> send(TransportMessage message);
+    public ListenableFuture<TransportMessage> receive(ListeningExecutorService executor);
 }

@@ -16,13 +16,14 @@
  */
 package de.dfki.kiara.http;
 
+import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.AsyncHandler;
-import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.netty.AsyncCallbackAdapter;
-import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.netty.AbstractTransportConnection;
+import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -38,11 +39,10 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +69,7 @@ public class HttpTransportConnection extends AbstractTransportConnection {
     private State state;
     private Throwable error;
     private final List<AsyncHandler<TransportMessage>> handlers = new ArrayList<>();
+    private final BlockingQueue<Object> queue = new LinkedBlockingDeque<>();
 
     HttpTransportConnection(URI uri, HttpMethod method) {
         this.uri = uri;
@@ -78,11 +79,13 @@ public class HttpTransportConnection extends AbstractTransportConnection {
         this.error = null;
     }
 
+    @Override
     public void init(Channel channel) {
         if (channel == null) {
             throw new NullPointerException();
         }
         this.channel = channel;
+        //executor = MoreExecutors.listeningDecorator(channel.eventLoop());
         switch (state) {
             case UNINITIALIZED:
             case WAIT_CONNECT:
@@ -110,9 +113,46 @@ public class HttpTransportConnection extends AbstractTransportConnection {
         return new HttpRequestMessage(this, request);
     }
 
+    class ResponseListener extends AbstractFuture<TransportMessage> implements AsyncHandler<TransportMessage> {
+
+        @Override
+        public void onSuccess(TransportMessage result) {
+            HttpTransportConnection.this.removeResponseHandler(this);
+            set(result);
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+            HttpTransportConnection.this.removeResponseHandler(this);
+            setException(t);
+        }
+    }
+
     @Override
-    public Future<TransportMessage> receive(AsyncHandler<TransportMessage> callback) {
-        return null;
+    public ListenableFuture<TransportMessage> receive(ListeningExecutorService executor) {
+       return executor.submit(new Callable<TransportMessage>() {
+
+            @Override
+            public TransportMessage call() throws Exception {
+                boolean interrupted = false;
+                try {
+                    for (;;) {
+                        try {
+                            Object value = queue.take();
+                            if (value instanceof Exception)
+                                throw (Exception)value;
+                            return (TransportMessage) value;
+                        } catch (InterruptedException ignore) {
+                            interrupted = true;
+                        }
+                    }
+                } finally {
+                    if (interrupted) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -179,14 +219,22 @@ public class HttpTransportConnection extends AbstractTransportConnection {
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
-        for (AsyncHandler<TransportMessage> handler : handlers) {
-            handler.onSuccess(response);
+        if (handlers.isEmpty()) {
+            queue.add(response);
+        } else {
+            for (AsyncHandler<TransportMessage> handler : handlers) {
+                handler.onSuccess(response);
+            }
         }
     }
 
     public void onErrorResponse(Throwable error) {
-        for (AsyncHandler<TransportMessage> handler : handlers) {
-            handler.onFailure(error);
+        if (handlers.isEmpty()) {
+            queue.add(error);
+        } else {
+            for (AsyncHandler<TransportMessage> handler : handlers) {
+                handler.onFailure(error);
+            }
         }
     }
 

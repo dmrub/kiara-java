@@ -17,9 +17,6 @@
 
 package de.dfki.kiara.test;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.Kiara;
@@ -30,9 +27,6 @@ import de.dfki.kiara.TransportRegistry;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  *
@@ -74,12 +68,12 @@ public class TransportTest2 {
         msg.setPayload(ByteBuffer.wrap(request.getBytes("UTF-8")));
         msg.setContentType("application/json");
         msg.setSessionId("SID1");
+
         c.send(msg).get();
         System.err.println("Message #1 sent");
+
         TransportMessage response = c.receive(executor).get();
-
         System.err.println("Message #1 received");
-
         printMessage(response);
 
         msg = c.createRequest();
@@ -96,9 +90,9 @@ public class TransportTest2 {
         System.err.println("Message #2 sent");
 
         response = c.receive(executor).get();
-
         System.err.println("Message #2 received");
         printMessage(response);
+
         closeAll(c);
     }
 }

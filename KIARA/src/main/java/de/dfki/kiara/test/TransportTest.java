@@ -55,6 +55,7 @@ public class TransportTest {
         } finally {
             Kiara.shutdownGracefully();
         }
+        executor.shutdownNow();
         System.err.println("PROGRAM FINISHED");
     }
 

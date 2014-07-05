@@ -39,8 +39,10 @@ public class Kiara {
         ProtocolRegistry.registerProtocol("javaobjectstream", JosProtocol.class);
 
         // initialize transports
-        TransportRegistry.registerTransport(new TcpBlockTransport());
-        TransportRegistry.registerTransport(new HttpTransport());
+        TransportRegistry.registerTransport("tcp", new TcpBlockTransport());
+        HttpTransport httpTransport = new HttpTransport();
+        TransportRegistry.registerTransport("http", httpTransport);
+        TransportRegistry.registerTransport("https", httpTransport);
     }
 
     public static void init() {

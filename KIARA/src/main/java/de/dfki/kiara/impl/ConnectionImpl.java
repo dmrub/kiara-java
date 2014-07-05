@@ -24,6 +24,7 @@ import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ProtocolRegistry;
 import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportRegistry;
 import de.dfki.kiara.config.ServerConfiguration;
 import de.dfki.kiara.config.ServerInfo;
@@ -38,6 +39,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -54,9 +57,12 @@ public class ConnectionImpl implements Connection {
     private static final Logger logger = LoggerFactory.getLogger(ConnectionImpl.class);
 
     private final Protocol protocol;
+    private final Transport transport;
+    private final TransportConnection transportConnection;
     private final World world;
     private final Module module;
 
+    @SuppressWarnings("null")
     ConnectionImpl(String configUriStr) throws IOException {
         world = new World();
         module = new Module(world, "kiara");
@@ -121,31 +127,33 @@ public class ConnectionImpl implements Connection {
 
         // find matching endpoint
         ServerInfo serverInfo = null;
-        Transport transport = null;
+        Transport selectedTransport = null;
 
         for (ServerInfo si : serverConfig.servers) {
             Transport t = TransportRegistry.getTransportByName(si.transport.name);
             if (t != null) {
                 // we change selected endpoint only if priority is higher
                 // i.e. when priority value is less than current one
-                if (transport != null && transport.getPriority() < t.getPriority())
+                if (selectedTransport != null && selectedTransport.getPriority() < t.getPriority())
                     continue;
 
                 serverInfo = si;
-                transport = t;
+                selectedTransport = t;
             }
         }
 
         if (serverInfo == null)
             throw new ConnectException("No matching endpoint found");
 
-        logger.debug("Selected transport: {}", transport.getName());
+        transport = selectedTransport;
+
+        logger.debug("Selected transport: {}", serverInfo.transport.name);
         logger.debug("Selected protocol: {}", serverInfo.protocol.name);
 
         // FIXME load plugin classes ?
 
         // load required protocol
-        String protocolName = "jsonrpc";
+        String protocolName = serverInfo.protocol.name;
         //String protocolName = "javaobjectstream";
 
         try {
@@ -158,6 +166,21 @@ public class ConnectionImpl implements Connection {
 
         if (protocol == null)
             throw new ConnectException("Unsupported protocol '" + protocolName + "'");
+
+
+        URI transportUri = configUri.resolve(serverInfo.transport.url);
+
+        logger.debug("Open transport connection to: {}", transportUri);
+
+        try {
+            transportConnection = transport.openConnection(transportUri.toString(), null).get();
+        } catch (URISyntaxException ex) {
+            throw new ConnectException(ex);
+        } catch (InterruptedException ex) {
+            throw new ConnectException(ex);
+        } catch (ExecutionException ex) {
+            throw new ConnectException(ex);
+        }
 
         protocol.initConnection(this);
     }
@@ -197,6 +220,8 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public void close() throws IOException {
+        if (transportConnection != null)
+            transportConnection.close();
     }
 
     @Override
@@ -206,6 +231,11 @@ public class ConnectionImpl implements Connection {
 
         InterfaceCodeGen codegen = protocol.getInterfaceCodeGen();
         return codegen.generateInterfaceImpl(interfaceClass, mapping);
+    }
+
+    @Override
+    public TransportConnection getTransportConnection() {
+        return transportConnection;
     }
 
 }

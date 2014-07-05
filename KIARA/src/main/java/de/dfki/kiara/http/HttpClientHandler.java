@@ -18,6 +18,7 @@ package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.AsyncHandler;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
@@ -70,6 +71,7 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
 
     private final List<AsyncHandler<TransportMessage>> handlers = new ArrayList<>();
     private final BlockingQueue<Object> queue = new LinkedBlockingDeque<>();
+    private static final ListeningExecutorService sameThreadExecutor = MoreExecutors.sameThreadExecutor();
 
     static enum State {
 
@@ -246,6 +248,8 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
 
     @Override
     public ListenableFuture<TransportMessage> receive(ListeningExecutorService executor) {
+        if (executor == null)
+            executor = sameThreadExecutor;
         return executor.submit(new Callable<TransportMessage>() {
 
             @Override

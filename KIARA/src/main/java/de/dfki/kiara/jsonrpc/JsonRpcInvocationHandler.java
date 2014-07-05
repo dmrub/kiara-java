@@ -18,9 +18,12 @@
 package de.dfki.kiara.jsonrpc;
 
 import com.google.common.reflect.AbstractInvocationHandler;
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
+import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.WrappedRemoteException;
 import de.dfki.kiara.impl.SpecialMethods;
@@ -73,6 +76,28 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler {
                 }
 
                 return ro.result;
+            } else {
+                final TransportConnection tc = connection.getTransportConnection();
+                final Message request = protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
+                final TransportMessage transportRequest = tc.createRequest();
+                transportRequest.setContentType(protocol.getMimeType());
+                transportRequest.setPayload(request.getMessageData());
+                // send & wait
+                tc.send(transportRequest).get();
+                // receive
+                ListenableFuture<TransportMessage> responseFuture = tc.receive(null);
+                TransportMessage transportResponse = responseFuture.get();
+
+                Message response = protocol.createResponseMessageFromData(transportResponse.getPayload(), method);
+                Message.ResponseObject ro = response.getResponseObject();
+
+                if (ro.isException) {
+                    if (ro.result instanceof Exception)
+                        throw (Exception)ro.result;
+                    throw new WrappedRemoteException(ro.result);
+                }
+
+                return ro.result;
             }
 
             /*
@@ -82,11 +107,13 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler {
             System.out.println("Object: " + obj);
             */
 
+            /*
             if (method.getReturnType().equals(int.class)) {
                 return 0;
             }
 
             return null;
+            */
         }
 
         throw new UnsupportedOperationException("Unknown method: "+method);

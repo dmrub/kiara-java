@@ -46,7 +46,7 @@ public final class TransportRegistry {
         return getTransportByName(scheme);
     }
 
-    public static synchronized void registerTransport(Transport transport) {
-        transports.put(transport.getName(), transport);
+    public static synchronized void registerTransport(String transportName, Transport transport) {
+        transports.put(transportName, transport);
     }
 }

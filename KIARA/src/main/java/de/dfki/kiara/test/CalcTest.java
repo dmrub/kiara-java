@@ -46,13 +46,13 @@ public class CalcTest {
         try (Context context = Kiara.createContext();
              Connection connection = context.openConnection("http://localhost:8080/service")) {
 
-            MethodBinder<Calc> b =
+            MethodBinder<Calc> binder =
                     new MethodBinder<>(Calc.class)
                             .bind("calc.add", "add")
                             .bind("calc.add", "add_serializer")
                             .bind("calc.add", "add_deserializer");
 
-            Calc calc = connection.generateClientFunctions(b);
+            Calc calc = connection.generateClientFunctions(binder);
             RemoteInterface ri = (RemoteInterface)calc;
             Connection c = ri.getConnection();
 
@@ -62,13 +62,19 @@ public class CalcTest {
             msg = calc.add_serializer(2, 30);
             System.out.println("Message data: "+new String(msg.getMessageData().array()));
 
-            calc.add(10, 12);
+            int a = 3;
+            int b = 4;
+            int result = calc.add(a, b);
+            System.out.println("Performed remote call: "+a+"+"+b+" = "+result);
 
-            String res = "{\"jsonrpc\":2.0, \"result\": 22}";
+            String res = "{\"jsonrpc\":\"2.0\", \"result\": 22}";
             Message responseMsg = msg.getProtocol().createResponseMessageFromData(ByteBuffer.wrap(res.getBytes("UTF-8")),
                     Calc.class.getMethod("add_deserializer", new Class<?>[] { de.dfki.kiara.Message.class }));
-            int result = calc.add_deserializer(responseMsg);
-            System.out.println("Result: "+result);
+            result = calc.add_deserializer(responseMsg);
+            System.out.println("Result of deserialization of: "+res+" -> "+result);
+
+        } finally {
+            Kiara.shutdownGracefully();
         }
     }
 }

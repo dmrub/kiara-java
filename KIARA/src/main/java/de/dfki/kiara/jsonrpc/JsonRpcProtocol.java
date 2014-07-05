@@ -16,10 +16,14 @@
  */
 package de.dfki.kiara.jsonrpc;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.DoubleNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.InterfaceCodeGen;
@@ -41,10 +45,31 @@ import java.util.concurrent.atomic.AtomicLong;
 public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
 
     private Connection connection;
-    private AtomicLong nextId = new AtomicLong(1);
+    private final AtomicLong nextId;
+    private final ObjectMapper objectMapper;
+
+    private static com.fasterxml.jackson.databind.Module createSerializationModule() {
+        com.fasterxml.jackson.databind.Module module = new SimpleModule("JsonRpcModule",
+                new com.fasterxml.jackson.core.Version(1, 0, 0, null, null, null))
+                .addDeserializer(Void.TYPE, new JsonDeserializer<Void>() {
+
+                    @Override
+                    public Void deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+                        if (jp.getCurrentToken() == JsonToken.VALUE_NULL) {
+                            return null;
+                        }
+                        throw ctxt.wrongTokenException(jp, JsonToken.VALUE_NULL, "expected JSON null token");
+                    }
+
+                });
+        return module;
+    }
 
     public JsonRpcProtocol() {
-        this.connection = null;
+        connection = null;
+        nextId = new AtomicLong(1);
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(createSerializationModule());
     }
 
     public long getNextId() {
@@ -53,10 +78,12 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
 
     @Override
     public void initConnection(Connection connection) {
-        if (connection == null)
+        if (connection == null) {
             throw new IllegalArgumentException("connection can't be null");
-        if (this.connection != null)
+        }
+        if (this.connection != null) {
             throw new IllegalStateException("connection was already initialized");
+        }
         this.connection = connection;
     }
 
@@ -79,38 +106,45 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
      */
     @Override
     public Message createRequestMessageFromData(ByteBuffer data, Method method) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(new ByteBufferInputStream(data));
+        JsonNode node = objectMapper.readTree(new ByteBufferInputStream(data));
 
-        DoubleNode jsonrpcNode = ((DoubleNode)node.get("jsonrpc"));
-        if (jsonrpcNode == null)
+        JsonNode jsonrpcNode = node.get("jsonrpc");
+        if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
             throw new IOException("Not a jsonrpc protocol");
+        }
 
-        double version = jsonrpcNode.doubleValue();
-        if (version != 2.0)
+        if (!"2.0".equals(jsonrpcNode.textValue())) {
             throw new IOException("Not a jsonrpc 2.0");
+        }
 
-        TextNode methodNode = (TextNode)node.get("method");
-        if (methodNode == null)
+        JsonNode methodNode = node.get("method");
+        if (methodNode == null) {
             throw new IOException("No 'method' member in the request object");
+        }
+
+        if (!methodNode.isTextual()) {
+            throw new IOException("Member 'method' in request object is not a string");
+        }
 
         JsonNode paramsNode = node.get("params");
 
         Object[] args = null;
         if (paramsNode != null) {
-            if (!paramsNode.isArray() && !paramsNode.isObject())
+            if (!paramsNode.isArray() && !paramsNode.isObject()) {
                 throw new IOException("Member 'params' is neither array nor object");
+            }
 
             if (paramsNode.isArray()) {
                 Class<?>[] paramTypes = method.getParameterTypes();
 
-                if (paramTypes.length != paramsNode.size())
-                    throw new IOException("Member 'params' size is: "+paramsNode.size()+", required "+paramTypes.length);
+                if (paramTypes.length != paramsNode.size()) {
+                    throw new IOException("Member 'params' size is: " + paramsNode.size() + ", required " + paramTypes.length);
+                }
 
                 args = new Object[paramTypes.length];
 
                 for (int i = 0; i < paramsNode.size(); ++i) {
-                    args[i] = mapper.treeToValue(paramsNode.get(i), paramTypes[i]);
+                    args[i] = objectMapper.treeToValue(paramsNode.get(i), paramTypes[i]);
                 }
             } else {
                 throw new UnsupportedOperationException("Object is not supported as 'params' member");
@@ -120,12 +154,14 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         JsonNode idNode = node.get("id");
         Object id = null;
         if (idNode != null) {
-            if (!idNode.isTextual() && !idNode.isNumber() && !idNode.isNull())
+            if (!idNode.isTextual() && !idNode.isNumber() && !idNode.isNull()) {
                 throw new IOException("Invalid 'id' member");
-            if (idNode.isTextual())
+            }
+            if (idNode.isTextual()) {
                 id = idNode.textValue();
-            else if (idNode.isNumber())
+            } else if (idNode.isNumber()) {
                 id = idNode.numberValue();
+            }
         }
 
         return new JsonRpcMessage(this,
@@ -134,29 +170,30 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
 
     @Override
     public Message createResponseMessageFromData(ByteBuffer data, Method method) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(new ByteBufferInputStream(data));
+        JsonNode node = objectMapper.readTree(new ByteBufferInputStream(data));
 
-        DoubleNode jsonrpcNode = ((DoubleNode)node.get("jsonrpc"));
-        if (jsonrpcNode == null)
+        JsonNode jsonrpcNode = node.get("jsonrpc");
+        if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
             throw new IOException("Not a jsonrpc protocol");
+        }
 
-        double version = jsonrpcNode.doubleValue();
-        if (version != 2.0)
+        if (!"2.0".equals(jsonrpcNode.textValue())) {
             throw new IOException("Not a jsonrpc 2.0");
+        }
 
-        JsonNode resultNode = (JsonNode)node.get("result");
-        JsonNode errorNode = (JsonNode)node.get("error");
+        JsonNode resultNode = node.get("result");
+        JsonNode errorNode = node.get("error");
 
-        if (resultNode == null && errorNode == null)
+        if (resultNode == null && errorNode == null) {
             throw new IOException("Neither 'error' nor 'result' member in the response object");
+        }
 
         if (resultNode != null) {
             return new JsonRpcMessage(this,
                     new Message.ResponseObject(
-                            mapper.treeToValue(resultNode, method.getReturnType()), false));
+                            objectMapper.treeToValue(resultNode, method.getReturnType()), false));
         } else {
-            JsonRpcError error = mapper.treeToValue(errorNode, JsonRpcError.class);
+            JsonRpcError error = objectMapper.treeToValue(errorNode, JsonRpcError.class);
             return new JsonRpcMessage(this,
                     new Message.ResponseObject(
                             new GenericRemoteException("JSON-RPC Error", error.getCode(), error.getData()),
@@ -171,7 +208,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
 
     @Override
     public Message createResponseMessage(Message requestMessage) {
-        return new JsonRpcMessage((JsonRpcMessage)requestMessage, false);
+        return new JsonRpcMessage((JsonRpcMessage) requestMessage, false);
     }
 
     @Override
@@ -208,16 +245,14 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
                 Message.RequestObject ro = message.getRequestObject();
                 JsonRpcHeader header = new JsonRpcHeader(message.getMethodName(), ro.args, message.getId());
 
-                ObjectMapper mapper = new ObjectMapper();
-                buf = ByteBuffer.wrap(mapper.writeValueAsBytes(header));
+                buf = ByteBuffer.wrap(objectMapper.writeValueAsBytes(header));
             }
             break;
             case RESPONSE: {
                 Message.ResponseObject ro = message.getResponseObject();
                 JsonRpcHeader header = new JsonRpcHeader(ro.result, message.getId());
 
-                ObjectMapper mapper = new ObjectMapper();
-                buf = ByteBuffer.wrap(mapper.writeValueAsBytes(header));
+                buf = ByteBuffer.wrap(objectMapper.writeValueAsBytes(header));
             }
             break;
             case EXCEPTION: {
@@ -225,8 +260,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
                 // FIXME process errors correctly
                 JsonRpcHeader header = new JsonRpcHeader(ro.result, message.getId());
 
-                ObjectMapper mapper = new ObjectMapper();
-                buf = ByteBuffer.wrap(mapper.writeValueAsBytes(header));
+                buf = ByteBuffer.wrap(objectMapper.writeValueAsBytes(header));
             }
             break;
         }

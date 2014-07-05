@@ -18,7 +18,6 @@
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.Connection;
-import de.dfki.kiara.ConnectException;
 import de.dfki.kiara.Context;
 import java.io.IOException;
 

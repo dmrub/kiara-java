@@ -69,6 +69,7 @@ runServerClientBenchmark() {
 
     runBenchmark "$client"
     kill $ppid
+    sleep 1
 }
 
 if [ -n "$1" ]; then

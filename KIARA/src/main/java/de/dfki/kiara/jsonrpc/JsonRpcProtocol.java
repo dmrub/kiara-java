@@ -16,6 +16,7 @@
  */
 package de.dfki.kiara.jsonrpc;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
@@ -48,21 +49,35 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     private final AtomicLong nextId;
     private final ObjectMapper objectMapper;
 
-    private static com.fasterxml.jackson.databind.Module createSerializationModule() {
-        com.fasterxml.jackson.databind.Module module = new SimpleModule("JsonRpcModule",
-                new com.fasterxml.jackson.core.Version(1, 0, 0, null, null, null))
-                .addDeserializer(Void.TYPE, new JsonDeserializer<Void>() {
+    private static abstract class JsonRpcErrorMixIn {
 
-                    @Override
-                    public Void deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-                        if (jp.getCurrentToken() == JsonToken.VALUE_NULL) {
-                            return null;
-                        }
-                        throw ctxt.wrongTokenException(jp, JsonToken.VALUE_NULL, "expected JSON null token");
+        public JsonRpcErrorMixIn(@JsonProperty("code") int code, @JsonProperty("message") String message, @JsonProperty("data") Object data) {
+        }
+    }
+
+    private static class JsonRpcModule extends SimpleModule {
+
+        public JsonRpcModule() {
+            super("JsonRpcModule",
+                    new com.fasterxml.jackson.core.Version(1, 0, 0, null, null, null));
+            addDeserializer(Void.TYPE, new JsonDeserializer<Void>() {
+
+                @Override
+                public Void deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+                    if (jp.getCurrentToken() == JsonToken.VALUE_NULL) {
+                        return null;
                     }
+                    throw ctxt.wrongTokenException(jp, JsonToken.VALUE_NULL, "expected JSON null token");
+                }
 
-                });
-        return module;
+            });
+            setMixInAnnotation(JsonRpcError.class, JsonRpcErrorMixIn.class);
+        }
+
+    }
+
+    private static com.fasterxml.jackson.databind.Module createSerializationModule() {
+        return new JsonRpcModule();
     }
 
     public JsonRpcProtocol() {
@@ -196,7 +211,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
             JsonRpcError error = objectMapper.treeToValue(errorNode, JsonRpcError.class);
             return new JsonRpcMessage(this,
                     new Message.ResponseObject(
-                            new GenericRemoteException("JSON-RPC Error", error.getCode(), error.getData()),
+                            new GenericRemoteException(error.getMessage(), error.getCode(), error.getData()),
                             true));
         }
     }

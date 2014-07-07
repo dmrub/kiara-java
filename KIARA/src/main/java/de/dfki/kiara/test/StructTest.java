@@ -18,6 +18,7 @@ package de.dfki.kiara.test;
 
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
+import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.RemoteInterface;
@@ -100,6 +101,8 @@ public class StructTest {
         public Location getLocation();
 
         public void setLocation(Location location);
+
+        void throwException(int code, String message) throws GenericRemoteException;
     }
 
     public static void main(String[] args) throws Exception {
@@ -121,7 +124,8 @@ public class StructTest {
                     .bind("StructTest.getInteger", "getInteger")
                     .bind("StructTest.getString", "getString")
                     .bind("StructTest.setLocation", "setLocation")
-                    .bind("StructTest.getLocation", "getLocation");
+                    .bind("StructTest.getLocation", "getLocation")
+                    .bind("StructTest.throwException", "throwException");
 
             StructTestIface structTest = connection.generateClientFunctions(binder);
             RemoteInterface ri = (RemoteInterface) structTest;
@@ -161,6 +165,13 @@ public class StructTest {
                         location.rotation.v.y,
                         location.rotation.v.z);
             }
+
+            try {
+                structTest.throwException(1234, "error");
+            } catch (GenericRemoteException ex) {
+                System.err.format("Server exception raised: %d %s\n", ex.getErrorCode(), ex.getMessage());
+            }
+
         } finally {
             Kiara.shutdownGracefully();
         }

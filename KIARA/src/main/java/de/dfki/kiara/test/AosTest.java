@@ -31,6 +31,7 @@ import java.util.List;
 public class AosTest {
 
     public static class Vec3f {
+
         public float x;
         public float y;
         public float z;
@@ -95,15 +96,24 @@ public class AosTest {
     }
 
     public static void main(String[] args) throws Exception {
-        try (Context context = Kiara.createContext();
-                Connection connection = context.openConnection("http://localhost:8080/service")) {
+        String uri;
+        if (args.length > 0) {
+            uri = args[0];
+        } else {
+            uri = "http://localhost:8080/service";
+        }
 
-            MethodBinder<AosTest.GetSetLocations> binder
-                    = new MethodBinder<>(AosTest.GetSetLocations.class)
+        System.out.format("Opening connection to %s...\n", uri);
+
+        try (Context context = Kiara.createContext();
+                Connection connection = context.openConnection(uri)) {
+
+            MethodBinder<GetSetLocations> binder
+                    = new MethodBinder<>(GetSetLocations.class)
                     .bind("aostest.setLocations", "setLocations")
                     .bind("aostest.getLocations", "getLocations");
 
-            AosTest.GetSetLocations getSetLocations = connection.generateClientFunctions(binder);
+            GetSetLocations getSetLocations = connection.generateClientFunctions(binder);
             RemoteInterface ri = (RemoteInterface) getSetLocations;
             Connection c = ri.getConnection();
 

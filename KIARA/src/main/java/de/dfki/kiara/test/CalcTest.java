@@ -14,17 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.test;
 
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
-import de.dfki.kiara.Message;
 import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.RemoteInterface;
-import de.dfki.kiara.jsonrpc.JsonRpcMessage;
-import java.nio.ByteBuffer;
 
 /**
  *
@@ -33,45 +29,75 @@ import java.nio.ByteBuffer;
 public class CalcTest {
 
     public static interface Calc {
+
         public int add(int a, int b);
+
         public float addFloat(float a, float b);
+
         public int stringToInt32(String s);
+
         public String int32ToString(int i);
 
-        public de.dfki.kiara.Message add_serializer(int a, int b);
-        public int add_deserializer(de.dfki.kiara.Message msg);
+        public Integer stringToInt32_CharSequence(CharSequence s);
+
+        public CharSequence int32ToString_Integer(Integer i);
     }
 
     public static void main(String[] args) throws Exception {
-        try (Context context = Kiara.createContext();
-             Connection connection = context.openConnection("http://localhost:8080/service")) {
+        String uri;
+        if (args.length > 0) {
+            uri = args[0];
+        } else {
+            uri = "http://localhost:8080/service";
+        }
 
-            MethodBinder<Calc> binder =
-                    new MethodBinder<>(Calc.class)
-                            .bind("calc.add", "add")
-                            .bind("calc.add", "add_serializer")
-                            .bind("calc.add", "add_deserializer");
+        System.out.format("Opening connection to %s...\n", uri);
+
+        try (Context context = Kiara.createContext();
+                Connection connection = context.openConnection(uri)) {
+
+            MethodBinder<Calc> binder
+                    = new MethodBinder<>(Calc.class)
+                    .bind("calc.add", "add")
+                    .bind("calc.addf", "addFloat")
+                    .bind("calc.stringToInt32", "stringToInt32")
+                    .bind("calc.int32ToString", "int32ToString")
+                    .bind("calc.stringToInt32", "stringToInt32_CharSequence")
+                    .bind("calc.int32ToString", "int32ToString_Integer");
 
             Calc calc = connection.generateClientFunctions(binder);
-            RemoteInterface ri = (RemoteInterface)calc;
+            RemoteInterface ri = (RemoteInterface) calc;
             Connection c = ri.getConnection();
 
-            Message msg = calc.add_serializer(10, 12);
-            System.out.println("Message data: "+new String(msg.getMessageData().array()));
+            {
+                int result = calc.add(21, 32);
+                System.out.format("calc.add: result = %d\n", result);
+            }
 
-            msg = calc.add_serializer(2, 30);
-            System.out.println("Message data: "+new String(msg.getMessageData().array()));
+            {
+                float result = calc.addFloat(21, 32);
+                System.out.format("calc.addf: result = %f\n", result);
+            }
 
-            int a = 3;
-            int b = 4;
-            int result = calc.add(a, b);
-            System.out.println("Performed remote call: "+a+"+"+b+" = "+result);
+            {
+                int result = calc.stringToInt32("-125");
+                System.out.format("calc.stringToInt32: result = %d\n", result);
+            }
 
-            String res = "{\"jsonrpc\":\"2.0\", \"result\": 22}";
-            Message responseMsg = msg.getProtocol().createResponseMessageFromData(ByteBuffer.wrap(res.getBytes("UTF-8")),
-                    Calc.class.getMethod("add_deserializer", new Class<?>[] { de.dfki.kiara.Message.class }));
-            result = calc.add_deserializer(responseMsg);
-            System.out.println("Result of deserialization of: "+res+" -> "+result);
+            {
+                String result = calc.int32ToString(-42);
+                System.out.format("calc.int32ToString: result = %s\n", result);
+            }
+
+            {
+                Integer result = calc.stringToInt32_CharSequence("521");
+                System.out.format("calc.stringToInt32: result = %d\n", result);
+            }
+
+            {
+                CharSequence result = calc.int32ToString_Integer(new Integer(142));
+                System.out.format("calc.int32ToString: result = %s\n", result);
+            }
 
         } finally {
             Kiara.shutdownGracefully();

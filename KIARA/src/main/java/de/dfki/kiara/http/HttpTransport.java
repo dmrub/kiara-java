@@ -18,7 +18,7 @@ package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Kiara;
-import de.dfki.kiara.Service;
+import de.dfki.kiara.RunningService;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
@@ -42,7 +42,7 @@ import java.util.Map;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class HttpTransport implements Transport, Service {
+public class HttpTransport implements Transport, RunningService {
 
     private final EventLoopGroup group = new NioEventLoopGroup();
 

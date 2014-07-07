@@ -116,7 +116,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler {
             */
         }
 
-        throw new UnsupportedOperationException("Unknown method: "+method);
+        throw new UnsupportedOperationException("Unbound method: "+method);
     }
 
 }

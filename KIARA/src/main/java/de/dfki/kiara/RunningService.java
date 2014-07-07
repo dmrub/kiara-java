@@ -21,6 +21,6 @@ package de.dfki.kiara;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Service {
+public interface RunningService {
     public void shutdownGracefully();
 }

@@ -31,7 +31,7 @@ import java.util.List;
  */
 public class Kiara {
 
-    private static final List<Service> runningServices = new ArrayList<>();
+    private static final List<RunningService> runningServices = new ArrayList<>();
 
     static {
         // initialize protocols
@@ -52,24 +52,24 @@ public class Kiara {
         return new ContextImpl();
     }
 
-    public static void addRunningService(Service service) {
+    public static void addRunningService(RunningService service) {
         synchronized(runningServices) {
             runningServices.add(service);
         }
     }
 
-    public static void removeRunningService(Service service) {
+    public static void removeRunningService(RunningService service) {
         synchronized(runningServices) {
             runningServices.remove(service);
         }
     }
 
     public static void shutdownGracefully() {
-        List<Service> tmp;
+        List<RunningService> tmp;
         synchronized(runningServices) {
             tmp = new ArrayList<>(runningServices);
         }
-        for (Service s : tmp) {
+        for (RunningService s : tmp) {
             s.shutdownGracefully();
         }
     }

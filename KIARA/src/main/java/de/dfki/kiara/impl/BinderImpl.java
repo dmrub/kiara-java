@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 German Research Center for Artificial Intelligence (DFKI)
+ * Copyright (C) 2014 shahzad
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,16 +15,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara;
+package de.dfki.kiara.impl;
 
-import java.io.Closeable;
-import java.io.IOException;
+import de.dfki.kiara.Binder;
 
 /**
  *
- * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
+ * @author shahzad
  */
-public interface Context extends Closeable {
-    public Connection openConnection(String url) throws IOException;
-    public Server newServer();
+public class BinderImpl implements Binder{
+
+    @Override
+    public void bindServiceMethod(String idlString, Object serviceClass, String methodName) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Object getServiceMethod(String idlString) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
 }

@@ -19,6 +19,7 @@ package de.dfki.kiara.impl;
 
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
+import de.dfki.kiara.Server;
 import java.io.IOException;
 
 /**
@@ -34,6 +35,11 @@ public class ContextImpl implements Context {
 
     @Override
     public void close() throws IOException {
+    }
+
+    @Override
+    public Server newServer() {
+        return new ServerImpl();
     }
 
 }

@@ -17,14 +17,27 @@
 
 package de.dfki.kiara;
 
-import java.io.Closeable;
 import java.io.IOException;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Context extends Closeable {
-    public Connection openConnection(String url) throws IOException;
-    public Server newServer();
+public class AlreadyBoundException extends IOException {
+
+    public AlreadyBoundException() {
+    }
+
+    public AlreadyBoundException(String message) {
+        super(message);
+    }
+
+    public AlreadyBoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public AlreadyBoundException(Throwable cause) {
+        super(cause);
+    }
+
 }

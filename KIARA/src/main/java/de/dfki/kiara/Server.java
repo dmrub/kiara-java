@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 German Research Center for Artificial Intelligence (DFKI)
+ * Copyright (C) 2014 shahzad
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,14 +17,10 @@
 
 package de.dfki.kiara;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 /**
  *
- * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
+ * @author shahzad
  */
-public interface Context extends Closeable {
-    public Connection openConnection(String url) throws IOException;
-    public Server newServer();
+public interface Server {
+    public Service newService();
 }

@@ -38,8 +38,8 @@ public class ContextImpl implements Context {
     }
 
     @Override
-    public Server newServer() {
-        return new ServerImpl();
+    public Server newServer(String host, int port, String configPath) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

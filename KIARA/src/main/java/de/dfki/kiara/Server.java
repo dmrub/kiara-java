@@ -17,10 +17,14 @@
 
 package de.dfki.kiara;
 
+import java.io.IOException;
+
 /**
  *
  * @author shahzad
  */
 public interface Server {
     public Service newService();
+    public void addService(String path, String protocol, Service service);
+    public void run() throws IOException;
 }

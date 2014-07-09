@@ -26,5 +26,5 @@ import java.io.IOException;
  */
 public interface Context extends Closeable {
     public Connection openConnection(String url) throws IOException;
-    public Server newServer();
+    public Server newServer(String host, int port, String configPath);
 }

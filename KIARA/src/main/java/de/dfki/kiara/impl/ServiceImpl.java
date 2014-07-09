@@ -16,7 +16,7 @@
  */
 package de.dfki.kiara.impl;
 
-import de.dfki.kiara.AlreadyBoundException;
+import de.dfki.kiara.MethodAlreadyBoundException;
 import de.dfki.kiara.Binder;
 import de.dfki.kiara.IDLParseException;
 import de.dfki.kiara.Service;
@@ -49,21 +49,39 @@ public class ServiceImpl implements Service {
 
     /**
      *
-     * @param idlMethod
+     * @param idlMethodName
+     * @param serviceMethodName
      * @param serviceImpl
-     * @param serviceMethod
-     * @throws AlreadyBoundException
+     * @throws MethodAlreadyBoundException
      */
     @Override
-    public void registerServiceFunction(String idlMethod, Object serviceImpl, String serviceMethod) throws AlreadyBoundException{
-        if(binder.getServiceMethod(idlMethod) != null){
-            throw new AlreadyBoundException("Service method already bound");
+    public void registerServiceFunction(String idlMethodName, Object serviceImpl, String serviceMethodName) throws MethodAlreadyBoundException{
+        if(binder.getServiceMethod(idlMethodName) != null){
+            throw new MethodAlreadyBoundException("Service method already bound");
         }
-        binder.bindServiceMethod(idlMethod, serviceImpl, serviceMethod);
+        binder.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName);
+    }
+
+    /**
+    *
+    * @param idlMethodName
+    * @param serviceMethodName
+    * @param serviceImpl
+     * @param parameterTypes
+    * @throws MethodAlreadyBoundException
+    */
+
+    @Override
+    public void registerServiceFunction(String idlMethodName, Object serviceImpl,
+            String serviceMethodName,Class<?>... parameterTypes) throws MethodAlreadyBoundException {
+        if(binder.getServiceMethod(idlMethodName) != null){
+            throw new MethodAlreadyBoundException("Service method already bound");
+        }
+        binder.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName,parameterTypes);
     }
 
     @Override
-    public void removeBinding(String idlMethod) {
+    public void unregisterServiceFunction(String idlMethodName) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

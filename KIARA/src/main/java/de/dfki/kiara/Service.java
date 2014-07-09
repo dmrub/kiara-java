@@ -26,6 +26,9 @@ public interface Service {
     public void loadIDL(String fileName);
     public void loadServiceIDLFromString(String idlLanguage,String idlContents) throws IDLParseException;
     public String getIDLContents();
-    public void registerServiceFunction(String idlMethod, Object serviceImpl, String serviceMethod) throws AlreadyBoundException;
-    public void removeBinding(String idlMethod);
+    public void registerServiceFunction(String idlMethodName, Object serviceImpl,
+            String serviceMethodName) throws MethodAlreadyBoundException;
+    public void registerServiceFunction(String idlMethodName, Object serviceImpl,
+            String serviceMethodName,Class<?>... parameterTypes) throws MethodAlreadyBoundException;
+    public void unregisterServiceFunction(String idlMethodName);
 }

@@ -26,13 +26,17 @@ import de.dfki.kiara.Binder;
 public class BinderImpl implements Binder{
 
     @Override
-    public void bindServiceMethod(String idlString, Object serviceClass, String methodName) {
+    public void bindServiceMethod(String idlMethodName, Object serviceClass, String methodName) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Object getServiceMethod(String idlString) {
+    public void bindServiceMethod(String idlMethodName, Object serviceImpl, String serviceMethodName, Class<?>[] parameterTypes) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    @Override
+    public Object getServiceMethod(String idlMethodName) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }

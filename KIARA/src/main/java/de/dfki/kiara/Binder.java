@@ -22,6 +22,8 @@ package de.dfki.kiara;
  * @author shahzad
  */
 public interface Binder {
-    public void bindServiceMethod(String idlString,Object serviceClass,String methodName);
-    public Object getServiceMethod(String idlString); //TODO:need to add method
+    public void bindServiceMethod(String idlMethodName,Object serviceClass,String methodName);
+    public Object getServiceMethod(String idlMethodName); //TODO:need to add method
+
+    public void bindServiceMethod(String idlMethodName, Object serviceImpl, String serviceMethodName, Class<?>[] parameterTypes);
 }

@@ -29,13 +29,25 @@ import de.dfki.kiara.Service;
 public class CalcTestServer {
 
     public static void main(String[] args) throws Exception {
-        String port = "8080";
-        String protocol = "jsonrpc";
-        System.out.printf("Server port: %s\n", port);
+        int port;
+        String protocol;
+        if (args.length > 0) {
+            port = Integer.parseInt(args[0]);
+        } else {
+            port = 8080;
+        }
+        if (args.length > 1) {
+            protocol = args[1];
+        } else {
+            protocol = "jsonrpc";
+        }
+
+        System.out.printf("Server port: %i\n", port);
         System.out.printf("Protocol: %s\n", protocol);
         Service service = null;
+        Server server = null;
         try (Context context = Kiara.createContext()) {
-            Server server = context.newServer();
+            server = context.newServer("0.0.0.0", port, "/service");
             service = server.newService();
             service.loadServiceIDLFromString("KIARA",
                 "namespace * calc "+
@@ -52,11 +64,15 @@ public class CalcTestServer {
         }
         System.out.printf("Register calc.add ....\n");
         CalcImpl impl = new CalcImpl();
-        service.registerServiceFunction("calc.add", impl, "add");
-        service.registerServiceFunction("calc.addf", impl, "addFloat");
+        service.registerServiceFunction("calc.add", impl, "add", Integer.TYPE, Integer.TYPE);
+        service.registerServiceFunction("calc.addf", impl, "add", Float.TYPE, Float.TYPE);
         service.registerServiceFunction("calc.stringToInt32", impl,"stringToInt32");
         service.registerServiceFunction("calc.int32ToString", impl, "int32ToString");
-        
+        System.out.printf("Starting server...\n");
+
+        server.run();
+        Kiara.shutdownGracefully();
+
     }
 }
 
@@ -66,7 +82,7 @@ class CalcImpl {
         return a + b;
     }
 
-    public float addFloat(float a, float b) {
+    public float add(float a, float b) {
         return a + b;
     }
 

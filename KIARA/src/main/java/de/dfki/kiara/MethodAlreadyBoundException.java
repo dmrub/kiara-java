@@ -23,20 +23,20 @@ import java.io.IOException;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class AlreadyBoundException extends IOException {
+public class MethodAlreadyBoundException extends IOException {
 
-    public AlreadyBoundException() {
+    public MethodAlreadyBoundException() {
     }
 
-    public AlreadyBoundException(String message) {
+    public MethodAlreadyBoundException(String message) {
         super(message);
     }
 
-    public AlreadyBoundException(String message, Throwable cause) {
+    public MethodAlreadyBoundException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public AlreadyBoundException(Throwable cause) {
+    public MethodAlreadyBoundException(Throwable cause) {
         super(cause);
     }
 

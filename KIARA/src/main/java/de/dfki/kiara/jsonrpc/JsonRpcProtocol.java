@@ -112,6 +112,10 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         return "application/json";
     }
 
+    JsonNode parseMessageData(ByteBuffer data) throws IOException {
+        return objectMapper.readTree(new ByteBufferInputStream(data));
+    }
+
     /**
      *
      * @param data
@@ -122,7 +126,26 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     @Override
     public Message createRequestMessageFromData(ByteBuffer data, Method method) throws IOException {
         JsonNode node = objectMapper.readTree(new ByteBufferInputStream(data));
+        return createRequestMessageFromData(node, method);
+    }
 
+    public static Object parseMessageId(JsonNode messageNode) throws IOException {
+        JsonNode idNode = messageNode.get("id");
+        Object id = null;
+        if (idNode != null) {
+            if (!idNode.isTextual() && !idNode.isNumber() && !idNode.isNull()) {
+                throw new IOException("Invalid 'id' member");
+            }
+            if (idNode.isTextual()) {
+                id = idNode.textValue();
+            } else if (idNode.isNumber()) {
+                id = idNode.numberValue();
+            }
+        }
+        return id;
+    }
+
+    public JsonRpcMessage createRequestMessageFromData(JsonNode node, Method method) throws IOException {
         JsonNode jsonrpcNode = node.get("jsonrpc");
         if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
             throw new IOException("Not a jsonrpc protocol");
@@ -166,18 +189,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
             }
         }
 
-        JsonNode idNode = node.get("id");
-        Object id = null;
-        if (idNode != null) {
-            if (!idNode.isTextual() && !idNode.isNumber() && !idNode.isNull()) {
-                throw new IOException("Invalid 'id' member");
-            }
-            if (idNode.isTextual()) {
-                id = idNode.textValue();
-            } else if (idNode.isNumber()) {
-                id = idNode.numberValue();
-            }
-        }
+        Object id = parseMessageId(node);
 
         return new JsonRpcMessage(this,
                 new Message.RequestObject(methodNode.textValue(), args), id);
@@ -186,7 +198,10 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     @Override
     public Message createResponseMessageFromData(ByteBuffer data, Method method) throws IOException {
         JsonNode node = objectMapper.readTree(new ByteBufferInputStream(data));
+        return createResponseMessageFromData(node, method);
+    }
 
+    public JsonRpcMessage createResponseMessageFromData(JsonNode node, Method method) throws IOException {
         JsonNode jsonrpcNode = node.get("jsonrpc");
         if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
             throw new IOException("Not a jsonrpc protocol");
@@ -214,6 +229,24 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
                             new GenericRemoteException(error.getMessage(), error.getCode(), error.getData()),
                             true));
         }
+    }
+
+    public static boolean equalIds(Object id1, Object id2) {
+        if (id1 == id2)
+            return true;
+        if (id1 == null || id2 == null)
+            return false;
+
+        if (isIntegral(id1) && isIntegral(id2)) {
+            if (((Number)id1).longValue() == ((Number)id2).longValue()) {
+                return true;
+            }
+        }
+        return id1.equals(id2);
+    }
+
+    private static boolean isIntegral(Object obj) {
+        return obj instanceof Long || obj instanceof Integer || obj instanceof Short || obj instanceof Byte;
     }
 
     @Override

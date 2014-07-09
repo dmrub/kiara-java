@@ -21,7 +21,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import java.io.Closeable;
 import java.net.SocketAddress;
-import java.util.concurrent.Future;
 
 /**
  *
@@ -32,9 +31,26 @@ public interface TransportConnection extends Closeable {
     public SocketAddress getRemoteAddress();
 
     public TransportMessage createRequest();
-    public void addResponseHandler(AsyncHandler<TransportMessage> handler);
-    public void removeResponseHandler(AsyncHandler<TransportMessage> handler);
+
+    /** Handler is executed in the unspecified thread.
+     *
+     * @param handler
+     */
+    public void addResponseHandler(Handler<TransportMessage> handler);
+
+    /** Handler is executed in the unspecified thread.
+     *
+     * @param handler
+     * @return
+     */
+    public boolean removeResponseHandler(Handler<TransportMessage> handler);
 
     public ListenableFuture<Void> send(TransportMessage message);
+
+    /** Receive transport message which was not processed by all registered response handlers.
+     *
+     * @param executor
+     * @return
+     */
     public ListenableFuture<TransportMessage> receive(ListeningExecutorService executor);
 }

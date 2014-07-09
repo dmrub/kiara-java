@@ -15,13 +15,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara;
-import com.google.common.util.concurrent.FutureCallback;
+package de.dfki.kiara.jsonrpc;
+
+import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.util.Pipeline;
+import java.lang.reflect.Method;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
- * @param <T>
  */
-public interface AsyncHandler<T> extends FutureCallback<T> {
+public class JsonRpcMessageDecoder implements Pipeline.Handler {
+
+    private final JsonRpcProtocol protocol;
+
+    public JsonRpcMessageDecoder(JsonRpcProtocol protocol) {
+        this.protocol = protocol;
+    }
+
+    @Override
+    public Object process(Object input) throws Exception {
+        if (!(input instanceof TransportMessage))
+            throw new IllegalArgumentException();
+        TransportMessage response = (TransportMessage)input;
+        return protocol.parseMessageData(response.getPayload());
+    }
+
 }

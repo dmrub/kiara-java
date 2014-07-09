@@ -19,7 +19,7 @@ package de.dfki.kiara.http;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import de.dfki.kiara.AsyncHandler;
+import de.dfki.kiara.Handler;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -69,7 +69,7 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
     private final HttpMethod method;
     private volatile Channel channel;
 
-    private final List<AsyncHandler<TransportMessage>> handlers = new ArrayList<>();
+    private final List<Handler<TransportMessage>> handlers = new ArrayList<>();
     private final BlockingQueue<Object> queue = new LinkedBlockingDeque<>();
     private static final ListeningExecutorService sameThreadExecutor = MoreExecutors.sameThreadExecutor();
 
@@ -164,23 +164,36 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
-        if (handlers.isEmpty()) {
-            queue.add(response);
-        } else {
-            for (AsyncHandler<TransportMessage> handler : handlers) {
-                handler.onSuccess(response);
+
+        synchronized (handlers) {
+            if (!handlers.isEmpty()) {
+                for (Handler<TransportMessage> handler : handlers) {
+                    if (handler.onSuccess(response)) {
+                        return;
+                    }
+                }
             }
         }
+
+        queue.add(response);
     }
 
     public void onErrorResponse(Throwable error) {
-        if (handlers.isEmpty()) {
-            queue.add(error);
-        } else {
-            for (AsyncHandler<TransportMessage> handler : handlers) {
-                handler.onFailure(error);
+        if (logger.isDebugEnabled()) {
+            logger.debug("RECEIVED ERROR {}", error);
+        }
+
+        synchronized (handlers) {
+            if (!handlers.isEmpty()) {
+                for (Handler<TransportMessage> handler : handlers) {
+                    if (handler.onFailure(error)) {
+                        return;
+                    }
+                }
             }
         }
+
+        queue.add(error);
     }
 
     public void closeChannel() {
@@ -213,13 +226,24 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
     }
 
     @Override
-    public void addResponseHandler(AsyncHandler<TransportMessage> handler) {
-        handlers.add(handler);
+    public void addResponseHandler(Handler<TransportMessage> handler) {
+        if (handler == null) {
+            throw new NullPointerException("handler");
+        }
+        synchronized (handlers) {
+            handlers.add(handler);
+        }
     }
 
     @Override
-    public void removeResponseHandler(AsyncHandler<TransportMessage> handler) {
-        handlers.remove(handler);
+    public boolean removeResponseHandler(Handler<TransportMessage> handler) {
+        if (handler == null) {
+            return false;
+        }
+        synchronized (handlers) {
+            handlers.remove(handler);
+        }
+        return false;
     }
 
     @Override
@@ -248,8 +272,9 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
 
     @Override
     public ListenableFuture<TransportMessage> receive(ListeningExecutorService executor) {
-        if (executor == null)
+        if (executor == null) {
             executor = sameThreadExecutor;
+        }
         return executor.submit(new Callable<TransportMessage>() {
 
             @Override
@@ -282,8 +307,7 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
             return;
         }
 
-        System.err.println("state: " + state);
-        System.err.println("channel: " + channel);
+        logger.debug("Closing transport connection state={} channel={}", state, channel);
 
         state = State.WAIT_CLOSE;
         closeChannel();

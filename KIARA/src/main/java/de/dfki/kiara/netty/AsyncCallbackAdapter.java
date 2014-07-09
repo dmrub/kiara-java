@@ -17,7 +17,7 @@
 
 package de.dfki.kiara.netty;
 
-import de.dfki.kiara.AsyncHandler;
+import de.dfki.kiara.Handler;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -26,9 +26,9 @@ import io.netty.util.concurrent.GenericFutureListener;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class AsyncCallbackAdapter implements GenericFutureListener<ChannelFuture> {
-    private final AsyncHandler<Void> callback;
+    private final Handler<Void> callback;
 
-    public AsyncCallbackAdapter(AsyncHandler<Void> callback) {
+    public AsyncCallbackAdapter(Handler<Void> callback) {
         if (callback == null)
             throw new NullPointerException("callback");
         this.callback = callback;

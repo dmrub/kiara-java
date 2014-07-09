@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.test;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -22,6 +21,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionReceiver;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportRegistry;
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class TransportTest2 {
     //private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(10));
     private static final ListeningExecutorService executor = MoreExecutors.sameThreadExecutor();
 
-    private static void closeAll(TransportConnection c) {
+    private static void closeAll(TransportConnectionReceiver c) {
         try {
             c.close();
         } catch (IOException ex) {
@@ -62,21 +62,23 @@ public class TransportTest2 {
         Transport http = TransportRegistry.getTransportByName("http");
         // GET http://localhost:8080/service
         // POST http://localhost:8080/rpc/calc
-        final TransportConnection c = http.openConnection("http://localhost:8080/rpc/calc", null).get();
-        TransportMessage msg = c.createRequest();
+        final TransportConnection tc = http.openConnection("http://localhost:8080/rpc/calc", null).get();
+        final TransportConnectionReceiver rc = new TransportConnectionReceiver(tc);
+
+        TransportMessage msg = rc.createRequest();
         String request = "{\"jsonrpc\":\"2.0\",\"method\":\"calc.add\",\"params\":[1,2],\"id\":1}";
         msg.setPayload(ByteBuffer.wrap(request.getBytes("UTF-8")));
         msg.setContentType("application/json");
         msg.setSessionId("SID1");
 
-        c.send(msg).get();
+        rc.send(msg).get();
         System.err.println("Message #1 sent");
 
-        TransportMessage response = c.receive(executor).get();
+        TransportMessage response = rc.receive(executor).get();
         System.err.println("Message #1 received");
         printMessage(response);
 
-        msg = c.createRequest();
+        msg = rc.createRequest();
         request = "{\"jsonrpc\":\"2.0\",\"method\":\"calc.add\",\"params\":[3,4],\"id\":2}";
         try {
             msg.setPayload(ByteBuffer.wrap(request.getBytes("UTF-8")));
@@ -86,13 +88,13 @@ public class TransportTest2 {
         }
         msg.setContentType("application/json");
 
-        c.send(msg).get();
+        rc.send(msg).get();
         System.err.println("Message #2 sent");
 
-        response = c.receive(executor).get();
+        response = rc.receive(executor).get();
         System.err.println("Message #2 received");
         printMessage(response);
 
-        closeAll(c);
+        closeAll(rc);
     }
 }

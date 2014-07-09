@@ -14,10 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.jsonrpc;
 
-import de.dfki.kiara.jsonrpc.JsonRpcHeader;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -38,8 +36,9 @@ public class JsonRpcHeaderSerializer extends JsonSerializer<JsonRpcHeader> {
             jgen.writeStringField("jsonrpc", "2.0");
             jgen.writeStringField("method", value.getMethod());
             jgen.writeObjectField("params", value.getParams());
-            if (value.getId() != null)
+            if (value.getId() != null) {
                 jgen.writeObjectField("id", value.getId());
+            }
             jgen.writeEndObject();
         } else {
             jgen.writeStartObject();
@@ -49,8 +48,9 @@ public class JsonRpcHeaderSerializer extends JsonSerializer<JsonRpcHeader> {
             } else {
                 jgen.writeObjectField("error", value.getError());
             }
-            if (value.getId() != null)
+            if (value.getId() != null) {
                 jgen.writeObjectField("id", value.getId());
+            }
             jgen.writeEndObject();
         }
     }

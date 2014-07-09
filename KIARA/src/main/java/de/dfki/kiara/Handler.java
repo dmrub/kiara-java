@@ -14,38 +14,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package de.dfki.kiara;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
+ * @param <V>
  */
-public class WrappedRemoteException extends RemoteException {
+public interface Handler<V> {
 
-    private final Object errorObject;
+    /**
+     * Invoked with the result of the computation when it is
+     * successful. Returns true when result is processed, and false otherwise.
+     *
+     * @param result
+     * @return
+     */
+    public boolean onSuccess(V result);
 
-    public WrappedRemoteException(Object errorObject) {
-        super();
-        this.errorObject = errorObject;
-    }
-
-    public WrappedRemoteException(Object errorObject, String message) {
-        super(message);
-        this.errorObject = errorObject;
-    }
-
-    public WrappedRemoteException(Object errorObject, String message, Throwable cause) {
-        super(message, cause);
-        this.errorObject = errorObject;
-    }
-
-    public WrappedRemoteException(Object errorObject, Throwable cause) {
-        super(cause);
-        this.errorObject = errorObject;
-    }
-
-    public Object getErrorObject() {
-        return errorObject;
-    }
-
+    /**
+     * Invoked when a computation fails or is canceled.
+     * Returns true when result is processed, and false otherwise.
+     *
+     * @param t
+     * @return
+     */
+    public boolean onFailure(Throwable t);
 }

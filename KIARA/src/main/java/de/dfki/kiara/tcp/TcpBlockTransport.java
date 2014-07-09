@@ -18,7 +18,7 @@
 package de.dfki.kiara.tcp;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import de.dfki.kiara.AsyncHandler;
+import de.dfki.kiara.Handler;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;

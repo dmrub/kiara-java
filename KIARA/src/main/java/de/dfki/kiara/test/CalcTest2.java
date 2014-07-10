@@ -24,6 +24,7 @@ import de.dfki.kiara.Message;
 import de.dfki.kiara.MethodBinder;
 import de.dfki.kiara.RemoteInterface;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
 /**
  *
@@ -32,7 +33,7 @@ import java.nio.ByteBuffer;
 public class CalcTest2 {
 
     public static interface Calc {
-        public int add(int a, int b);
+        public Future<Integer> add(int a, int b);
         public float addFloat(float a, float b);
         public int stringToInt32(String s);
         public String int32ToString(int i);
@@ -63,7 +64,7 @@ public class CalcTest2 {
 
             int a = 3;
             int b = 4;
-            int result = calc.add(a, b);
+            int result = calc.add(a, b).get();
             System.out.println("Performed remote call: "+a+"+"+b+" = "+result);
 
             String res = "{\"jsonrpc\":\"2.0\", \"result\": 22}";

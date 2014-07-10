@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionReceiver;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportRegistry;
 import java.io.IOException;
@@ -67,36 +68,8 @@ public class TransportTest {
         Transport http = TransportRegistry.getTransportByName("http");
         // GET http://localhost:8080/service
         // POST http://localhost:8080/rpc/calc
-        final TransportConnection c = http.openConnection("http://localhost:8080/rpc/calc", null).get();
+        final TransportConnectionReceiver c = new TransportConnectionReceiver(http.openConnection("http://localhost:8080/rpc/calc", null).get());
 
-        /*
-         c.addResponseHandler(new AsyncHandler<TransportMessage>() {
-
-         private int i = 0;
-
-         @Override
-         public void onSuccess(TransportMessage result) {
-         String content = new String(result.getPayload().array(), result.getPayload().arrayOffset(), result.getPayload().remaining());
-         System.err.println("#" + i + " Received content (type=" + result.getContentType() + "): " + content);
-
-         i++;
-         if (i > 1) {
-         System.err.println("Shutdown");
-         try {
-         c.close();
-         } catch (IOException ex) {
-         ex.printStackTrace();
-         } finally {
-         Kiara.shutdownGracefully();
-         }
-         }
-         }
-
-         @Override
-         public void onFailure(Throwable error) {
-         }
-         });
-         */
         TransportMessage msg = c.createRequest();
         String request = "{\"jsonrpc\":\"2.0\",\"method\":\"calc.add\",\"params\":[1,2],\"id\":1}";
         msg.setPayload(ByteBuffer.wrap(request.getBytes("UTF-8")));
@@ -143,26 +116,6 @@ public class TransportTest {
                     }
 
                 });
-
-                /*
-                 try {
-                 TransportMessage response = c.receive().get();
-                 printMessage(response);
-                 } catch (InterruptedException ex) {
-                 ex.printStackTrace();
-                 } catch (ExecutionException ex) {
-                 ex.printStackTrace();
-                 }
-                 */
-                /*
-                 try {
-                 c.close();
-                 } catch (IOException ex) {
-                 ex.printStackTrace();
-                 } finally {
-                 Kiara.shutdownGracefully();
-                 }
-                 */
             }
 
             @Override

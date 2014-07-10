@@ -47,10 +47,4 @@ public interface TransportConnection extends Closeable {
 
     public ListenableFuture<Void> send(TransportMessage message);
 
-    /** Receive transport message which was not processed by all registered response handlers.
-     *
-     * @param executor
-     * @return
-     */
-    public ListenableFuture<TransportMessage> receive(ListeningExecutorService executor);
 }

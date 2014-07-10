@@ -30,6 +30,7 @@ import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.RunningService;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionReceiver;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.WrappedRemoteException;
@@ -40,6 +41,9 @@ import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -53,6 +57,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
     //private static final ListeningExecutorService executor = MoreExecutors.sameThreadExecutor();
     private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(10));
     private static final ListeningExecutorService sameThreadExecutor = MoreExecutors.sameThreadExecutor();
+    private static final Logger logger = LoggerFactory.getLogger(JsonRpcInvocationHandler.class);
 
     private final Pipeline pipeline;
 
@@ -75,7 +80,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
     }
 
     public static ListenableFuture<TransportMessage> performAsyncCall(TransportMessage request, final ListeningExecutorService executor) {
-        final TransportConnection connection = request.getConnection();
+        final TransportConnectionReceiver connection = new TransportConnectionReceiver(request.getConnection());
         ListenableFuture<Void> reqSent = connection.send(request);
         AsyncFunction<Void, TransportMessage> f = new AsyncFunction<Void, TransportMessage>() {
 
@@ -110,7 +115,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
     }
 
     public Message performSyncCall(Message request, Method method) throws InterruptedException, ExecutionException, IOException {
-        final TransportConnection tc = connection.getTransportConnection();
+        final TransportConnectionReceiver tc = new TransportConnectionReceiver(connection.getTransportConnection());
         final TransportMessage transportRequest = tc.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
         transportRequest.setPayload(request.getMessageData());
@@ -219,13 +224,26 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
 
     @Override
     public boolean onSuccess(TransportMessage result) {
-        pipeline.process(result);
+        try {
+            Object processResult = pipeline.process(result);
+            if (processResult != null) {
+                logger.warn("Unprocessed JSON-RPC transport message: {}: {}", processResult.getClass(), processResult);
+            }
+        } catch (Exception ex) {
+            logger.error("Pipeline processing failed: {}", ex);
+        }
         return true;
+
     }
 
     @Override
     public boolean onFailure(Throwable t) {
-        pipeline.processException(t);
+        try {
+            pipeline.process(t);
+            return true;
+        } catch (Exception ex) {
+            logger.error("Pipeline processing failed: {}", ex);
+        }
         return true;
     }
 

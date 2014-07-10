@@ -18,6 +18,7 @@ package de.dfki.kiara.jsonrpc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import de.dfki.kiara.util.Pipeline;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -31,7 +32,7 @@ public class JsonRpcMessageDispatcher implements Pipeline.Handler {
     private final JsonRpcProtocol protocol;
     private final Object messageId;
     private final Method method;
-    private final BlockingQueue<JsonRpcMessage> messageQueue;
+    private final BlockingQueue<Object> messageQueue;
 
     JsonRpcMessageDispatcher(JsonRpcProtocol protocol, Object messageId, Method method) {
         this.protocol = protocol;
@@ -40,7 +41,7 @@ public class JsonRpcMessageDispatcher implements Pipeline.Handler {
         this.messageQueue = new ArrayBlockingQueue<>(1);
     }
 
-    public BlockingQueue<JsonRpcMessage> getQueue() {
+    public BlockingQueue<Object> getQueue() {
         return messageQueue;
     }
 
@@ -54,8 +55,12 @@ public class JsonRpcMessageDispatcher implements Pipeline.Handler {
         Object id = JsonRpcProtocol.parseMessageId(node);
 
         if (JsonRpcProtocol.equalIds(id, messageId)) {
-            JsonRpcMessage message = protocol.createResponseMessageFromData(node, method);
-            messageQueue.add(message);
+            try {
+                JsonRpcMessage message = protocol.createResponseMessageFromData(node, method);
+                messageQueue.add(message);
+            } catch (IOException ex) {
+                messageQueue.add(ex);
+            }
             return null; // stop processing
         }
         return input;

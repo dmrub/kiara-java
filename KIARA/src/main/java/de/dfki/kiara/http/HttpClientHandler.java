@@ -70,8 +70,6 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
     private volatile Channel channel;
 
     private final List<Handler<TransportMessage>> handlers = new ArrayList<>();
-    private final BlockingQueue<Object> queue = new LinkedBlockingDeque<>();
-    private static final ListeningExecutorService sameThreadExecutor = MoreExecutors.sameThreadExecutor();
 
     static enum State {
 
@@ -174,8 +172,6 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
                 }
             }
         }
-
-        queue.add(response);
     }
 
     public void onErrorResponse(Throwable error) {
@@ -192,8 +188,6 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
                 }
             }
         }
-
-        queue.add(error);
     }
 
     public void closeChannel() {
@@ -268,37 +262,6 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
 
         ChannelFuture result = channel.writeAndFlush(request);
         return new ListenableConstantFutureAdapter<>(result, null);
-    }
-
-    @Override
-    public ListenableFuture<TransportMessage> receive(ListeningExecutorService executor) {
-        if (executor == null) {
-            executor = sameThreadExecutor;
-        }
-        return executor.submit(new Callable<TransportMessage>() {
-
-            @Override
-            public TransportMessage call() throws Exception {
-                boolean interrupted = false;
-                try {
-                    for (;;) {
-                        try {
-                            Object value = queue.take();
-                            if (value instanceof Exception) {
-                                throw (Exception) value;
-                            }
-                            return (TransportMessage) value;
-                        } catch (InterruptedException ignore) {
-                            interrupted = true;
-                        }
-                    }
-                } finally {
-                    if (interrupted) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }
-        });
     }
 
     @Override

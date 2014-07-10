@@ -19,7 +19,6 @@ package de.dfki.kiara;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.concurrent.BlockingQueue;
@@ -30,7 +29,7 @@ import java.util.concurrent.LinkedBlockingDeque;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class TransportConnectionReceiver implements Handler<TransportMessage>, Closeable {
+public class TransportConnectionReceiver implements Handler<TransportMessage>, TransportConnection {
 
     private final TransportConnection connection;
     private final BlockingQueue<Object> queue = new LinkedBlockingDeque<>();
@@ -48,18 +47,22 @@ public class TransportConnectionReceiver implements Handler<TransportMessage>, C
         return connection;
     }
 
+    @Override
     public SocketAddress getLocalAddress() {
         return connection.getLocalAddress();
     }
 
+    @Override
     public SocketAddress getRemoteAddress() {
         return connection.getRemoteAddress();
     }
 
+    @Override
     public TransportMessage createRequest() {
         return connection.createRequest();
     }
 
+    @Override
     public ListenableFuture<Void> send(TransportMessage message) {
         return connection.send(message);
     }
@@ -109,5 +112,15 @@ public class TransportConnectionReceiver implements Handler<TransportMessage>, C
     @Override
     public void close() throws IOException {
         connection.close();
+    }
+
+    @Override
+    public void addResponseHandler(Handler<TransportMessage> handler) {
+        connection.addResponseHandler(handler);
+    }
+
+    @Override
+    public boolean removeResponseHandler(Handler<TransportMessage> handler) {
+        return connection.removeResponseHandler(handler);
     }
 }

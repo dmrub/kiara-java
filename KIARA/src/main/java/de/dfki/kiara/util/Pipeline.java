@@ -16,8 +16,11 @@
  */
 package de.dfki.kiara.util;
 
+import de.dfki.kiara.jsonrpc.JsonRpcInvocationHandler;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -30,13 +33,7 @@ public class Pipeline {
         Object process(Object input) throws Exception;
     }
 
-    public static interface ExceptionHandler {
-
-        void exceptionCaught(Throwable t);
-    }
-
     private final List<Handler> handlers = new ArrayList<>();
-    private final List<ExceptionHandler> exceptionHandlers = new ArrayList<>();
 
     public void addHandler(Handler handler) {
         synchronized (handlers) {
@@ -50,40 +47,15 @@ public class Pipeline {
         }
     }
 
-    public void addExceptionHandler(ExceptionHandler handler) {
-        synchronized (exceptionHandlers) {
-            exceptionHandlers.add(handler);
-        }
-    }
-
-    public void removeExceptionHandler(ExceptionHandler handler) {
-        synchronized (exceptionHandlers) {
-            exceptionHandlers.remove(handler);
-        }
-    }
-
-    public void processException(Throwable t) {
-        synchronized (exceptionHandlers) {
-            for (ExceptionHandler eh : exceptionHandlers) {
-                eh.exceptionCaught(t);
-            }
-        }
-    }
-
-    public Object process(Object input) {
-        try {
-            synchronized (handlers) {
-                for (Handler handler : handlers) {
-                    input = handler.process(input);
-                    if (input == null) {
-                        break;
-                    }
+    public Object process(Object input) throws Exception {
+        synchronized (handlers) {
+            for (Handler handler : handlers) {
+                input = handler.process(input);
+                if (input == null) {
+                    break;
                 }
-                return input;
             }
-        } catch (Exception e) {
-            processException(e);
+            return input;
         }
-        return null;
     }
 }

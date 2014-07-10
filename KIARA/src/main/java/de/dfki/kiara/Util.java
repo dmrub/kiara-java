@@ -14,18 +14,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara;
 
+import com.google.common.reflect.TypeToken;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.concurrent.Future;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public final class Util {
+
+    private static final TypeToken<Future<?>> futureTok = new TypeToken<Future<?>>() {
+    };
+
     private Util() {
 
+    }
+
+    public static Type getFutureParameterType(java.lang.reflect.Type type) {
+        if (!(type instanceof ParameterizedType)) {
+            return null;
+        }
+        ParameterizedType ptype = (ParameterizedType) type;
+        return futureTok.isAssignableFrom(ptype) ? ptype.getActualTypeArguments()[0] : null;
+    }
+
+    public static Class<?> toClass(java.lang.reflect.Type type) {
+        if (type instanceof ParameterizedType)
+            return (Class<?>)((ParameterizedType)type).getRawType();
+        if (type instanceof Class)
+            return (Class<?>)type;
+        return null;
     }
 
     public static boolean isSerializer(Method method) {
@@ -36,4 +59,5 @@ public final class Util {
         final Class<?>[] paramTypes = method.getParameterTypes();
         return paramTypes.length == 1 && paramTypes[0].equals(de.dfki.kiara.Message.class);
     }
+
 }

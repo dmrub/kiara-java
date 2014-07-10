@@ -31,13 +31,13 @@ public class JsonRpcMessageDispatcher implements Pipeline.Handler {
 
     private final JsonRpcProtocol protocol;
     private final Object messageId;
-    private final Method method;
+    private final Class<?> returnType;
     private final BlockingQueue<Object> messageQueue;
 
-    JsonRpcMessageDispatcher(JsonRpcProtocol protocol, Object messageId, Method method) {
+    JsonRpcMessageDispatcher(JsonRpcProtocol protocol, Object messageId, Class<?> returnType) {
         this.protocol = protocol;
         this.messageId = messageId;
-        this.method = method;
+        this.returnType = returnType;
         this.messageQueue = new ArrayBlockingQueue<>(1);
     }
 
@@ -56,7 +56,7 @@ public class JsonRpcMessageDispatcher implements Pipeline.Handler {
 
         if (JsonRpcProtocol.equalIds(id, messageId)) {
             try {
-                JsonRpcMessage message = protocol.createResponseMessageFromData(node, method);
+                JsonRpcMessage message = protocol.createResponseMessageFromData(node, returnType);
                 messageQueue.add(message);
             } catch (IOException ex) {
                 messageQueue.add(ex);

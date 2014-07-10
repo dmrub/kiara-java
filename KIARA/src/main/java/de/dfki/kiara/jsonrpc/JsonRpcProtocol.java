@@ -34,7 +34,6 @@ import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RemoteInterface;
 import de.dfki.kiara.util.ByteBufferInputStream;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
@@ -119,14 +118,14 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     /**
      *
      * @param data
-     * @param method
+     * @param paramTypes
      * @return
      * @throws IOException
      */
     @Override
-    public Message createRequestMessageFromData(ByteBuffer data, Method method) throws IOException {
+    public Message createRequestMessageFromData(ByteBuffer data, Class<?>[] paramTypes) throws IOException {
         JsonNode node = objectMapper.readTree(new ByteBufferInputStream(data));
-        return createRequestMessageFromData(node, method);
+        return createRequestMessageFromData(node, paramTypes);
     }
 
     public static Object parseMessageId(JsonNode messageNode) throws IOException {
@@ -145,7 +144,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         return id;
     }
 
-    public JsonRpcMessage createRequestMessageFromData(JsonNode node, Method method) throws IOException {
+    public JsonRpcMessage createRequestMessageFromData(JsonNode node, Class<?>[] paramTypes) throws IOException {
         JsonNode jsonrpcNode = node.get("jsonrpc");
         if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
             throw new IOException("Not a jsonrpc protocol");
@@ -173,8 +172,6 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
             }
 
             if (paramsNode.isArray()) {
-                Class<?>[] paramTypes = method.getParameterTypes();
-
                 if (paramTypes.length != paramsNode.size()) {
                     throw new IOException("Member 'params' size is: " + paramsNode.size() + ", required " + paramTypes.length);
                 }
@@ -196,12 +193,12 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createResponseMessageFromData(ByteBuffer data, Method method) throws IOException {
+    public Message createResponseMessageFromData(ByteBuffer data, Class<?> returnType) throws IOException {
         JsonNode node = objectMapper.readTree(new ByteBufferInputStream(data));
-        return createResponseMessageFromData(node, method);
+        return createResponseMessageFromData(node, returnType);
     }
 
-    public JsonRpcMessage createResponseMessageFromData(JsonNode node, Method method) throws IOException {
+    public JsonRpcMessage createResponseMessageFromData(JsonNode node, Class<?> returnType) throws IOException {
         JsonNode jsonrpcNode = node.get("jsonrpc");
         if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
             throw new IOException("Not a jsonrpc protocol");
@@ -221,7 +218,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         if (resultNode != null) {
             return new JsonRpcMessage(this,
                     new Message.ResponseObject(
-                            objectMapper.treeToValue(resultNode, method.getReturnType()), false));
+                            objectMapper.treeToValue(resultNode, returnType), false));
         } else {
             JsonRpcError error = objectMapper.treeToValue(errorNode, JsonRpcError.class);
             return new JsonRpcMessage(this,

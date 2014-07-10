@@ -72,7 +72,7 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createRequestMessageFromData(ByteBuffer data, Method method) throws IOException {
+    public Message createRequestMessageFromData(ByteBuffer data, Class<?>[] paramTypes) throws IOException {
         ByteBufferInputStream is = new ByteBufferInputStream(data);
         ObjectInputStream ois = new ObjectInputStream(is);
         byte requestCode = ois.readByte();
@@ -93,7 +93,7 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createResponseMessageFromData(ByteBuffer data, Method method) throws IOException {
+    public Message createResponseMessageFromData(ByteBuffer data, Class<?> returnType) throws IOException {
         ByteBufferInputStream is = new ByteBufferInputStream(data);
         ObjectInputStream ois = new ObjectInputStream(is);
         byte responseCode = ois.readByte();

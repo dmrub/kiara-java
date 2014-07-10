@@ -41,7 +41,6 @@ import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
     private final InterfaceMapping<?> interfaceMapping;
     private final JsonRpcProtocol protocol;
     //private static final ListeningExecutorService executor = MoreExecutors.sameThreadExecutor();
-    private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(10));
+    private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
     private static final ListeningExecutorService sameThreadExecutor = MoreExecutors.sameThreadExecutor();
     private static final Logger logger = LoggerFactory.getLogger(JsonRpcInvocationHandler.class);
 
@@ -104,7 +103,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
             @Override
             public Message apply(TransportMessage input) {
                 try {
-                    return protocol.createResponseMessageFromData(input.getPayload(), method);
+                    return protocol.createResponseMessageFromData(input.getPayload(), method.getReturnType());
                 } catch (IOException ex) {
                     return null;
                 }
@@ -126,15 +125,15 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
         ListenableFuture<TransportMessage> responseFuture = tc.receive(null);
         TransportMessage transportResponse = responseFuture.get();
 
-        return protocol.createResponseMessageFromData(transportResponse.getPayload(), method);
+        return protocol.createResponseMessageFromData(transportResponse.getPayload(), method.getReturnType());
     }
 
-    public ListenableFuture<Message> performAsyncCall2(final Message request, final Method method, ListeningExecutorService executor) throws IOException {
+    public ListenableFuture<Message> performAsyncCall2(final Message request, final Class<?> returnType, ListeningExecutorService executor) throws IOException {
         final TransportConnection tc = connection.getTransportConnection();
         final TransportMessage transportRequest = tc.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
         transportRequest.setPayload(request.getMessageData());
-        final JsonRpcMessageDispatcher dispatcher = new JsonRpcMessageDispatcher(protocol, ((JsonRpcMessage) request).getId(), method);
+        final JsonRpcMessageDispatcher dispatcher = new JsonRpcMessageDispatcher(protocol, ((JsonRpcMessage) request).getId(), returnType);
         pipeline.addHandler(dispatcher);
 
         ListenableFuture<Void> reqSent = tc.send(transportRequest);
@@ -189,6 +188,12 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
             throw new UnsupportedOperationException("Unbound method: " + method);
         }
 
+        // check for Future<?>
+        logger.debug("Method return type {}: {}", method.getGenericReturnType().getClass(), method.getGenericReturnType());
+        java.lang.reflect.Type genericReturnType = method.getGenericReturnType();
+        java.lang.reflect.Type futureReturnParamType = genericReturnType != null ? Util.getFutureParameterType(genericReturnType) : null;
+        logger.debug("Future return parameter: {}", futureReturnParamType);
+
         if (Util.isSerializer(method)) {
             return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
         } else if (Util.isDeserializer(method)) {
@@ -206,18 +211,49 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
         } else {
             final JsonRpcMessage request = (JsonRpcMessage) protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
 
-            //Message response = performSyncCall(request, method);
-            Message response = performAsyncCall2(request, method, executor).get();
-            Message.ResponseObject ro = response.getResponseObject();
+            final Class<?> returnType = futureReturnParamType != null ? Util.toClass(futureReturnParamType) : method.getReturnType();
 
-            if (ro.isException) {
-                if (ro.result instanceof Exception) {
-                    throw (Exception) ro.result;
+            final ListenableFuture<Message> responseFuture = performAsyncCall2(request, returnType, executor);
+
+            if (futureReturnParamType != null) {
+                AsyncFunction<Message, Object> f = new AsyncFunction<Message, Object>() {
+
+                    @Override
+                    public ListenableFuture<Object> apply(final Message response) throws Exception {
+                        return executor.submit(new Callable<Object>() {
+
+                            @Override
+                            public Object call() throws Exception {
+                                Message.ResponseObject ro = response.getResponseObject();
+
+                                if (ro.isException) {
+                                    if (ro.result instanceof Exception) {
+                                        throw (Exception) ro.result;
+                                    }
+                                    throw new WrappedRemoteException(ro.result);
+                                }
+
+                                return ro.result;
+
+                            }
+                        });
+                    }
+                };
+                return Futures.transform(responseFuture, f);
+
+            } else {
+                Message response = responseFuture.get();
+                Message.ResponseObject ro = response.getResponseObject();
+
+                if (ro.isException) {
+                    if (ro.result instanceof Exception) {
+                        throw (Exception) ro.result;
+                    }
+                    throw new WrappedRemoteException(ro.result);
                 }
-                throw new WrappedRemoteException(ro.result);
-            }
 
-            return ro.result;
+                return ro.result;
+            }
         }
 
     }

@@ -39,9 +39,9 @@ public interface Protocol {
 
     public InterfaceCodeGen getInterfaceCodeGen();
 
-    public Message createRequestMessageFromData(ByteBuffer data, Method method) throws IOException;
+    public Message createRequestMessageFromData(ByteBuffer data, Class<?>[] paramTypes) throws IOException;
 
-    public Message createResponseMessageFromData(ByteBuffer data, Method method) throws IOException;
+    public Message createResponseMessageFromData(ByteBuffer data, Class<?> returnType) throws IOException;
 
     /** Create message for calling service method name.
      *

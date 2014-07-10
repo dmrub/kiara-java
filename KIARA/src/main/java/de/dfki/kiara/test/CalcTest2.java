@@ -17,6 +17,7 @@
 
 package de.dfki.kiara.test;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
@@ -33,7 +34,7 @@ import java.util.concurrent.Future;
 public class CalcTest2 {
 
     public static interface Calc {
-        public Future<Integer> add(int a, int b);
+        public ListenableFuture<Integer> add(int a, int b);
         public float addFloat(float a, float b);
         public int stringToInt32(String s);
         public String int32ToString(int i);
@@ -69,7 +70,7 @@ public class CalcTest2 {
 
             String res = "{\"jsonrpc\":\"2.0\", \"result\": 22}";
             Message responseMsg = msg.getProtocol().createResponseMessageFromData(ByteBuffer.wrap(res.getBytes("UTF-8")),
-                    Calc.class.getMethod("add_deserializer", new Class<?>[] { de.dfki.kiara.Message.class }));
+                    Calc.class.getMethod("add_deserializer", new Class<?>[] { de.dfki.kiara.Message.class }).getReturnType());
             result = calc.add_deserializer(responseMsg);
             System.out.println("Result of deserialization of: "+res+" -> "+result);
 

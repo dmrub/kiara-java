@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.jos;
 
 import de.dfki.kiara.impl.*;
@@ -31,6 +30,7 @@ import java.lang.reflect.Method;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class JosInvocationHandler extends AbstractInvocationHandler {
+
     private final Connection connection;
     private final InterfaceMapping<?> interfaceMapping;
     private final JosProtocol protocol;
@@ -58,23 +58,26 @@ public class JosInvocationHandler extends AbstractInvocationHandler {
         InterfaceMapping<?> mapping = getInterfaceMapping();
 
         final String idlMethodName = mapping.getIDLMethodName(method);
-        if (idlMethodName != null) {
+        if (idlMethodName == null) {
+            throw new UnsupportedOperationException("Unknown method: " + method);
+        }
 
-            if (Util.isSerializer(method)) {
-                return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
-            } else if (Util.isDeserializer(method)) {
-                Message msg = (Message)os[0];
+        if (Util.isSerializer(method)) {
+            return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
+        } else if (Util.isDeserializer(method)) {
+            Message msg = (Message) os[0];
 
-                Message.ResponseObject ro = msg.getResponseObject();
+            Message.ResponseObject ro = msg.getResponseObject();
 
-                if (ro.isException) {
-                    if (ro.result instanceof Exception)
-                        throw (Exception)ro.result;
-                    throw new WrappedRemoteException(ro.result);
+            if (ro.isException) {
+                if (ro.result instanceof Exception) {
+                    throw (Exception) ro.result;
                 }
-
-                return ro.result;
+                throw new WrappedRemoteException(ro.result);
             }
+
+            return ro.result;
+        } else {
 
             // FIXME this is a hack
             if (method.getReturnType().equals(int.class)) {
@@ -83,8 +86,6 @@ public class JosInvocationHandler extends AbstractInvocationHandler {
 
             return null;
         }
-
-        throw new UnsupportedOperationException("Unknown method: "+method);
     }
 
 }

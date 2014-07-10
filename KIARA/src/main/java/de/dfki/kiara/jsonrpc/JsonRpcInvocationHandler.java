@@ -185,41 +185,41 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
         InterfaceMapping<?> mapping = getInterfaceMapping();
 
         final String idlMethodName = mapping.getIDLMethodName(method);
-        if (idlMethodName != null) {
-
-            if (Util.isSerializer(method)) {
-                return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
-            } else if (Util.isDeserializer(method)) {
-                Message msg = (Message) os[0];
-                Message.ResponseObject ro = msg.getResponseObject();
-
-                if (ro.isException) {
-                    if (ro.result instanceof Exception) {
-                        throw (Exception) ro.result;
-                    }
-                    throw new WrappedRemoteException(ro.result);
-                }
-
-                return ro.result;
-            } else {
-                final JsonRpcMessage request = (JsonRpcMessage) protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
-
-                //Message response = performSyncCall(request, method);
-                Message response = performAsyncCall2(request, method, executor).get();
-                Message.ResponseObject ro = response.getResponseObject();
-
-                if (ro.isException) {
-                    if (ro.result instanceof Exception) {
-                        throw (Exception) ro.result;
-                    }
-                    throw new WrappedRemoteException(ro.result);
-                }
-
-                return ro.result;
-            }
+        if (idlMethodName == null) {
+            throw new UnsupportedOperationException("Unbound method: " + method);
         }
 
-        throw new UnsupportedOperationException("Unbound method: " + method);
+        if (Util.isSerializer(method)) {
+            return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
+        } else if (Util.isDeserializer(method)) {
+            Message msg = (Message) os[0];
+            Message.ResponseObject ro = msg.getResponseObject();
+
+            if (ro.isException) {
+                if (ro.result instanceof Exception) {
+                    throw (Exception) ro.result;
+                }
+                throw new WrappedRemoteException(ro.result);
+            }
+
+            return ro.result;
+        } else {
+            final JsonRpcMessage request = (JsonRpcMessage) protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
+
+            //Message response = performSyncCall(request, method);
+            Message response = performAsyncCall2(request, method, executor).get();
+            Message.ResponseObject ro = response.getResponseObject();
+
+            if (ro.isException) {
+                if (ro.result instanceof Exception) {
+                    throw (Exception) ro.result;
+                }
+                throw new WrappedRemoteException(ro.result);
+            }
+
+            return ro.result;
+        }
+
     }
 
     @Override

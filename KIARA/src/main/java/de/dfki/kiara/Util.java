@@ -16,7 +16,12 @@
  */
 package de.dfki.kiara;
 
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.JdkFutureAdapters;
+import com.google.common.util.concurrent.ListenableFuture;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -30,6 +35,8 @@ public final class Util {
 
     private static final TypeToken<Future<?>> futureTok = new TypeToken<Future<?>>() {
     };
+    private static final TypeToken<ListenableFuture<?>> listenableFutureTok = new TypeToken<ListenableFuture<?>>() {
+    };
 
     private Util() {
 
@@ -39,15 +46,106 @@ public final class Util {
         if (!(type instanceof ParameterizedType)) {
             return null;
         }
-        ParameterizedType ptype = (ParameterizedType) type;
-        return futureTok.isAssignableFrom(ptype) ? ptype.getActualTypeArguments()[0] : null;
+        return futureTok.isAssignableFrom(type) ? ((ParameterizedType) type).getActualTypeArguments()[0] : null;
+    }
+
+    public static Type getListenableFutureParameterType(java.lang.reflect.Type type) {
+        if (!(type instanceof ParameterizedType)) {
+            return null;
+        }
+        return listenableFutureTok.isAssignableFrom(type) ? ((ParameterizedType) type).getActualTypeArguments()[0] : null;
+    }
+
+    public static class ClassAndConverter {
+
+        public final Class<?> paramType;
+        public final Function<Object, Object> paramConverter;
+
+        public ClassAndConverter(Class<?> paramClass, Function<Object, Object> paramConverter) {
+            this.paramType = paramClass;
+            this.paramConverter = paramConverter;
+        }
+
+    }
+
+    private static class DereferenceListenableFuture implements Function<Object, Object> {
+
+        @Override
+        public Object apply(Object input) {
+            ListenableFuture<ListenableFuture<?>> future = (ListenableFuture<ListenableFuture<?>>) input;
+            return Futures.dereference(future);
+        }
+
+    }
+
+    private static class ConvertFutureToListenableFuture implements Function<Object, Object> {
+
+        @Override
+        public Object apply(Object input) {
+            if (input instanceof ListenableFuture<?>) {
+                return input;
+            }
+            return JdkFutureAdapters.listenInPoolThread((Future<?>) input);
+        }
+
+    }
+
+    public static Class<?> dereferenceFutureType(java.lang.reflect.Type type) {
+        if (!(type instanceof ParameterizedType)) {
+            return null;
+        }
+        if (!futureTok.isAssignableFrom(type) && !listenableFutureTok.isAssignableFrom(type)) {
+            return null;
+        }
+        java.lang.reflect.Type paramType = ((ParameterizedType) type).getActualTypeArguments()[0];
+        while (futureTok.isAssignableFrom(paramType) || listenableFutureTok.isAssignableFrom(paramType)) {
+            paramType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
+        }
+        return toClass(paramType);
+    }
+
+    public static ClassAndConverter dereferenceFutureTypeAndCreateConverter(java.lang.reflect.Type type) {
+        if (!(type instanceof ParameterizedType)) {
+            return null;
+        }
+        boolean isFuture = futureTok.isAssignableFrom(type);
+        if (!isFuture) {
+            return null;
+        }
+        boolean isListenableFuture = listenableFutureTok.isAssignableFrom(type);
+        if (!isListenableFuture) {
+            return null;
+        }
+        java.lang.reflect.Type paramType = ((ParameterizedType) type).getActualTypeArguments()[0];
+        Function<Object, Object> paramConverter = null;
+        if (!isListenableFuture) {
+            paramConverter = new ConvertFutureToListenableFuture();
+        }
+        while (isFuture) {
+            isFuture = futureTok.isAssignableFrom(paramType);
+            if (isFuture) {
+                paramType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
+                isListenableFuture = listenableFutureTok.isAssignableFrom(paramType);
+                if (!isListenableFuture) {
+                    Function<Object, Object> tmp = new ConvertFutureToListenableFuture();
+                    if (paramConverter == null) {
+                        paramConverter = tmp;
+                    } else {
+                        paramConverter = Functions.compose(tmp, paramConverter);
+                    }
+                }
+            }
+        }
+        return new ClassAndConverter(toClass(paramType), paramConverter == null ? Functions.<Object>identity() : paramConverter);
     }
 
     public static Class<?> toClass(java.lang.reflect.Type type) {
-        if (type instanceof ParameterizedType)
-            return (Class<?>)((ParameterizedType)type).getRawType();
-        if (type instanceof Class)
-            return (Class<?>)type;
+        if (type instanceof ParameterizedType) {
+            return (Class<?>) ((ParameterizedType) type).getRawType();
+        }
+        if (type instanceof Class) {
+            return (Class<?>) type;
+        }
         return null;
     }
 

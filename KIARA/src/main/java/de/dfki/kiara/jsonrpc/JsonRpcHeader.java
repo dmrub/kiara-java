@@ -17,6 +17,7 @@
 package de.dfki.kiara.jsonrpc;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.util.List;
 
 /**
  *
@@ -26,12 +27,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 public class JsonRpcHeader {
 
     private final String method;
-    private final Object[] params;
+    private final List<Object> params;
     private final Object result;
     private final JsonRpcError error;
     private final Object id;
 
-    public JsonRpcHeader(String method, Object[] params, Object id) {
+    public JsonRpcHeader(String method, List<Object> params, Object id) {
         this.method = method;
         this.params = params;
         this.result = null;
@@ -59,7 +60,7 @@ public class JsonRpcHeader {
         return method;
     }
 
-    public Object[] getParams() {
+    public List<Object> getParams() {
         return params;
     }
 

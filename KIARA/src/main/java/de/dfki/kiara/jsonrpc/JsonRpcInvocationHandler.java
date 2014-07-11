@@ -38,6 +38,9 @@ import de.dfki.kiara.impl.SpecialMethods;
 import de.dfki.kiara.util.Pipeline;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -189,13 +192,28 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
         }
 
         // check for Future<?>
-        logger.debug("Method return type {}: {}", method.getGenericReturnType().getClass(), method.getGenericReturnType());
-        java.lang.reflect.Type genericReturnType = method.getGenericReturnType();
-        java.lang.reflect.Type futureReturnParamType = genericReturnType != null ? Util.getFutureParameterType(genericReturnType) : null;
-        logger.debug("Future return parameter: {}", futureReturnParamType);
+        final InterfaceMapping<?>.MethodEntry methodEntry = mapping.getMethodEntry(method);
+
+        logger.debug("has future params {} has listeningfuture params {}", methodEntry.hasFutureParams, methodEntry.hasListeningFutureParams);
+
+        ListenableFuture<List<Object>> futureParams = null;
+
+        if (methodEntry.hasFutureParams) {
+            List<ListenableFuture<Object>> futureParamsList = new ArrayList<>(os.length);
+            for (int i = 0; i < os.length; ++i) {
+                final Function<Object, Object> f = ((Function<Object, Object>) methodEntry.paramConverters[i]);
+                futureParamsList.add((ListenableFuture<Object>) f.apply(os[i]));
+            }
+            futureParams = Futures.allAsList(futureParamsList);
+            //System.out.format("futureParams = %s%n", Joiner.on(" ").join(futureParams.get()));
+        }
 
         if (Util.isSerializer(method)) {
-            return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
+            if (futureParams != null) {
+                return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, futureParams.get()));
+            } else {
+                return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
+            }
         } else if (Util.isDeserializer(method)) {
             Message msg = (Message) os[0];
             Message.ResponseObject ro = msg.getResponseObject();
@@ -209,50 +227,91 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
 
             return ro.result;
         } else {
-            final JsonRpcMessage request = (JsonRpcMessage) protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
+            if (futureParams != null && methodEntry.futureParamOfReturnType != null) {
 
-            final Class<?> returnType = futureReturnParamType != null ? Util.toClass(futureReturnParamType) : method.getReturnType();
-
-            final ListenableFuture<Message> responseFuture = performAsyncCall2(request, returnType, executor);
-
-            if (futureReturnParamType != null) {
-                AsyncFunction<Message, Object> f = new AsyncFunction<Message, Object>() {
+                AsyncFunction<List<Object>, Object> f = new AsyncFunction<List<Object>, Object>() {
 
                     @Override
-                    public ListenableFuture<Object> apply(final Message response) throws Exception {
-                        return executor.submit(new Callable<Object>() {
+                    public ListenableFuture<Object> apply(List<Object> params) throws Exception {
+                        final JsonRpcMessage request = (JsonRpcMessage) protocol.createRequestMessage(new Message.RequestObject(idlMethodName, params));
+                        final Class<?> returnType = Util.toClass(methodEntry.futureParamOfReturnType);
+                        final ListenableFuture<Message> responseFuture = performAsyncCall2(request, returnType, executor);
+                        AsyncFunction<Message, Object> g = new AsyncFunction<Message, Object>() {
 
                             @Override
-                            public Object call() throws Exception {
-                                Message.ResponseObject ro = response.getResponseObject();
+                            public ListenableFuture<Object> apply(final Message response) throws Exception {
+                                return executor.submit(new Callable<Object>() {
 
-                                if (ro.isException) {
-                                    if (ro.result instanceof Exception) {
-                                        throw (Exception) ro.result;
+                                    @Override
+                                    public Object call() throws Exception {
+                                        Message.ResponseObject ro = response.getResponseObject();
+
+                                        if (ro.isException) {
+                                            if (ro.result instanceof Exception) {
+                                                throw (Exception) ro.result;
+                                            }
+                                            throw new WrappedRemoteException(ro.result);
+                                        }
+
+                                        return ro.result;
+
                                     }
-                                    throw new WrappedRemoteException(ro.result);
-                                }
-
-                                return ro.result;
-
+                                });
                             }
-                        });
+                        };
+                        return Futures.transform(responseFuture, g);
                     }
                 };
-                return Futures.transform(responseFuture, f);
-
+                return Futures.transform(futureParams, f);
             } else {
-                Message response = responseFuture.get();
-                Message.ResponseObject ro = response.getResponseObject();
 
-                if (ro.isException) {
-                    if (ro.result instanceof Exception) {
-                        throw (Exception) ro.result;
+                List<Object> params = futureParams != null ? futureParams.get() : Arrays.asList(os);
+
+                final JsonRpcMessage request = (JsonRpcMessage) protocol.createRequestMessage(new Message.RequestObject(idlMethodName, params));
+
+                final Class<?> returnType = methodEntry.futureParamOfReturnType != null ? Util.toClass(methodEntry.futureParamOfReturnType) : method.getReturnType();
+
+                final ListenableFuture<Message> responseFuture = performAsyncCall2(request, returnType, executor);
+
+                if (methodEntry.futureParamOfReturnType != null) {
+                    AsyncFunction<Message, Object> f = new AsyncFunction<Message, Object>() {
+
+                        @Override
+                        public ListenableFuture<Object> apply(final Message response) throws Exception {
+                            return executor.submit(new Callable<Object>() {
+
+                                @Override
+                                public Object call() throws Exception {
+                                    Message.ResponseObject ro = response.getResponseObject();
+
+                                    if (ro.isException) {
+                                        if (ro.result instanceof Exception) {
+                                            throw (Exception) ro.result;
+                                        }
+                                        throw new WrappedRemoteException(ro.result);
+                                    }
+
+                                    return ro.result;
+
+                                }
+                            });
+                        }
+                    };
+                    return Futures.transform(responseFuture, f);
+
+                } else {
+                    Message response = responseFuture.get();
+                    Message.ResponseObject ro = response.getResponseObject();
+
+                    if (ro.isException) {
+                        if (ro.result instanceof Exception) {
+                            throw (Exception) ro.result;
+                        }
+                        throw new WrappedRemoteException(ro.result);
                     }
-                    throw new WrappedRemoteException(ro.result);
-                }
 
-                return ro.result;
+                    return ro.result;
+                }
             }
         }
 

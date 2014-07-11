@@ -14,10 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara;
 
+import com.google.common.base.Function;
+import com.google.common.util.concurrent.Futures;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,22 +29,47 @@ import java.util.Map;
  * @param <T>
  */
 public final class InterfaceMapping<T> {
+
     private final Class<T> interfaceClass;
     private final Map<Method, String> boundMethods;
     private final Map<Method, MethodEntry> methodEntries;
 
-    private enum MethodKind {
+    public enum MethodKind {
+
         SYNCHRONOUS,
         ASYNCHRONOUS,
         SERIALIZER,
         DESERIALIZER
     }
 
-    private final class MethodEntry {
-        public final MethodKind kind;
+    public enum ResultTypeKind {
 
-        public MethodEntry(MethodKind kind) {
+        DEFAULT,
+        FUTURE,
+        LISTENING
+    }
+
+    public final class MethodEntry {
+
+        public final MethodKind kind;
+        public final java.lang.reflect.Type futureParamOfReturnType;
+        public final boolean hasFutureParams;
+        public final boolean hasListeningFutureParams;
+        public final Class<?>[] serializationParamTypes;
+        public final Function<?, ?>[] paramConverters;
+
+        public MethodEntry(MethodKind kind,
+                java.lang.reflect.Type futureParamOfReturnType,
+                boolean hasFutureParams,
+                boolean hasListeningFutureParams,
+                Class<?>[] serializationParamTypes,
+                Function<?, ?>[] paramConverters) {
             this.kind = kind;
+            this.futureParamOfReturnType = futureParamOfReturnType;
+            this.hasFutureParams = hasFutureParams;
+            this.hasListeningFutureParams = hasListeningFutureParams;
+            this.serializationParamTypes = serializationParamTypes;
+            this.paramConverters = paramConverters;
         }
     }
 
@@ -56,14 +83,55 @@ public final class InterfaceMapping<T> {
         methodEntries = new HashMap<>(boundMethods.size());
 
         MethodKind kind = MethodKind.SYNCHRONOUS;
+        java.lang.reflect.Type futureParamOfReturnType;
+        boolean hasFutureParams = false;
+        boolean hasListeningFutureParams = false;
         for (Method m : boundMethods.keySet()) {
             // serializers
-            if (Util.isSerializer(m))
+            if (Util.isSerializer(m)) {
                 kind = MethodKind.SERIALIZER;
-            else if (Util.isDeserializer(m)) {
+            } else if (Util.isDeserializer(m)) {
                 kind = MethodKind.DESERIALIZER;
             }
-            methodEntries.put(m, new MethodEntry(kind));
+            java.lang.reflect.Type genericReturnType = m.getGenericReturnType();
+            futureParamOfReturnType = genericReturnType != null ? Util.getFutureParameterType(genericReturnType) : null;
+
+            // check for Future
+            final java.lang.reflect.Type[] genericParamTypes = m.getGenericParameterTypes();
+            final Class<?>[] serParamTypes = new Class<?>[genericParamTypes.length];
+            final Function<?, ?>[] paramConverters = new Function<?, ?>[10];
+
+            Util.ClassAndConverter classAndConverter = null;
+
+            for (int i = 0; i < genericParamTypes.length; ++i) {
+                classAndConverter = Util.dereferenceFutureTypeAndCreateConverter(genericParamTypes[i]);
+                java.lang.reflect.Type futureParamType = Util.getFutureParameterType(genericParamTypes[i]);
+                if (futureParamType != null) {
+                    hasFutureParams = true;
+                    futureParamType = Util.getListenableFutureParameterType(genericParamTypes[i]);
+                    if (futureParamType != null) {
+                        hasListeningFutureParams = true;
+                    }
+                }
+
+                if (classAndConverter == null) {
+                    classAndConverter = new Util.ClassAndConverter(
+                            Util.toClass(genericParamTypes[i]),
+                            new Function<Object, Object>() {
+
+                                @Override
+                                public Object apply(Object input) {
+                                    return Futures.immediateFuture(input);
+                                }
+
+                            });
+                }
+                serParamTypes[i] = classAndConverter.paramType;
+                paramConverters[i] = classAndConverter.paramConverter;
+            }
+            //System.err.format("Param classes: %s%n", Arrays.toString(serParamTypes));
+
+            methodEntries.put(m, new MethodEntry(kind, futureParamOfReturnType, hasFutureParams, hasListeningFutureParams, serParamTypes, paramConverters));
         }
     }
 
@@ -79,10 +147,15 @@ public final class InterfaceMapping<T> {
         return boundMethods.get(method);
     }
 
+    public final MethodEntry getMethodEntry(Method method) {
+        return methodEntries.get(method);
+    }
+
     public final Method getMethod(String idlMethodName) {
         for (Map.Entry<Method, String> e : boundMethods.entrySet()) {
-            if (e.getValue().equals(idlMethodName))
+            if (e.getValue().equals(idlMethodName)) {
                 return e.getKey();
+            }
         }
         return null;
     }

@@ -100,7 +100,7 @@ public class StructTest {
 
         public void setLocation(Location location);
 
-        void throwException(int code, String message) throws GenericRemoteException;
+        public void throwException(int code, String message) throws GenericRemoteException;
     }
 
     public static void main(String[] args) throws Exception {

@@ -45,34 +45,35 @@ public class CalcTestServer {
         System.out.printf("Server port: %i\n", port);
         System.out.printf("Protocol: %s\n", protocol);
         Service service = null;
-        Server server = null;
         try (Context context = Kiara.createContext()) {
-            server = context.newServer("0.0.0.0", port, "/service");
-            service = server.newService();
+            service = context.newService();
             service.loadServiceIDLFromString("KIARA",
-                "namespace * calc "+
-                "service calc { "+
-                "    i32 add(i32 a, i32 b) "+
-                "    float addf(float a, float b) "+
-                "    i32 stringToInt32(string s) "+
-                "    string int32ToString(i32 i) "+
-                "} "
+                    "namespace * calc "
+                    + "service calc { "
+                    + "    i32 add(i32 a, i32 b) "
+                    + "    float addf(float a, float b) "
+                    + "    i32 stringToInt32(string s) "
+                    + "    string int32ToString(i32 i) "
+                    + "} "
             );
-        }catch(IDLParseException e){
-            System.out.printf("Error: could not parse IDL: %s",e.getMessage());
+
+            System.out.printf("Register calc.add ....\n");
+            CalcImpl impl = new CalcImpl();
+            service.registerServiceFunction("calc.add", impl, "add", Integer.TYPE, Integer.TYPE);
+            service.registerServiceFunction("calc.addf", impl, "add", Float.TYPE, Float.TYPE);
+            service.registerServiceFunction("calc.stringToInt32", impl, "stringToInt32");
+            service.registerServiceFunction("calc.int32ToString", impl, "int32ToString");
+            System.out.printf("Starting server...\n");
+
+            Server server = context.newServer("0.0.0.0", port, "/service");
+            server.addService("/rpc/calc", protocol, service);
+            server.run();
+        } catch (IDLParseException e) {
+            System.out.printf("Error: could not parse IDL: %s", e.getMessage());
             System.exit(1);
+        } finally {
+            Kiara.shutdownGracefully();
         }
-        System.out.printf("Register calc.add ....\n");
-        CalcImpl impl = new CalcImpl();
-        service.registerServiceFunction("calc.add", impl, "add", Integer.TYPE, Integer.TYPE);
-        service.registerServiceFunction("calc.addf", impl, "add", Float.TYPE, Float.TYPE);
-        service.registerServiceFunction("calc.stringToInt32", impl,"stringToInt32");
-        service.registerServiceFunction("calc.int32ToString", impl, "int32ToString");
-        System.out.printf("Starting server...\n");
-
-        server.run();
-        Kiara.shutdownGracefully();
-
     }
 }
 

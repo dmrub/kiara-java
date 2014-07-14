@@ -20,6 +20,7 @@ package de.dfki.kiara.impl;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Server;
+import de.dfki.kiara.Service;
 import java.io.IOException;
 
 /**
@@ -39,6 +40,11 @@ public class ContextImpl implements Context {
 
     @Override
     public Server newServer(String host, int port, String configPath) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Service newService() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

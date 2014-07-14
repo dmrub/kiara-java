@@ -33,11 +33,6 @@ public class ServerImpl implements Server{
     }
 
     @Override
-    public Service newService() {
-        return new ServiceImpl(binder);
-    }
-
-    @Override
     public void addService(String path, String protocol, Service service) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }

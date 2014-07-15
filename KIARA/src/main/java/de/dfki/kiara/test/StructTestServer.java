@@ -164,23 +164,33 @@ class StructTestImpl {
     }
 
     public Data pack(long ival, String sval) {
-        return null;
+        return new Data(ival, sval);
     }
 
     public long getInteger(Data data) {
-        return 0;
+        return data.ival;
     }
 
     public String getString(Data data) {
-        return null;
+        return data.sval;
     }
 
     public Location getLocation() {
-        return null;
+        return location;
     }
 
-    public void setLocation(Location location) {
+    private Location location = null;
 
+    public void setLocation(Location location) {
+        System.out.printf("Location.position %f %f %f\nLocation.rotation %f %f %f %f\n",
+                location.position.x,
+                location.position.y,
+                location.position.z,
+                location.rotation.r,
+                location.rotation.v.x,
+                location.rotation.v.y,
+                location.rotation.v.z);
+        this.location = location;
     }
 
     public void throwException(int code, String message) throws GenericRemoteException {

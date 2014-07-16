@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Shahzad
+ * Copyright (C) 2014 German Research Center for Artificial Intelligence (DFKI)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,9 +44,19 @@ public class AosTestServer {
         }
         System.out.printf("Server port: %d\n", port);
         System.out.printf("Protocol: %s\n", protocol);
-        Service service = null;
+
+        /* Create new context,
+         * it will be automatically closed at the end of
+         * the try block
+         */
         try (Context context = Kiara.createContext()) {
-            service = context.newService();
+
+            /* Create a new service */
+
+            Service service = context.newService();
+
+            /* Add IDL to the service */
+
             service.loadServiceIDLFromString("KIARA",
                     "namespace * aostest "
                     + "struct Vec3f {"
@@ -71,12 +81,37 @@ public class AosTestServer {
                     + "} "
             );
             System.out.printf("Register aostest.setLocations ...\n");
+
+            /* Create new instance of the implementation class */
+
             GetSetLocationsImpl locationsImpl = new GetSetLocationsImpl();
+
+            /* Register methods of the instance with the sepcified IDL service methods
+             *
+             * service.registerServiceFunction(String idlMethodName, Object serviceImpl,
+             *                                 String serviceMethodName)
+             *
+             * service       - valid instance of the Service class
+             * idlMethodName - name of the remote service method specified in the IDL.
+             * serviceImpl   - arbitrary Java object that implements IDL service method
+             * serviceMethodName - name of the Java object method that implements IDL service method
+             */
+
             service.registerServiceFunction("aostest.setLocations", locationsImpl, "setLocations");
             service.registerServiceFunction("aostest.getLocations", locationsImpl, "getLocations");
-            System.out.printf("Starting server...\n");
+
+            /*
+             * Create new server and register service
+             */
+
             Server server = context.newServer("0.0.0.0", port, "/service");
+
             server.addService("/rpc/aostest", protocol, service);
+
+            System.out.printf("Starting server...\n");
+
+            /* Run server */
+
             server.run();
         } catch (IDLParseException e) {
             System.out.printf("Error: could not parse IDL: %s", e.getMessage());

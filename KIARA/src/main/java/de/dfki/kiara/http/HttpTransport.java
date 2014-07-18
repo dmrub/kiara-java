@@ -101,7 +101,7 @@ public class HttpTransport extends AbstractTransport {
         }
 
         // Configure the client.
-        final HttpServerHandler httpClientHandler = new HttpServerHandler(uri, HttpMethod.POST);
+        final HttpHandler httpClientHandler = new HttpHandler(uri, HttpMethod.POST);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)

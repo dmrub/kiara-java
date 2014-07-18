@@ -41,7 +41,6 @@ import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import io.netty.handler.codec.http.HttpVersion;
 import static io.netty.handler.codec.http.HttpVersion.*;
@@ -61,9 +60,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class HttpServerHandler extends SimpleChannelInboundHandler<Object> implements TransportConnection {
+public class HttpHandler extends SimpleChannelInboundHandler<Object> implements TransportConnection {
 
-    private static final Logger logger = LoggerFactory.getLogger(HttpClientHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(HttpHandler.class);
 
     private HttpHeaders headers = null;
     private final NoCopyByteArrayOutputStream bout = new NoCopyByteArrayOutputStream(1024);
@@ -76,7 +75,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> imple
     private final Handler<TransportConnection> connectionHandler;
 
     private final List<RequestHandler<TransportMessage, TransportMessage>> requestHandlers = new ArrayList<>();
-    private final List<Handler<TransportMessage>> handlers = new ArrayList<>();
+    private final List<Handler<TransportMessage>> responseHandlers = new ArrayList<>();
 
     static enum Mode {
 
@@ -95,7 +94,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> imple
     }
     private State state;
 
-    public HttpServerHandler(URI uri, HttpMethod method) {
+    public HttpHandler(URI uri, HttpMethod method) {
         if (uri == null) {
             throw new NullPointerException("uri");
         }
@@ -109,7 +108,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> imple
         this.mode = Mode.CLIENT;
     }
 
-    public HttpServerHandler(Handler<TransportConnection> connectionHandler) {
+    public HttpHandler(Handler<TransportConnection> connectionHandler) {
         if (connectionHandler == null) {
             throw new NullPointerException("connectionHandler");
         }
@@ -253,9 +252,9 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> imple
             logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
 
-        synchronized (handlers) {
-            if (!handlers.isEmpty()) {
-                for (Handler<TransportMessage> handler : handlers) {
+        synchronized (responseHandlers) {
+            if (!responseHandlers.isEmpty()) {
+                for (Handler<TransportMessage> handler : responseHandlers) {
                     if (handler.onSuccess(response)) {
                         return;
                     }
@@ -269,9 +268,9 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> imple
             logger.debug("RECEIVED ERROR {}", error);
         }
 
-        synchronized (handlers) {
-            if (!handlers.isEmpty()) {
-                for (Handler<TransportMessage> handler : handlers) {
+        synchronized (responseHandlers) {
+            if (!responseHandlers.isEmpty()) {
+                for (Handler<TransportMessage> handler : responseHandlers) {
                     if (handler.onFailure(error)) {
                         return;
                     }
@@ -349,8 +348,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> imple
         if (handler == null) {
             throw new NullPointerException("handler");
         }
-        synchronized (handlers) {
-            handlers.add(handler);
+        synchronized (responseHandlers) {
+            responseHandlers.add(handler);
         }
     }
 
@@ -359,8 +358,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> imple
         if (handler == null) {
             return false;
         }
-        synchronized (handlers) {
-            handlers.remove(handler);
+        synchronized (responseHandlers) {
+            responseHandlers.remove(handler);
         }
         return false;
     }

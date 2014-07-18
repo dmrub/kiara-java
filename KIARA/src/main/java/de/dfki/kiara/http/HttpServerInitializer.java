@@ -54,6 +54,6 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         // Remove the following line if you don't want automatic content compression.
         //p.addLast(new HttpContentCompressor());
         p.addLast("aggregator", new HttpObjectAggregator(1048576));
-        p.addLast(new HttpServerHandler(connectionHandler));
+        p.addLast(new HttpHandler(connectionHandler));
     }
 }

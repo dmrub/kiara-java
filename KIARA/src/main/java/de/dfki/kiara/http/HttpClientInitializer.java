@@ -32,9 +32,9 @@ import io.netty.handler.ssl.SslContext;
  */
 class HttpClientInitializer extends ChannelInitializer<SocketChannel> {
     private final SslContext sslCtx;
-    private final HttpServerHandler handler;
+    private final HttpHandler handler;
 
-    public HttpClientInitializer(SslContext sslCtx, HttpServerHandler handler) {
+    public HttpClientInitializer(SslContext sslCtx, HttpHandler handler) {
         this.sslCtx = sslCtx;
         this.handler = handler;
     }

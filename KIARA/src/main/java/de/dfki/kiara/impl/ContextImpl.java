@@ -40,12 +40,12 @@ public class ContextImpl implements Context {
 
     @Override
     public Server newServer(String host, int port, String configPath) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return new ServerImpl();
     }
 
     @Override
     public Service newService() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return new ServiceImpl();
     }
 
 }

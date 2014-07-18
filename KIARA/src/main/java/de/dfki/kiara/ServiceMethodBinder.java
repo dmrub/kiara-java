@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 shahzad
+ * Copyright (C) 2014 Shahzad
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,27 +15,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara.impl;
+package de.dfki.kiara;
 
-import de.dfki.kiara.Server;
-import de.dfki.kiara.Service;
+import java.lang.reflect.Method;
 
 /**
  *
- * @author shahzad
+ * @author Shahzad
  */
-public class ServerImpl implements Server{
+public class ServiceMethodBinder {
+    final private Object implementedClass;
+    final private Method boundedMethod;
 
-    public ServerImpl(){
+    public ServiceMethodBinder(Object implementedClass, Method boundedMethod) {
+        this.implementedClass = implementedClass;
+        this.boundedMethod = boundedMethod;
     }
 
-    @Override
-    public void addService(String path, String protocol, Service service) {
-
+    public Object getImplementedClass(){
+        return implementedClass;
     }
 
-    @Override
-    public void run() {
-
+    public Method getBoundedMethod(){
+        return boundedMethod;
     }
 }

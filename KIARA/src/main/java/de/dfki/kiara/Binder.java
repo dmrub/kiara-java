@@ -22,8 +22,12 @@ package de.dfki.kiara;
  * @author shahzad
  */
 public interface Binder {
-    public void bindServiceMethod(String idlMethodName,Object serviceClass,String methodName);
-    public Object getServiceMethod(String idlMethodName); //TODO:need to add method
+    public void bindServiceMethod(String idlMethodName,Object serviceClass,
+            String methodName) throws NoSuchMethodException, SecurityException ;
+    public ServiceMethodBinder getServiceMethod(String idlMethodName);
+    public void bindServiceMethod(String idlMethodName, Object serviceImpl,
+            String serviceMethodName, Class<?>[] parameterTypes) throws
+            NoSuchMethodException, SecurityException ;
 
-    public void bindServiceMethod(String idlMethodName, Object serviceImpl, String serviceMethodName, Class<?>[] parameterTypes);
+    public void unbindServiceMethod(String idlMethodName) throws NoSuchMethodException;
 }

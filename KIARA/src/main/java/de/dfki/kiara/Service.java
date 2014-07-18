@@ -14,21 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara;
-
 
 /**
  *
  * @author shahzad
  */
 public interface Service {
+
     public void loadIDL(String fileName);
-    public void loadServiceIDLFromString(String idlLanguage,String idlContents) throws IDLParseException;
+
+    public void loadServiceIDLFromString(String idlLanguage, String idlContents) throws IDLParseException;
+
     public String getIDLContents();
+
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
-            String serviceMethodName) throws MethodAlreadyBoundException;
+            String serviceMethodName) throws
+            MethodAlreadyBoundException, NoSuchMethodException, SecurityException;
+
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
-            String serviceMethodName,Class<?>... parameterTypes) throws MethodAlreadyBoundException;
-    public void unregisterServiceFunction(String idlMethodName);
+            String serviceMethodName, Class<?>... parameterTypes) throws
+            MethodAlreadyBoundException, NoSuchMethodException, SecurityException;
+
+    public void unregisterServiceFunction(String idlMethodName) throws NoSuchMethodException;
 }

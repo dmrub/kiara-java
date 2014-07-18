@@ -42,7 +42,7 @@ public class CalcTestServer {
             protocol = "jsonrpc";
         }
 
-        System.out.printf("Server port: %i\n", port);
+        System.out.printf("Server port: %d\n", port);
         System.out.printf("Protocol: %s\n", protocol);
         Service service = null;
         try (Context context = Kiara.createContext()) {

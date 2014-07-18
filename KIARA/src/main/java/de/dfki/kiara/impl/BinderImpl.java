@@ -14,29 +14,58 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.Binder;
+import de.dfki.kiara.ServiceMethodBinder;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
  * @author shahzad
  */
-public class BinderImpl implements Binder{
+public class BinderImpl implements Binder {
 
-    @Override
-    public void bindServiceMethod(String idlMethodName, Object serviceClass, String methodName) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    private Map<String, ServiceMethodBinder> internalMapping = null;
+
+    public BinderImpl() {
+        internalMapping = new HashMap<>();
     }
 
     @Override
-    public void bindServiceMethod(String idlMethodName, Object serviceImpl, String serviceMethodName, Class<?>[] parameterTypes) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void bindServiceMethod(String idlMethodName, Object serviceClass,
+            String serviceMethodName) throws NoSuchMethodException, SecurityException {
+        Method method = null;
+        for(Method m: serviceClass.getClass().getMethods()){
+            if(m.getName().equalsIgnoreCase(serviceMethodName)){
+                method = m;
+                break;
+            }
+        }
+        internalMapping.put(idlMethodName, new ServiceMethodBinder(serviceClass, method));
     }
 
     @Override
-    public Object getServiceMethod(String idlMethodName) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void bindServiceMethod(String idlMethodName, Object serviceClass,
+            String serviceMethodName, Class<?>[] parameterTypes) throws
+            NoSuchMethodException, SecurityException {
+        Method method = serviceClass.getClass().getMethod(serviceMethodName, parameterTypes);
+        internalMapping.put(idlMethodName, new ServiceMethodBinder(serviceClass, method));
+    }
+
+    @Override
+    public ServiceMethodBinder getServiceMethod(String idlMethodName) {
+        return internalMapping.get(idlMethodName);
+    }
+
+    @Override
+    public void unbindServiceMethod(String idlMethodName) throws NoSuchMethodException {
+        if (internalMapping.containsKey(idlMethodName)) {
+            internalMapping.remove(idlMethodName);
+        } else {
+            throw new NoSuchMethodException();
+        }
     }
 }

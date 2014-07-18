@@ -27,9 +27,10 @@ import de.dfki.kiara.Service;
  */
 public class ServiceImpl implements Service {
 
-    private Binder binder;
-    ServiceImpl(Binder binder) {
-        this.binder = binder;
+    final private Binder binder;
+
+    public ServiceImpl() {
+        this.binder = new BinderImpl();
     }
 
     @Override
@@ -39,7 +40,7 @@ public class ServiceImpl implements Service {
 
     @Override
     public void loadServiceIDLFromString(String idlLanguage, String idlContents) throws IDLParseException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+
     }
 
     @Override
@@ -53,35 +54,39 @@ public class ServiceImpl implements Service {
      * @param serviceMethodName
      * @param serviceImpl
      * @throws MethodAlreadyBoundException
+     * @throws java.lang.NoSuchMethodException
      */
     @Override
-    public void registerServiceFunction(String idlMethodName, Object serviceImpl, String serviceMethodName) throws MethodAlreadyBoundException{
-        if(binder.getServiceMethod(idlMethodName) != null){
+    public void registerServiceFunction(String idlMethodName, Object serviceImpl,
+            String serviceMethodName) throws MethodAlreadyBoundException,
+            NoSuchMethodException, SecurityException {
+        if (binder.getServiceMethod(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
         binder.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName);
     }
 
     /**
-    *
-    * @param idlMethodName
-    * @param serviceMethodName
-    * @param serviceImpl
+     *
+     * @param idlMethodName
+     * @param serviceMethodName
+     * @param serviceImpl
      * @param parameterTypes
-    * @throws MethodAlreadyBoundException
-    */
-
+     * @throws MethodAlreadyBoundException
+     * @throws java.lang.NoSuchMethodException
+     */
     @Override
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
-            String serviceMethodName,Class<?>... parameterTypes) throws MethodAlreadyBoundException {
-        if(binder.getServiceMethod(idlMethodName) != null){
+            String serviceMethodName, Class<?>... parameterTypes)
+            throws MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
+        if (binder.getServiceMethod(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        binder.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName,parameterTypes);
+        binder.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName, parameterTypes);
     }
 
     @Override
-    public void unregisterServiceFunction(String idlMethodName) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void unregisterServiceFunction(String idlMethodName) throws NoSuchMethodException{
+        binder.unbindServiceMethod(idlMethodName);
     }
 }

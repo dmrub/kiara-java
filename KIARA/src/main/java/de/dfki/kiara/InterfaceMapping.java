@@ -77,7 +77,7 @@ public final class InterfaceMapping<T> {
      *
      * @param binder
      */
-    public InterfaceMapping(MethodBinder<T> binder) {
+    public InterfaceMapping(MethodBinding<T> binder) {
         interfaceClass = binder.getInterfaceClass();
         boundMethods = new HashMap<>(binder.getBoundMethods());
         methodEntries = new HashMap<>(boundMethods.size());

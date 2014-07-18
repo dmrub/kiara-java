@@ -22,7 +22,7 @@ import com.google.common.primitives.UnsignedLongs;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MethodBinder;
+import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.RemoteInterface;
 
 /**
@@ -71,8 +71,8 @@ public class BasetypeTest {
         try (Context context = Kiara.createContext();
                 Connection connection = context.openConnection(uri)) {
 
-            MethodBinder<Basetype> binder
-                    = new MethodBinder<>(Basetype.class)
+            MethodBinding<Basetype> binder
+                    = new MethodBinding<>(Basetype.class)
                     .bind("basetype.send_boolean", "send_boolean")
                     .bind("basetype.send_i8", "send_i8")
                     .bind("basetype.send_u8", "send_u8")

@@ -22,7 +22,7 @@ import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Message;
-import de.dfki.kiara.MethodBinder;
+import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.RemoteInterface;
 import java.nio.ByteBuffer;
 
@@ -53,8 +53,8 @@ public class CalcTest2 {
         try (Context context = Kiara.createContext();
                 Connection connection = context.openConnection("http://localhost:8080/service")) {
 
-            MethodBinder<Calc> binder
-                    = new MethodBinder<>(Calc.class)
+            MethodBinding<Calc> binder
+                    = new MethodBinding<>(Calc.class)
                     .bind("calc.add", "add")
                     .bind("calc.add", "add1")
                     .bind("calc.add", "add_serializer")

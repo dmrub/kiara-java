@@ -28,12 +28,12 @@ import java.util.HashSet;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  * @param <T>
  */
-public final class MethodBinder<T> {
+public final class MethodBinding<T> {
     private final Class<T> interfaceClass;
     private final Map<String, Method> uniqueMethodMap; // maps Java method name ot Method object
     private final Map<Method, String> boundMethods; // maps Java method to IDL method name
 
-    public MethodBinder(Class<T> interfaceClass) {
+    public MethodBinding(Class<T> interfaceClass) {
         if (interfaceClass == null)
             throw new NullPointerException("Interface class can't be null");
         if (!interfaceClass.isInterface())
@@ -55,7 +55,7 @@ public final class MethodBinder<T> {
         }
     }
 
-    public final MethodBinder bind(String idlMethodName, String methodName) throws NoSuchMethodException, SecurityException {
+    public final MethodBinding bind(String idlMethodName, String methodName) throws NoSuchMethodException, SecurityException {
         Method method = uniqueMethodMap.get(methodName);
         if (method == null)
             throw new NoSuchMethodException("No method '"+methodName+"' in class "+interfaceClass.getName());
@@ -65,7 +65,7 @@ public final class MethodBinder<T> {
         return this;
     }
 
-    public final MethodBinder bind(String idlMethodName, String methodName, Class<?>... parameterTypes) throws NoSuchMethodException, SecurityException {
+    public final MethodBinding bind(String idlMethodName, String methodName, Class<?>... parameterTypes) throws NoSuchMethodException, SecurityException {
         Method method = interfaceClass.getMethod(methodName, parameterTypes);
                 if (boundMethods.containsKey(method))
             throw new IllegalArgumentException("Method '"+methodName+"' was already bound");

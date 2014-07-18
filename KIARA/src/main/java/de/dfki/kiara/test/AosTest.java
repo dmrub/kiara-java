@@ -19,7 +19,7 @@ package de.dfki.kiara.test;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MethodBinder;
+import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.RemoteInterface;
 import java.util.ArrayList;
 import java.util.List;
@@ -108,8 +108,8 @@ public class AosTest {
         try (Context context = Kiara.createContext();
                 Connection connection = context.openConnection(uri)) {
 
-            MethodBinder<GetSetLocations> binder
-                    = new MethodBinder<>(GetSetLocations.class)
+            MethodBinding<GetSetLocations> binder
+                    = new MethodBinding<>(GetSetLocations.class)
                     .bind("aostest.setLocations", "setLocations")
                     .bind("aostest.getLocations", "getLocations");
 

@@ -25,5 +25,5 @@ import java.io.Closeable;
  */
 public interface Connection extends Closeable {
     public TransportConnection getTransportConnection();
-    public <T> T generateClientFunctions(MethodBinder<T> methodBinder);
+    public <T> T generateClientFunctions(MethodBinding<T> methodBinder);
 }

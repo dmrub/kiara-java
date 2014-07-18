@@ -19,7 +19,7 @@ package de.dfki.kiara.test;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MethodBinder;
+import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.RemoteInterface;
 
 /**
@@ -56,8 +56,8 @@ public class CalcTest {
         try (Context context = Kiara.createContext();
                 Connection connection = context.openConnection(uri)) {
 
-            MethodBinder<Calc> binder
-                    = new MethodBinder<>(Calc.class)
+            MethodBinding<Calc> binder
+                    = new MethodBinding<>(Calc.class)
                     .bind("calc.add", "add")
                     .bind("calc.addf", "addFloat")
                     .bind("calc.stringToInt32", "stringToInt32")

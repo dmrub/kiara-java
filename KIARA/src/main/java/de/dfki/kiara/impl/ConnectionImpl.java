@@ -20,7 +20,7 @@ import de.dfki.kiara.ConnectException;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
-import de.dfki.kiara.MethodBinder;
+import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ProtocolRegistry;
 import de.dfki.kiara.Transport;
@@ -224,7 +224,7 @@ public class ConnectionImpl implements Connection {
     }
 
     @Override
-    public <T> T generateClientFunctions(MethodBinder<T> methodBinder) {
+    public <T> T generateClientFunctions(MethodBinding<T> methodBinder) {
         InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinder);
         Class<T> interfaceClass = mapping.getInterfaceClass();
 

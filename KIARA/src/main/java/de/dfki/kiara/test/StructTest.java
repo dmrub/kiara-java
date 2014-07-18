@@ -20,7 +20,7 @@ import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MethodBinder;
+import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.RemoteInterface;
 import java.util.ArrayList;
 import java.util.List;
@@ -118,8 +118,8 @@ public class StructTest {
         try (Context context = Kiara.createContext();
                 Connection connection = context.openConnection(uri)) {
 
-            MethodBinder<StructTestIface> binder
-                    = new MethodBinder<>(StructTestIface.class)
+            MethodBinding<StructTestIface> binder
+                    = new MethodBinding<>(StructTestIface.class)
                     .bind("StructTest.pack", "pack")
                     .bind("StructTest.getInteger", "getInteger")
                     .bind("StructTest.getString", "getString")

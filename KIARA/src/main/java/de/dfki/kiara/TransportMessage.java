@@ -28,6 +28,7 @@ public abstract class TransportMessage {
     public static final class Names {
         public static final String SESSION_ID = "session-id";
         public static final String CONTENT_TYPE = "content-type";
+        public static final String REQUEST_URI = "request-uri";
     }
 
     private final TransportConnection connection;
@@ -76,6 +77,14 @@ public abstract class TransportMessage {
 
     public TransportMessage setContentType(String value) {
         return set(Names.CONTENT_TYPE, value);
+    }
+
+    public String getRequestUri() {
+        return (String)get(Names.REQUEST_URI);
+    }
+
+    public TransportMessage setRequestUri(String uri) {
+        return set(Names.REQUEST_URI, uri);
     }
 
     public abstract TransportMessage set(String name, Object value);

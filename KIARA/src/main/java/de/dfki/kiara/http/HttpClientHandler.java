@@ -17,9 +17,8 @@
 package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.Handler;
+import de.dfki.kiara.RequestHandler;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -36,6 +35,7 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
@@ -47,9 +47,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.LinkedBlockingDeque;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +67,11 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
     private volatile Channel channel;
 
     private final List<Handler<TransportMessage>> handlers = new ArrayList<>();
+
+    @Override
+    public TransportMessage createResponse(TransportMessage request) {
+        throw new UnsupportedOperationException();
+    }
 
     static enum State {
 
@@ -190,21 +192,6 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
         }
     }
 
-    public void closeChannel() {
-        if (channel != null) {
-            channel.closeFuture().addListener(new ChannelFutureListener() {
-
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    future.removeListener(this);
-                    state = State.CLOSED;
-                    channel = null;
-                }
-
-            });
-        }
-    }
-
     @Override
     public TransportMessage createRequest() {
         // Prepare the HTTP request.
@@ -217,6 +204,30 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
         request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
         return new HttpRequestMessage(this, request);
+    }
+
+    @Override
+    public ListenableFuture<Void> send(TransportMessage message) {
+        if (message == null) {
+            throw new NullPointerException("msg");
+        }
+        if (!(message instanceof HttpRequestMessage)) {
+            throw new IllegalArgumentException("msg is not of type HttpRequestMessage");
+        }
+        HttpRequestMessage httpMsg = (HttpRequestMessage) message;
+
+        if (state != State.CONNECTED || channel == null) {
+            throw new IllegalStateException("state=" + state.toString() + " channel=" + channel);
+        }
+
+        HttpRequest request = httpMsg.finalizeRequest();
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("SEND CONTENT: {}", httpMsg.getContent().content().toString(StandardCharsets.UTF_8));
+        }
+
+        ChannelFuture result = channel.writeAndFlush(request);
+        return new ListenableConstantFutureAdapter<>(result, null);
     }
 
     @Override
@@ -241,27 +252,28 @@ class HttpClientHandler extends SimpleChannelInboundHandler<HttpObject> implemen
     }
 
     @Override
-    public ListenableFuture<Void> send(TransportMessage message) {
-        if (message == null) {
-            throw new NullPointerException("msg");
-        }
-        if (!(message instanceof HttpRequestMessage)) {
-            throw new IllegalArgumentException("msg is not of type HttpRequestMessage");
-        }
-        HttpRequestMessage httpMsg = (HttpRequestMessage) message;
+    public void addRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler) {
+        throw new UnsupportedOperationException();
+    }
 
-        if (state != State.CONNECTED || channel == null) {
-            throw new IllegalStateException("state=" + state.toString() + " channel=" + channel);
+    @Override
+    public void removeRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void closeChannel() {
+        if (channel != null) {
+            channel.closeFuture().addListener(new ChannelFutureListener() {
+
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    future.removeListener(this);
+                    state = State.CLOSED;
+                    channel = null;
+                }
+
+            });
         }
-
-        FullHttpRequest request = httpMsg.finalizeRequest();
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("SEND CONTENT: {}", request.content().toString(StandardCharsets.UTF_8));
-        }
-
-        ChannelFuture result = channel.writeAndFlush(request);
-        return new ListenableConstantFutureAdapter<>(result, null);
     }
 
     @Override

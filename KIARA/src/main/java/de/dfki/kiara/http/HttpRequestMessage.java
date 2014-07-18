@@ -16,11 +16,14 @@
  */
 package de.dfki.kiara.http;
 
+import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpRequest;
 
 /**
  *
@@ -28,30 +31,46 @@ import io.netty.handler.codec.http.HttpHeaders;
  */
 public class HttpRequestMessage extends TransportMessage {
 
-    private final FullHttpRequest request;
+    private final HttpRequest request;
+    private final HttpContent content;
 
     /**
      *
-     * @param transport
+     * @param connection
      * @param request
      */
-    public HttpRequestMessage(HttpClientHandler connection, FullHttpRequest request) {
+    public HttpRequestMessage(TransportConnection connection, FullHttpRequest request) {
         super(connection);
         if (request == null) {
             throw new NullPointerException("request");
         }
         this.request = request;
+        this.content = request;
     }
 
-    public FullHttpRequest getRequest() {
+    public HttpRequestMessage(TransportConnection connection, HttpRequest request, HttpContent content) {
+        super(connection);
+        if (request == null)
+            throw new NullPointerException("request");
+        if (content == null)
+            throw new NullPointerException("content");
+        this.request = request;
+        this.content = content;
+    }
+
+    public HttpRequest getRequest() {
         return request;
     }
 
-    public FullHttpRequest finalizeRequest() {
+    public HttpContent getContent() {
+        return content;
+    }
+
+    public HttpRequest finalizeRequest() {
         request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, getPayload().remaining());
         ByteBuf bbuf = Unpooled.wrappedBuffer(getPayload());
-        ByteBuf content = request.content().clear();
-        content.writeBytes(bbuf);
+        ByteBuf byteContent = content.content().clear();
+        byteContent.writeBytes(bbuf);
         bbuf.release();
         return request;
     }
@@ -62,6 +81,8 @@ public class HttpRequestMessage extends TransportMessage {
             request.headers().set(HttpHeaders.Names.CONTENT_TYPE, value);
         } else if (Names.SESSION_ID.equals(name)) {
             request.headers().set("x-kiara-session", value);
+        } else if (Names.REQUEST_URI.equals(name)) {
+            request.setUri((String)value);
         }
         return this;
     }
@@ -72,6 +93,8 @@ public class HttpRequestMessage extends TransportMessage {
             return request.headers().get(HttpHeaders.Names.CONTENT_TYPE);
         } else if (Names.SESSION_ID.equals(name)) {
             return request.headers().get("x-kiara-session");
+        } else if (Names.REQUEST_URI.equals(name)) {
+            return request.getUri();
         }
         return null;
     }

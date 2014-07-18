@@ -32,6 +32,8 @@ public interface TransportConnection extends Closeable {
 
     public TransportMessage createRequest();
 
+    public TransportMessage createResponse(TransportMessage request);
+
     /** Handler is executed in the unspecified thread.
      *
      * @param handler
@@ -46,5 +48,9 @@ public interface TransportConnection extends Closeable {
     public boolean removeResponseHandler(Handler<TransportMessage> handler);
 
     public ListenableFuture<Void> send(TransportMessage message);
+
+    public void addRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler);
+
+    public void removeRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler);
 
 }

@@ -123,4 +123,19 @@ public class TransportConnectionReceiver implements Handler<TransportMessage>, T
     public boolean removeResponseHandler(Handler<TransportMessage> handler) {
         return connection.removeResponseHandler(handler);
     }
+
+    @Override
+    public void addRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void removeRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TransportMessage createResponse(TransportMessage request) {
+        throw new UnsupportedOperationException();
+    }
 }

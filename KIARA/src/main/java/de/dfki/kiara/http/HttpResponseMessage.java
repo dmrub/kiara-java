@@ -14,11 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.http;
 
+import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponse;
 
 /**
  *
@@ -27,10 +30,51 @@ import io.netty.handler.codec.http.HttpHeaders;
 public class HttpResponseMessage extends TransportMessage {
 
     private final HttpHeaders headers;
+    private final HttpResponse response;
+    private final HttpContent content;
 
-    HttpResponseMessage(HttpClientHandler connection, HttpHeaders headers) {
+    HttpResponseMessage(TransportConnection connection, HttpHeaders headers) {
         super(connection);
+        if (headers == null) {
+            throw new NullPointerException("headers");
+        }
+
         this.headers = headers;
+        this.response = null;
+        this.content = null;
+    }
+
+    HttpResponseMessage(TransportConnection connection, HttpResponse response, HttpContent content) {
+        super(connection);
+        if (response == null) {
+            throw new NullPointerException("response");
+        }
+        if (content == null) {
+            throw new NullPointerException("content");
+        }
+
+        this.response = response;
+        this.headers = response.headers();
+        this.content = content;
+    }
+
+    HttpResponseMessage(TransportConnection connection, FullHttpResponse response) {
+        super(connection);
+        if (response == null) {
+            throw new NullPointerException("response");
+        }
+
+        this.response = response;
+        this.headers = response.headers();
+        this.content = response;
+    }
+
+    public HttpResponse getResponse() {
+        return response;
+    }
+
+    public HttpContent getContent() {
+        return content;
     }
 
     @Override

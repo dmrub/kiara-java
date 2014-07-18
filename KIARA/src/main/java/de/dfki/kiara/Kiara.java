@@ -14,16 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara;
 
 import de.dfki.kiara.http.HttpTransport;
 import de.dfki.kiara.impl.ContextImpl;
+import de.dfki.kiara.impl.TransportServerImpl;
 import de.dfki.kiara.jos.JosProtocol;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import de.dfki.kiara.tcp.TcpBlockTransport;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.net.ssl.SSLException;
 
 /**
  *
@@ -48,25 +50,35 @@ public class Kiara {
     public static void init() {
     }
 
+    public static TransportServer createTransportServer() {
+        try {
+            return new TransportServerImpl();
+        } catch (CertificateException ex) {
+            throw new RuntimeException(ex);
+        } catch (SSLException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     public static Context createContext() {
         return new ContextImpl();
     }
 
     public static void addRunningService(RunningService service) {
-        synchronized(runningServices) {
+        synchronized (runningServices) {
             runningServices.add(service);
         }
     }
 
     public static void removeRunningService(RunningService service) {
-        synchronized(runningServices) {
+        synchronized (runningServices) {
             runningServices.remove(service);
         }
     }
 
     public static void shutdownGracefully() {
         List<RunningService> tmp;
-        synchronized(runningServices) {
+        synchronized (runningServices) {
             tmp = new ArrayList<>(runningServices);
         }
         for (RunningService s : tmp) {

@@ -49,8 +49,9 @@ public abstract class TransportMessage {
         return payload;
     }
 
-    public void setPayload(ByteBuffer payload) {
+    public TransportMessage setPayload(ByteBuffer payload) {
         this.payload = payload;
+        return this;
     }
 
     public boolean hasPayload() {

@@ -25,7 +25,6 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
 import io.netty.handler.codec.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 
 /**
  *
@@ -81,7 +80,6 @@ public class HttpResponseMessage extends TransportMessage {
         return content;
     }
 
-
     public HttpResponse finalizeResponse() {
         ByteBuf bbuf = Unpooled.wrappedBuffer(getPayload());
 
@@ -93,7 +91,6 @@ public class HttpResponseMessage extends TransportMessage {
 
         return httpResponse;
     }
-
 
     @Override
     public TransportMessage set(String name, Object value) {

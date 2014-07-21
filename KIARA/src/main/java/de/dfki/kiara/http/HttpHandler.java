@@ -38,8 +38,8 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
+import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import io.netty.handler.codec.http.HttpVersion;
@@ -65,7 +65,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     private static final Logger logger = LoggerFactory.getLogger(HttpHandler.class);
 
     private HttpHeaders headers = null;
-    private final NoCopyByteArrayOutputStream bout = new NoCopyByteArrayOutputStream(1024);
+    private final NoCopyByteArrayOutputStream bout;
 
     private final URI uri;
     private final HttpMethod method;
@@ -106,6 +106,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         this.connectionHandler = null;
         this.state = State.UNINITIALIZED;
         this.mode = Mode.CLIENT;
+        this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
     public HttpHandler(Handler<TransportConnection> connectionHandler) {
@@ -117,6 +118,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         this.connectionHandler = connectionHandler;
         this.state = State.UNINITIALIZED;
         this.mode = Mode.SERVER;
+        this.bout = null;
     }
 
     @Override
@@ -219,6 +221,9 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         ctx.close();
+
+        logger.error("Error {} in {} mode", cause, mode);
+
         if (mode == Mode.CLIENT) {
             onErrorResponse(cause);
         }
@@ -257,10 +262,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     }
 
     public void onErrorResponse(Throwable error) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("RECEIVED ERROR {}", error);
-        }
-
         synchronized (responseHandlers) {
             if (!responseHandlers.isEmpty()) {
                 for (Handler<TransportMessage> handler : responseHandlers) {
@@ -317,22 +318,33 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         if (message == null) {
             throw new NullPointerException("msg");
         }
-        if (!(message instanceof HttpRequestMessage)) {
-            throw new IllegalArgumentException("msg is not of type HttpRequestMessage");
-        }
-        HttpRequestMessage httpMsg = (HttpRequestMessage) message;
-
         if (state != State.CONNECTED || channel == null) {
             throw new IllegalStateException("state=" + state.toString() + " channel=" + channel);
         }
 
-        HttpRequest request = httpMsg.finalizeRequest();
+        HttpMessage httpMsg;
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("SEND CONTENT: {}", httpMsg.getContent().content().toString(StandardCharsets.UTF_8));
+        if (message instanceof HttpRequestMessage) {
+            HttpRequestMessage msg = (HttpRequestMessage) message;
+
+            httpMsg = msg.finalizeRequest();
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("SEND CONTENT: {}", msg.getContent().content().toString(StandardCharsets.UTF_8));
+            }
+        } else if (message instanceof HttpResponseMessage) {
+            HttpResponseMessage msg = (HttpResponseMessage) message;
+
+            httpMsg = msg.finalizeResponse();
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("SEND CONTENT: {}", msg.getContent().content().toString(StandardCharsets.UTF_8));
+            }
+        } else {
+            throw new IllegalArgumentException("msg is neither of type HttpRequestMessage nor HttpResponseMessage");
         }
 
-        ChannelFuture result = channel.writeAndFlush(request);
+        ChannelFuture result = channel.writeAndFlush(httpMsg);
         return new ListenableConstantFutureAdapter<>(result, null);
     }
 

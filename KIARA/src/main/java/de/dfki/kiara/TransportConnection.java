@@ -18,7 +18,6 @@
 package de.dfki.kiara;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import java.io.Closeable;
 import java.net.SocketAddress;
 

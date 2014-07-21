@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
  */
 public class TransportServerTest {
 
-    private static class HTTPServerHandler implements Handler<TransportConnection>, RequestHandler<TransportMessage, TransportMessage> {
+    private static class HttpServerHandler implements Handler<TransportConnection>, RequestHandler<TransportMessage, TransportMessage> {
 
         @Override
         public boolean onSuccess(TransportConnection result) {
@@ -53,8 +53,17 @@ public class TransportServerTest {
         @Override
         public TransportMessage onRequest(TransportMessage message) {
             String content = new String(message.getPayload().array(), message.getPayload().arrayOffset(), message.getPayload().remaining());
-            System.err.println("Received request (uri="+message.getRequestUri()+" type=" + message.getContentType() + "): " + content);
+            System.err.println("Received request (uri=" + message.getRequestUri() + " type=" + message.getContentType() + "): " + content);
             TransportMessage response = message.getConnection().createResponse(message);
+
+//            try {
+//                TransportConnection conn = message.getConnection();
+//                conn.send(conn.createResponse(message)
+//                        .setPayload(ByteBuffer.wrap("TEST123".getBytes("UTF-8")))
+//                        .setContentType("text/plain; charset=UTF-8"));
+//            } catch (UnsupportedEncodingException ex) {
+//
+//            }
 
             String responseText = "WELCOME TO THE WILD WILD WEB SERVER";
 
@@ -78,7 +87,7 @@ public class TransportServerTest {
 
             TransportServer server = Kiara.createTransportServer();
 
-            HTTPServerHandler handler = new HTTPServerHandler();
+            HttpServerHandler handler = new HttpServerHandler();
             server.listen("0.0.0.0", "8080", http, handler);
             server.run();
 

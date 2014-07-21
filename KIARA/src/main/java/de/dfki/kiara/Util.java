@@ -22,9 +22,11 @@ import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ListenableFuture;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
 /**
@@ -158,4 +160,23 @@ public final class Util {
         return paramTypes.length == 1 && paramTypes[0].equals(de.dfki.kiara.Message.class);
     }
 
+    public static String bufferToString(ByteBuffer buffer) {
+        if (buffer.hasArray()) {
+            return new String(buffer.array(), buffer.arrayOffset(), buffer.remaining());
+        } else {
+            byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            return new String(bytes);
+        }
+    }
+
+    public static String bufferToString(ByteBuffer buffer, String charsetName) throws UnsupportedEncodingException {
+        if (buffer.hasArray()) {
+            return new String(buffer.array(), buffer.arrayOffset(), buffer.remaining(), charsetName);
+        } else {
+            byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            return new String(bytes, charsetName);
+        }
+    }
 }

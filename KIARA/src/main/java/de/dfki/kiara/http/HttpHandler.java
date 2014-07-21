@@ -157,7 +157,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
                 HttpResponseMessage responseTransportMessage = null;
                 for (RequestHandler<TransportMessage, TransportMessage> requestHandler : requestHandlers) {
-                    TransportMessage tm = requestHandler.onRequest(transportMessage);
+                        TransportMessage tm = requestHandler.onRequest(transportMessage);
                     if (tm != null) {
                         if (!(tm instanceof HttpResponseMessage)) {
                             // FIXME handle error

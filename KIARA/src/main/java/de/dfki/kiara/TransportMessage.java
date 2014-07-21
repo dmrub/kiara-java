@@ -35,11 +35,15 @@ public abstract class TransportMessage {
     private final TransportConnection connection;
     private ByteBuffer payload;
 
-    protected TransportMessage(TransportConnection connection) {
+    protected TransportMessage(TransportConnection connection, ByteBuffer payload) {
         if (connection == null)
             throw new NullPointerException("connection");
         this.connection = connection;
-        this.payload = null;
+        this.payload = payload;
+    }
+
+    protected TransportMessage(TransportConnection connection) {
+        this(connection, null);
     }
 
     public TransportConnection getConnection() {

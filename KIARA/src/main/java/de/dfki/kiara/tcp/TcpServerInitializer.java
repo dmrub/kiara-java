@@ -14,13 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.tcp;
 
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.netty.ByteBufferDecoder;
 import de.dfki.kiara.netty.ByteBufferEncoder;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -32,6 +33,7 @@ import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
+import java.nio.ByteOrder;
 
 public class TcpServerInitializer extends ChannelInitializer<SocketChannel> {
 
@@ -52,10 +54,16 @@ public class TcpServerInitializer extends ChannelInitializer<SocketChannel> {
         }
         p.addLast("logger", new LoggingHandler(LogLevel.DEBUG));
 
-        p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+        p.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, Integer.MAX_VALUE, 0, 4, 0, 4, true));
         p.addLast(new ByteBufferDecoder());
 
-        p.addLast(new LengthFieldPrepender(4, false));
+        p.addLast(new LengthFieldPrepender(4, 0, false) {
+            @Override
+            protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
+                ByteBuf outWithLittleEndian = out.order(ByteOrder.LITTLE_ENDIAN);
+                super.encode(ctx, msg, outWithLittleEndian);
+            }
+        });
         p.addLast(new ByteBufferEncoder());
         p.addLast(new TcpHandler(connectionHandler));
     }

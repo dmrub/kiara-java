@@ -21,36 +21,21 @@ import de.dfki.kiara.Handler;
 import de.dfki.kiara.RequestHandler;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 
-import static io.netty.handler.codec.http.HttpHeaders.Names.*;
-import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponse;
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
-import io.netty.handler.codec.http.HttpVersion;
-import static io.netty.handler.codec.http.HttpVersion.*;
-import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.util.CharsetUtil;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -71,6 +56,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     private final HttpMethod method;
 
     private volatile Channel channel = null;
+    private volatile String sessionId = null;
 
     private final Handler<TransportConnection> connectionHandler;
 
@@ -121,6 +107,8 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         this.bout = null;
     }
 
+    private static final byte[] EMPTY_ARRAY = new byte[0];
+
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         channel = ctx.channel();
@@ -130,6 +118,10 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
                 state = State.CONNECTED;
                 if (connectionHandler != null) {
                     connectionHandler.onSuccess(this);
+                }
+                if (mode == Mode.CLIENT) {
+                    // FIXME send sessionID
+                    ctx.writeAndFlush(EMPTY_ARRAY);
                 }
                 break;
             case WAIT_CLOSE:
@@ -147,74 +139,44 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-        logger.debug("Handler: {} / Channel: {}", this, ctx.channel());
-        if (mode == Mode.SERVER) {
-            if (msg instanceof FullHttpRequest) {
-                FullHttpRequest request = (FullHttpRequest) msg;
+        logger.debug("Handler: {} / Mode: {} / Channel: {} / Message class {}", this, mode, ctx.channel(), msg.getClass());
 
-                TcpRequestMessage transportMessage = new TcpRequestMessage(this, request);
-                transportMessage.setPayload(request.content().nioBuffer());
+        if (msg instanceof ByteBuffer) {
+            ByteBuffer message = (ByteBuffer) msg;
+            TcpBlockMessage transportMessage = new TcpBlockMessage(this, (ByteBuffer) msg);
 
-                TcpResponseMessage responseTransportMessage = null;
-                for (RequestHandler<TransportMessage, TransportMessage> requestHandler : requestHandlers) {
-                    TransportMessage tm = requestHandler.onRequest(transportMessage);
-                    if (tm != null) {
-                        if (!(tm instanceof TcpResponseMessage)) {
-                            // FIXME handle error
-                            continue;
-                        }
-                        responseTransportMessage = (TcpResponseMessage) tm;
-                        break;
+            if (mode == Mode.SERVER) {
+                if (sessionId == null) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Set session ID to '{}'", Util.bufferToString(transportMessage.getPayload()));
                     }
-                }
-
-                boolean keepAlive = HttpHeaders.isKeepAlive(request);
-
-                HttpResponse httpResponse;
-                if (responseTransportMessage != null) {
-                    httpResponse = responseTransportMessage.finalizeResponse();
+                    sessionId = Util.bufferToString(transportMessage.getPayload(), "UTF-8");
                 } else {
-                    httpResponse = new DefaultFullHttpResponse(
-                            HTTP_1_1, BAD_REQUEST, Unpooled.copiedBuffer("Could not handle request", CharsetUtil.UTF_8));
-                }
-                logger.debug("RESPONSE CONTENT: {}", responseTransportMessage.getContent().content().toString(StandardCharsets.UTF_8));
-                ctx.write(httpResponse);
+                    TcpBlockMessage responseTransportMessage = null;
+                    for (RequestHandler<TransportMessage, TransportMessage> requestHandler : requestHandlers) {
+                        TransportMessage tm = requestHandler.onRequest(transportMessage);
+                        if (tm != null) {
+                            if (!(tm instanceof TcpBlockMessage)) {
+                                // FIXME handle error
+                                continue;
+                            }
+                            responseTransportMessage = (TcpBlockMessage) tm;
+                            break;
+                        }
+                    }
 
-                if (!keepAlive) {
-                    // If keep-alive is off, close the connection once the content is fully written.
-                    ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-                }
-            }
-        } else {
-            // CLIENT
-            if (msg instanceof HttpResponse) {
-                HttpResponse response = (HttpResponse) msg;
-                headers = response.headers();
-                //if (!response.headers().isEmpty()) {
-                //    contentType = response.headers().get("Content-Type");
-                //}
-            }
-            if (msg instanceof HttpContent) {
-                HttpContent content = (HttpContent) msg;
-                ByteBuf buf = content.content();
-                if (buf.isReadable()) {
-                    if (buf.hasArray()) {
-                        bout.write(buf.array(), buf.readerIndex(), buf.readableBytes());
+                    if (responseTransportMessage != null && responseTransportMessage.getPayload() != null) {
+                        logger.debug("RESPONSE CONTENT: {}", Util.bufferToString(responseTransportMessage.getPayload()));
+                        ctx.write(responseTransportMessage.getPayload());
                     } else {
-                        byte[] bytes = new byte[buf.readableBytes()];
-                        buf.getBytes(buf.readerIndex(), bytes);
-                        bout.write(bytes);
+                        logger.info("NO RESPONSE CONTENT");
                     }
                 }
-                if (content instanceof LastHttpContent) {
-                    //ctx.close();
-                    bout.flush();
-                    TcpResponseMessage response = new TcpResponseMessage(this, headers);
-                    response.setPayload(ByteBuffer.wrap(bout.toByteArray(), 0, bout.size()));
-                    onResponse(response);
-                    bout.reset();
-                }
+            } else {
+                // CLIENT
+                onResponse(transportMessage);
             }
+
         }
     }
 
@@ -222,7 +184,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         ctx.close();
 
-        logger.error("Error {} in {} mode", cause, mode);
+        logger.error("Tcp Error", cause);
 
         if (mode == Mode.CLIENT) {
             onErrorResponse(cause);
@@ -245,7 +207,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         return channel.remoteAddress();
     }
 
-    public void onResponse(TcpResponseMessage response) {
+    public void onResponse(TcpBlockMessage response) {
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
@@ -275,42 +237,17 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
 
     @Override
     public TransportMessage createRequest() {
-        // Prepare the HTTP request.
-        String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
-        FullHttpRequest request = new DefaultFullHttpRequest(
-                HttpVersion.HTTP_1_1, method, uri.getRawPath());
-
-        request.headers().set(HttpHeaders.Names.HOST, host);
-        request.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-        request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
-
-        return new TcpRequestMessage(this, request);
+        return new TcpBlockMessage(this, null);
     }
 
     @Override
     public TransportMessage createResponse(TransportMessage transportMessage) {
-        if (!(transportMessage instanceof TcpRequestMessage)) {
-            throw new IllegalArgumentException("request is not of type HttpRequestMessage");
+        if (!(transportMessage instanceof TcpBlockMessage)) {
+            throw new IllegalArgumentException("request is not of type TcpBlockMessage");
         }
-        TcpRequestMessage request = (TcpRequestMessage) transportMessage;
+        TcpBlockMessage request = (TcpBlockMessage) transportMessage;
 
-        // Decide whether to close the connection or not.
-        boolean keepAlive = HttpHeaders.isKeepAlive(request.getRequest());
-        // Build the response object.
-        FullHttpResponse response = new DefaultFullHttpResponse(
-                HTTP_1_1, request.getRequest().getDecoderResult().isSuccess() ? OK : BAD_REQUEST);
-
-        response.headers().set(CONTENT_TYPE, "text/plain; charset=UTF-8");
-
-        if (keepAlive) {
-            // Add 'Content-Length' header only for a keep-alive connection.
-            response.headers().set(CONTENT_LENGTH, response.content().readableBytes());
-            // Add keep alive header as per:
-            // - http://www.w3.org/Protocols/HTTP/1.1/draft-ietf-http-v11-spec-01.html#Connection
-            response.headers().set(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-        }
-
-        return new TcpResponseMessage(this, response);
+        return new TcpBlockMessage(this, null);
     }
 
     @Override
@@ -322,29 +259,11 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
             throw new IllegalStateException("state=" + state.toString() + " channel=" + channel);
         }
 
-        HttpMessage httpMsg;
-
-        if (message instanceof TcpRequestMessage) {
-            TcpRequestMessage msg = (TcpRequestMessage) message;
-
-            httpMsg = msg.finalizeRequest();
-
-            if (logger.isDebugEnabled()) {
-                logger.debug("SEND CONTENT: {}", msg.getContent().content().toString(StandardCharsets.UTF_8));
-            }
-        } else if (message instanceof TcpResponseMessage) {
-            TcpResponseMessage msg = (TcpResponseMessage) message;
-
-            httpMsg = msg.finalizeResponse();
-
-            if (logger.isDebugEnabled()) {
-                logger.debug("SEND CONTENT: {}", msg.getContent().content().toString(StandardCharsets.UTF_8));
-            }
-        } else {
-            throw new IllegalArgumentException("msg is neither of type HttpRequestMessage nor HttpResponseMessage");
+        if (logger.isDebugEnabled()) {
+            logger.debug("SEND CONTENT: {}", Util.bufferToString(message.getPayload()));
         }
 
-        ChannelFuture result = channel.writeAndFlush(httpMsg);
+        ChannelFuture result = channel.writeAndFlush(message.getPayload());
         return new ListenableConstantFutureAdapter<>(result, null);
     }
 

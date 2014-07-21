@@ -26,11 +26,10 @@ import de.dfki.kiara.TransportRegistry;
 import de.dfki.kiara.TransportServer;
 import de.dfki.kiara.config.ServerConfiguration;
 import de.dfki.kiara.config.ServerInfo;
+import de.dfki.kiara.util.HexDump;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -56,9 +55,16 @@ public class TransportServerTest {
         si.transport.name = "http";
         si.transport.url = "/rpc/calc";
         config.servers.add(si);
+
+        si = new ServerInfo();
+        si.services.add("*");
+        si.protocol.name = "jsonrpc";
+        si.transport.name = "tcp";
+        si.transport.url = "tcp://127.0.0.1:8090/rpc/calc";
+        config.servers.add(si);
     }
 
-    private static class HttpServerHandler implements Handler<TransportConnection>, RequestHandler<TransportMessage, TransportMessage> {
+    private static class ServerHandler implements Handler<TransportConnection>, RequestHandler<TransportMessage, TransportMessage> {
 
         @Override
         public boolean onSuccess(TransportConnection result) {
@@ -77,18 +83,26 @@ public class TransportServerTest {
 
         @Override
         public TransportMessage onRequest(TransportMessage message) {
-
-            String content;
+            byte[] array;
+            int arrayOffset;
+            int arrayLength;
             if (message.getPayload().hasArray()) {
-                content = new String(message.getPayload().array(), message.getPayload().arrayOffset(), message.getPayloadSize());
+                array = message.getPayload().array();
+                arrayOffset = message.getPayload().arrayOffset();
+                arrayLength = message.getPayloadSize();
             } else {
-                byte[] bytes = new byte[message.getPayloadSize()];
-                message.getPayload().get(bytes);
-                content = new String(bytes);
+                array = new byte[message.getPayloadSize()];
+                message.getPayload().get(array);
+                arrayOffset = 0;
+                arrayLength = 0;
             }
 
-            System.err.printf("Received request (method=%s uri=%s type=%s): %s",
-                    message.getHttpMethod(), message.getRequestUri(), message.getContentType(), content);
+            System.err.printf("Received request (message class=%s method=%s uri=%s type=%s): %n%s%n",
+                    message.getClass().getName(),
+                    message.getHttpMethod(),
+                    message.getRequestUri(),
+                    message.getContentType(),
+                    arrayLength == 0 ? "empty" : HexDump.dumpHexString(array, arrayOffset, arrayLength));
             TransportMessage response = message.getConnection().createResponse(message);
 
             String responseText;
@@ -131,11 +145,13 @@ public class TransportServerTest {
         Kiara.init();
         try {
             Transport http = TransportRegistry.getTransportByName("http");
+            Transport tcp = TransportRegistry.getTransportByName("tcp");
 
             TransportServer server = Kiara.createTransportServer();
 
-            HttpServerHandler handler = new HttpServerHandler();
+            ServerHandler handler = new ServerHandler();
             server.listen("0.0.0.0", "8080", http, handler);
+            server.listen("0.0.0.0", "8090", tcp, handler);
             server.run();
 
             System.out.println("Server running...");

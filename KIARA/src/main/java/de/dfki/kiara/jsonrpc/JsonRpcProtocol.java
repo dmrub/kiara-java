@@ -47,6 +47,18 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     private final AtomicLong nextId;
     private final ObjectMapper objectMapper;
 
+    public Object parseMessageName(JsonNode messageNode) throws IOException {
+        JsonNode methodNode = messageNode.get("method");
+        Object method = null;
+        if (methodNode != null) {
+            if (!methodNode.isTextual()  && !methodNode.isNull()) {
+                throw new IOException("Invalid 'id' member");
+            }
+            method = methodNode.textValue();
+        }
+        return method;
+    }
+
     private static abstract class JsonRpcErrorMixIn {
 
         public JsonRpcErrorMixIn(@JsonProperty("code") int code, @JsonProperty("message") String message, @JsonProperty("data") Object data) {

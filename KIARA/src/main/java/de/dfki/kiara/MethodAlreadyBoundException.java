@@ -16,14 +16,11 @@
  */
 
 package de.dfki.kiara;
-
-import java.io.IOException;
-
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class MethodAlreadyBoundException extends IOException {
+public class MethodAlreadyBoundException extends Exception {
 
     public MethodAlreadyBoundException() {
     }

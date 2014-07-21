@@ -39,7 +39,7 @@ public class BinderImpl implements Binder {
             String serviceMethodName) throws NoSuchMethodException, SecurityException {
         Method method = null;
         for(Method m: serviceClass.getClass().getMethods()){
-            if(m.getName().equalsIgnoreCase(serviceMethodName)){
+            if(m.getName().equals(serviceMethodName)){
                 method = m;
                 break;
             }

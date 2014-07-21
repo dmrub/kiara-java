@@ -40,7 +40,7 @@ public class ContextImpl implements Context {
 
     @Override
     public Server newServer(String host, int port, String configPath) {
-        return new ServerImpl();
+        return new ServerImpl(host, port, configPath);
     }
 
     @Override

@@ -37,4 +37,6 @@ public interface Service {
             MethodAlreadyBoundException, NoSuchMethodException, SecurityException;
 
     public void unregisterServiceFunction(String idlMethodName) throws NoSuchMethodException;
+
+    public void DbgSimulateCall(String messageString);
 }

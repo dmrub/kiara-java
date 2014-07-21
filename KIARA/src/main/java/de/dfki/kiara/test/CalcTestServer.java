@@ -65,6 +65,9 @@ public class CalcTestServer {
             service.registerServiceFunction("calc.int32ToString", impl, "int32ToString");
             System.out.printf("Starting server...\n");
 
+            service.DbgSimulateCall(
+                    "{\"jsonrpc\": \"2.0\", \"method\": \"calc.add\", \"params\": [42, 23], \"id\": 1}");
+
             Server server = context.newServer("0.0.0.0", port, "/service");
             server.addService("/rpc/calc", protocol, service);
             server.run();
@@ -75,23 +78,24 @@ public class CalcTestServer {
             Kiara.shutdownGracefully();
         }
     }
-}
 
-class CalcImpl {
+    public static class CalcImpl {
 
-    public int add(int a, int b) {
-        return a + b;
+        public int add(int a, int b) {
+            return a + b;
+        }
+
+        public float add(float a, float b) {
+            return a + b;
+        }
+
+        public int stringToInt32(String s) {
+            return Integer.parseInt(s);
+        }
+
+        public String int32ToString(int i) {
+            return Integer.toString(i);
+        }
     }
 
-    public float add(float a, float b) {
-        return a + b;
-    }
-
-    public int stringToInt32(String s) {
-        return Integer.parseInt(s);
-    }
-
-    public String int32ToString(int i) {
-        return Integer.toString(i);
-    }
 }

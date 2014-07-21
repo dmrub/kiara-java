@@ -16,10 +16,30 @@
  */
 package de.dfki.kiara.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import de.dfki.kiara.MethodAlreadyBoundException;
 import de.dfki.kiara.Binder;
 import de.dfki.kiara.IDLParseException;
 import de.dfki.kiara.Service;
+import de.dfki.kiara.ServiceMethodBinder;
+import de.dfki.kiara.idl.KiaraKTDConstructor;
+import de.dfki.kiara.idl.KiaraLexer;
+import de.dfki.kiara.idl.KiaraParser;
+import de.dfki.kiara.jsonrpc.JsonRpcMessage;
+import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
+import de.dfki.kiara.ktd.Module;
+import de.dfki.kiara.ktd.World;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.ByteBuffer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 /**
  *
@@ -27,10 +47,14 @@ import de.dfki.kiara.Service;
  */
 public class ServiceImpl implements Service {
 
-    final private Binder binder;
+    private final Binder binder;
+    private final World world;
+    private final Module module;
 
     public ServiceImpl() {
         this.binder = new BinderImpl();
+        world = new World();
+        module = new Module(world, "kiara");
     }
 
     @Override
@@ -40,7 +64,11 @@ public class ServiceImpl implements Service {
 
     @Override
     public void loadServiceIDLFromString(String idlLanguage, String idlContents) throws IDLParseException {
-
+        try {
+            loadIDL(idlContents, null);
+        } catch (IOException ex) {
+            throw new IDLParseException(ex);
+        }
     }
 
     @Override
@@ -86,7 +114,62 @@ public class ServiceImpl implements Service {
     }
 
     @Override
-    public void unregisterServiceFunction(String idlMethodName) throws NoSuchMethodException{
+    public void unregisterServiceFunction(String idlMethodName) throws NoSuchMethodException {
         binder.unbindServiceMethod(idlMethodName);
+    }
+
+    private void loadIDL(InputStream stream, String fileName) throws IOException {
+        loadIDL(new ANTLRInputStream(stream), fileName);
+    }
+
+    private void loadIDL(String idlContents, String fileName) throws IOException {
+        loadIDL(new ANTLRInputStream(idlContents), fileName);
+    }
+
+    private void loadIDL(ANTLRInputStream input, String fileName) throws IOException {
+        // create a lexer that feeds off of input CharStream
+        KiaraLexer lexer = new KiaraLexer(input);
+        // create a buffer of tokens pulled from the lexer
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        // create a parser that feeds off the tokens buffer
+        KiaraParser parser = new KiaraParser(tokens);
+        ParseTree tree = parser.program(); // begin parsing at program rule
+
+        ParseTreeWalker walker = new ParseTreeWalker();
+
+        KiaraKTDConstructor ktdConstructor = new KiaraKTDConstructor(module, fileName);
+        walker.walk(ktdConstructor, tree);
+
+        if (!ktdConstructor.getParserErrors().isEmpty()) {
+            StringBuilder b = new StringBuilder("IDL parser errors:");
+            b.append(System.lineSeparator());
+            for (String error : ktdConstructor.getParserErrors()) {
+                b.append(error);
+                b.append(System.lineSeparator());
+            }
+            throw new IOException(b.toString());
+        }
+    }
+
+    /**
+     *
+     * @param messageString
+     */
+    @Override
+    public void DbgSimulateCall(String messageString) {
+        JsonRpcProtocol protocol = new JsonRpcProtocol();
+
+        try {
+            JsonNode jsonNode = protocol.parseMessageData(ByteBuffer.wrap(messageString.getBytes("UTF-8")));
+            String methodName = (String) protocol.parseMessageName(jsonNode);
+            ServiceMethodBinder serviceMethod = binder.getServiceMethod(methodName);
+            JsonRpcMessage rpcMessage = protocol.createRequestMessageFromData(jsonNode, serviceMethod.getBoundedMethod().getParameterTypes());
+
+            System.out.println(serviceMethod.getBoundedMethod().invoke(
+                    serviceMethod.getImplementedClass(), rpcMessage.getRequestObject().args.toArray()));
+
+        } catch (IOException | InvocationTargetException | IllegalAccessException | IllegalArgumentException ex) {
+            ex.printStackTrace();
+        }
     }
 }

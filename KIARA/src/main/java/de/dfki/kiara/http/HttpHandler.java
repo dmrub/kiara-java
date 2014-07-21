@@ -168,22 +168,15 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
                 boolean keepAlive = HttpHeaders.isKeepAlive(request);
 
+                HttpResponse httpResponse;
                 if (responseTransportMessage != null) {
-                    // FIXME move this to HttpResponseMessage
-                    ByteBuf bbuf = Unpooled.wrappedBuffer(responseTransportMessage.getPayload());
-
-                    HttpResponse httpResponse = responseTransportMessage.getResponse();
-                    responseTransportMessage.getContent().content().clear();
-                    responseTransportMessage.getContent().content().writeBytes(bbuf);
-                    logger.debug("RESPONSE CONTENT: {}", responseTransportMessage.getContent().content().toString(StandardCharsets.UTF_8));
-
-                    httpResponse.headers().set(CONTENT_LENGTH, responseTransportMessage.getContent().content().readableBytes());
-                    ctx.write(httpResponse);
+                    httpResponse = responseTransportMessage.finalizeResponse();
                 } else {
-                    FullHttpResponse response = new DefaultFullHttpResponse(
+                    httpResponse = new DefaultFullHttpResponse(
                             HTTP_1_1, BAD_REQUEST, Unpooled.copiedBuffer("Could not handle request", CharsetUtil.UTF_8));
-                    ctx.write(response);
                 }
+                logger.debug("RESPONSE CONTENT: {}", responseTransportMessage.getContent().content().toString(StandardCharsets.UTF_8));
+                ctx.write(httpResponse);
 
                 if (!keepAlive) {
                     // If keep-alive is off, close the connection once the content is fully written.

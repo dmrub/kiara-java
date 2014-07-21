@@ -18,10 +18,14 @@ package de.dfki.kiara.http;
 
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
+import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
 import io.netty.handler.codec.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 
 /**
  *
@@ -76,6 +80,20 @@ public class HttpResponseMessage extends TransportMessage {
     public HttpContent getContent() {
         return content;
     }
+
+
+    public HttpResponse finalizeResponse() {
+        ByteBuf bbuf = Unpooled.wrappedBuffer(getPayload());
+
+        HttpResponse httpResponse = getResponse();
+        getContent().content().clear();
+        getContent().content().writeBytes(bbuf);
+
+        httpResponse.headers().set(CONTENT_LENGTH, getContent().content().readableBytes());
+
+        return httpResponse;
+    }
+
 
     @Override
     public TransportMessage set(String name, Object value) {

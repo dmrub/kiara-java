@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara.http;
+package de.dfki.kiara.tcp;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Handler;
@@ -60,9 +60,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class HttpHandler extends SimpleChannelInboundHandler<Object> implements TransportConnection {
+public class TcpHandler extends SimpleChannelInboundHandler<Object> implements TransportConnection {
 
-    private static final Logger logger = LoggerFactory.getLogger(HttpHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(TcpHandler.class);
 
     private HttpHeaders headers = null;
     private final NoCopyByteArrayOutputStream bout;
@@ -94,7 +94,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     }
     private State state;
 
-    public HttpHandler(URI uri, HttpMethod method) {
+    public TcpHandler(URI uri, HttpMethod method) {
         if (uri == null) {
             throw new NullPointerException("uri");
         }
@@ -109,7 +109,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public HttpHandler(Handler<TransportConnection> connectionHandler) {
+    public TcpHandler(Handler<TransportConnection> connectionHandler) {
         if (connectionHandler == null) {
             throw new NullPointerException("connectionHandler");
         }
@@ -152,18 +152,18 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
             if (msg instanceof FullHttpRequest) {
                 FullHttpRequest request = (FullHttpRequest) msg;
 
-                HttpRequestMessage transportMessage = new HttpRequestMessage(this, request);
+                TcpRequestMessage transportMessage = new TcpRequestMessage(this, request);
                 transportMessage.setPayload(request.content().nioBuffer());
 
-                HttpResponseMessage responseTransportMessage = null;
+                TcpResponseMessage responseTransportMessage = null;
                 for (RequestHandler<TransportMessage, TransportMessage> requestHandler : requestHandlers) {
                     TransportMessage tm = requestHandler.onRequest(transportMessage);
                     if (tm != null) {
-                        if (!(tm instanceof HttpResponseMessage)) {
+                        if (!(tm instanceof TcpResponseMessage)) {
                             // FIXME handle error
                             continue;
                         }
-                        responseTransportMessage = (HttpResponseMessage) tm;
+                        responseTransportMessage = (TcpResponseMessage) tm;
                         break;
                     }
                 }
@@ -209,7 +209,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
                 if (content instanceof LastHttpContent) {
                     //ctx.close();
                     bout.flush();
-                    HttpResponseMessage response = new HttpResponseMessage(this, headers);
+                    TcpResponseMessage response = new TcpResponseMessage(this, headers);
                     response.setPayload(ByteBuffer.wrap(bout.toByteArray(), 0, bout.size()));
                     onResponse(response);
                     bout.reset();
@@ -222,7 +222,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         ctx.close();
 
-        logger.error("Transport error", cause);
+        logger.error("Error {} in {} mode", cause, mode);
 
         if (mode == Mode.CLIENT) {
             onErrorResponse(cause);
@@ -245,7 +245,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         return channel.remoteAddress();
     }
 
-    public void onResponse(HttpResponseMessage response) {
+    public void onResponse(TcpResponseMessage response) {
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
@@ -284,15 +284,15 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         request.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
         request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
-        return new HttpRequestMessage(this, request);
+        return new TcpRequestMessage(this, request);
     }
 
     @Override
     public TransportMessage createResponse(TransportMessage transportMessage) {
-        if (!(transportMessage instanceof HttpRequestMessage)) {
+        if (!(transportMessage instanceof TcpRequestMessage)) {
             throw new IllegalArgumentException("request is not of type HttpRequestMessage");
         }
-        HttpRequestMessage request = (HttpRequestMessage) transportMessage;
+        TcpRequestMessage request = (TcpRequestMessage) transportMessage;
 
         // Decide whether to close the connection or not.
         boolean keepAlive = HttpHeaders.isKeepAlive(request.getRequest());
@@ -310,7 +310,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
             response.headers().set(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
         }
 
-        return new HttpResponseMessage(this, response);
+        return new TcpResponseMessage(this, response);
     }
 
     @Override
@@ -324,16 +324,16 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
         HttpMessage httpMsg;
 
-        if (message instanceof HttpRequestMessage) {
-            HttpRequestMessage msg = (HttpRequestMessage) message;
+        if (message instanceof TcpRequestMessage) {
+            TcpRequestMessage msg = (TcpRequestMessage) message;
 
             httpMsg = msg.finalizeRequest();
 
             if (logger.isDebugEnabled()) {
                 logger.debug("SEND CONTENT: {}", msg.getContent().content().toString(StandardCharsets.UTF_8));
             }
-        } else if (message instanceof HttpResponseMessage) {
-            HttpResponseMessage msg = (HttpResponseMessage) message;
+        } else if (message instanceof TcpResponseMessage) {
+            TcpResponseMessage msg = (TcpResponseMessage) message;
 
             httpMsg = msg.finalizeResponse();
 

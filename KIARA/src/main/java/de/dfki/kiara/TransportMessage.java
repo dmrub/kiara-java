@@ -29,6 +29,7 @@ public abstract class TransportMessage {
         public static final String SESSION_ID = "session-id";
         public static final String CONTENT_TYPE = "content-type";
         public static final String REQUEST_URI = "request-uri";
+        public static final String HTTP_METHOD = "http-method";
     }
 
     private final TransportConnection connection;
@@ -86,6 +87,14 @@ public abstract class TransportMessage {
 
     public TransportMessage setRequestUri(String uri) {
         return set(Names.REQUEST_URI, uri);
+    }
+
+    public String getHttpMethod() {
+        return (String)get(Names.HTTP_METHOD);
+    }
+
+    public TransportMessage setHttpMethod(String method) {
+        return set(Names.HTTP_METHOD, method);
     }
 
     public abstract TransportMessage set(String name, Object value);

@@ -24,14 +24,39 @@ import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportRegistry;
 import de.dfki.kiara.TransportServer;
+import de.dfki.kiara.config.ServerConfiguration;
+import de.dfki.kiara.config.ServerInfo;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class TransportServerTest {
+
+    static final ServerConfiguration config = new ServerConfiguration();
+
+    static {
+        config.info = "test server";
+        config.idlContents = "namespace * calc "
+                + "service calc { "
+                + "    i32 add(i32 a, i32 b) "
+                + "    float addf(float a, float b) "
+                + "    i32 stringToInt32(string s) "
+                + "    string int32ToString(i32 i) "
+                + "} ";
+
+        ServerInfo si = new ServerInfo();
+        si.services.add("*");
+        si.protocol.name = "jsonrpc";
+        si.transport.name = "http";
+        si.transport.url = "/rpc/calc";
+        config.servers.add(si);
+    }
 
     private static class HttpServerHandler implements Handler<TransportConnection>, RequestHandler<TransportMessage, TransportMessage> {
 
@@ -52,10 +77,34 @@ public class TransportServerTest {
 
         @Override
         public TransportMessage onRequest(TransportMessage message) {
-            String content = new String(message.getPayload().array(), message.getPayload().arrayOffset(), message.getPayload().remaining());
-            System.err.println("Received request (uri=" + message.getRequestUri() + " type=" + message.getContentType() + "): " + content);
+
+            String content;
+            if (message.getPayload().hasArray()) {
+                content = new String(message.getPayload().array(), message.getPayload().arrayOffset(), message.getPayloadSize());
+            } else {
+                byte[] bytes = new byte[message.getPayloadSize()];
+                message.getPayload().get(bytes);
+                content = new String(bytes);
+            }
+
+            System.err.printf("Received request (method=%s uri=%s type=%s): %s",
+                    message.getHttpMethod(), message.getRequestUri(), message.getContentType(), content);
             TransportMessage response = message.getConnection().createResponse(message);
 
+            String responseText;
+            String contentType;
+            if ("/service".equals(message.getRequestUri())) {
+                try {
+                    responseText = config.toJson();
+                    contentType = "application/json";
+                } catch (IOException ex) {
+                    responseText = ex.toString();
+                    contentType = "text/plain; charset=UTF-8";
+                }
+            } else {
+                responseText = "WELCOME TO THE WILD WILD WEB SERVER";
+                contentType = "text/plain; charset=UTF-8";
+            }
 //            try {
 //                TransportConnection conn = message.getConnection();
 //                conn.send(conn.createResponse(message)
@@ -65,11 +114,9 @@ public class TransportServerTest {
 //
 //            }
 
-            String responseText = "WELCOME TO THE WILD WILD WEB SERVER";
-
             try {
                 response.setPayload(ByteBuffer.wrap(responseText.getBytes("UTF-8")));
-                response.setContentType("text/plain; charset=UTF-8");
+                response.setContentType(contentType);
             } catch (UnsupportedEncodingException ex) {
 
             }

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara.http;
+package de.dfki.kiara.tcp;
 
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
@@ -23,14 +23,13 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class HttpRequestMessage extends TransportMessage {
+public class TcpRequestMessage extends TransportMessage {
 
     private final HttpRequest request;
     private final HttpContent content;
@@ -40,7 +39,7 @@ public class HttpRequestMessage extends TransportMessage {
      * @param connection
      * @param request
      */
-    public HttpRequestMessage(TransportConnection connection, FullHttpRequest request) {
+    public TcpRequestMessage(TransportConnection connection, FullHttpRequest request) {
         super(connection);
         if (request == null) {
             throw new NullPointerException("request");
@@ -49,7 +48,7 @@ public class HttpRequestMessage extends TransportMessage {
         this.content = request;
     }
 
-    public HttpRequestMessage(TransportConnection connection, HttpRequest request, HttpContent content) {
+    public TcpRequestMessage(TransportConnection connection, HttpRequest request, HttpContent content) {
         super(connection);
         if (request == null)
             throw new NullPointerException("request");
@@ -84,8 +83,6 @@ public class HttpRequestMessage extends TransportMessage {
             request.headers().set("x-kiara-session", value);
         } else if (Names.REQUEST_URI.equals(name)) {
             request.setUri((String)value);
-        } else if (Names.HTTP_METHOD.equals(name)) {
-            request.setMethod(HttpMethod.valueOf(name));
         }
         return this;
     }
@@ -98,8 +95,6 @@ public class HttpRequestMessage extends TransportMessage {
             return request.headers().get("x-kiara-session");
         } else if (Names.REQUEST_URI.equals(name)) {
             return request.getUri();
-        } else if (Names.HTTP_METHOD.equals(name)) {
-            return request.getMethod().name();
         }
         return null;
     }

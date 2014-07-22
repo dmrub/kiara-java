@@ -38,6 +38,10 @@ public interface Protocol {
 
     public InterfaceCodeGen getInterfaceCodeGen();
 
+    public Message createRequestMessageFromData(ByteBuffer data) throws IOException;
+
+    public Message createResponseMessageFromData(ByteBuffer data) throws IOException;
+
     public Message createRequestMessageFromData(ByteBuffer data, Class<?>[] paramTypes) throws IOException;
 
     public Message createResponseMessageFromData(ByteBuffer data, Class<?> returnType) throws IOException;

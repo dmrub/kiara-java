@@ -14,14 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.jsonrpc;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
+import de.dfki.kiara.MessageDeserializationException;
 import de.dfki.kiara.Protocol;
+import static de.dfki.kiara.jsonrpc.JsonRpcProtocol.parseMessageId;
+import de.dfki.kiara.util.ByteBufferInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -30,19 +37,92 @@ import java.nio.ByteBuffer;
 public class JsonRpcMessage implements Message {
 
     private final JsonRpcProtocol protocol;
-    private final String methodName;
     private Message.Kind kind;
+    private final String methodName;
     private ResponseObject response;
     private RequestObject request;
     private Object id;
 
-    public JsonRpcMessage(JsonRpcProtocol protocol, String methodName, Object id) {
+    private JsonNode body;
+    /**
+     * refers to "params" on request, "result" on successful response, and to
+     * "data" of the error on error response
+     */
+    private JsonNode params;
+
+    /**
+     * refers to "error on error response
+     */
+    private JsonNode error;
+
+    public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind, ByteBuffer data) throws IOException {
+        final ObjectMapper objectMapper = protocol.getObjectMapper();
+        body = objectMapper.readTree(new ByteBufferInputStream(data));
+        JsonNode jsonrpcNode = body.get("jsonrpc");
+        if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
+            throw new IOException("Not a jsonrpc protocol");
+        }
+
+        if (!"2.0".equals(jsonrpcNode.textValue())) {
+            throw new IOException("Not a jsonrpc 2.0");
+        }
+
+        if (kind == Kind.REQUEST) {
+            JsonNode methodNode = body.get("method");
+            if (methodNode == null) {
+                throw new IOException("No 'method' member in the request object");
+            }
+
+            if (!methodNode.isTextual()) {
+                throw new IOException("Member 'method' in request object is not a string");
+            }
+
+            this.methodName = methodNode.textValue();
+            this.params = body.get("params");
+            this.id = parseMessageId(body);
+        } else {
+            JsonNode resultNode = body.get("result");
+            JsonNode errorNode = body.get("error");
+
+            if (resultNode == null && errorNode == null) {
+                throw new IOException("Neither 'error' nor 'result' member in the response object");
+            }
+
+            this.methodName = null;
+
+            if (resultNode != null) {
+                this.params = resultNode;
+                this.error = null;
+            } else {
+                this.error = errorNode;
+                this.params = errorNode.get("data");
+
+                JsonRpcError jsonRpcError = objectMapper.treeToValue(errorNode, JsonRpcError.class);
+                this.response = new Message.ResponseObject(
+                        new GenericRemoteException(jsonRpcError.getMessage(), jsonRpcError.getCode(), jsonRpcError.getData()),
+                        true);
+            }
+        }
+        this.protocol = protocol;
+    }
+
+    /**
+     * Create request message.
+     *
+     * @param protocol
+     * @param methodName
+     * @param id
+     * @param params
+     */
+    public JsonRpcMessage(JsonRpcProtocol protocol, String methodName, Object id, JsonNode params) {
         this.protocol = protocol;
         this.methodName = methodName;
         this.kind = Kind.REQUEST;
         this.request = null;
         this.response = null;
         this.id = id;
+        this.params = params;
+        this.error = null;
     }
 
     public JsonRpcMessage(JsonRpcMessage requestMessage, boolean isException) {
@@ -52,6 +132,8 @@ public class JsonRpcMessage implements Message {
         this.request = null;
         this.response = null;
         this.id = requestMessage.id;
+        this.params = null;
+        this.error = null;
     }
 
     public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind) {
@@ -61,6 +143,8 @@ public class JsonRpcMessage implements Message {
         this.request = null;
         this.response = null;
         this.id = null;
+        this.params = null;
+        this.error = null;
     }
 
     public JsonRpcMessage(JsonRpcProtocol protocol, ResponseObject response) {
@@ -70,6 +154,8 @@ public class JsonRpcMessage implements Message {
         this.request = null;
         this.response = response;
         this.id = null;
+        this.params = null;
+        this.error = null;
     }
 
     public JsonRpcMessage(JsonRpcProtocol protocol, RequestObject request, Object id) {
@@ -79,6 +165,8 @@ public class JsonRpcMessage implements Message {
         this.request = request;
         this.response = null;
         this.id = id;
+        this.params = null;
+        this.error = null;
     }
 
     public Object getId() {
@@ -100,25 +188,117 @@ public class JsonRpcMessage implements Message {
         return methodName;
     }
 
+    public JsonNode getParams() {
+        return params;
+    }
+
     @Override
     public ByteBuffer getMessageData() throws IOException {
-        return protocol.convertMessageToData(this);
-    }
+        ByteBuffer buf = null;
+        switch (getMessageKind()) {
+            case REQUEST: {
+                if (this.request == null) {
+                    throw new NullPointerException("this.request");
+                }
+                JsonRpcHeader header = new JsonRpcHeader(getMethodName(), this.request.args, getId());
 
-    @Override
-    public RequestObject getRequestObject() {
-        return this.request;
-    }
+                buf = ByteBuffer.wrap(protocol.getObjectMapper().writeValueAsBytes(header));
+            }
+            break;
+            case RESPONSE: {
+                if (this.response == null) {
+                    throw new NullPointerException("this.response");
+                }
+                JsonRpcHeader header = new JsonRpcHeader(this.response.result, getId());
 
-    @Override
-    public ResponseObject getResponseObject() {
-        return this.response;
+                buf = ByteBuffer.wrap(protocol.getObjectMapper().writeValueAsBytes(header));
+            }
+            break;
+            case EXCEPTION: {
+                if (this.response == null) {
+                    throw new NullPointerException("this.response");
+                }
+                // FIXME process errors correctly
+                JsonRpcHeader header = new JsonRpcHeader(this.response.result, getId());
+
+                buf = ByteBuffer.wrap(protocol.getObjectMapper().writeValueAsBytes(header));
+            }
+            break;
+        }
+        return buf;
     }
 
     @Override
     public void setGenericError(int errorCode, String errorMessage) {
         this.kind = Kind.EXCEPTION;
         this.response = new ResponseObject(new GenericRemoteException(errorMessage, errorCode), true);
+    }
+
+    @Override
+    public RequestObject getRequestObject(Class<?>[] paramTypes) throws MessageDeserializationException {
+        if (this.request != null) {
+            return this.request;
+        }
+
+        if (this.kind != Kind.REQUEST) {
+            throw new IllegalStateException("not a request message");
+        }
+
+        Object[] args = null;
+        if (params != null) {
+            if (!params.isArray() && !params.isObject()) {
+                throw new MessageDeserializationException("Member 'params' is neither array nor object");
+            }
+
+            if (params.isArray()) {
+                if (paramTypes.length != params.size()) {
+                    throw new MessageDeserializationException("Member 'params' size is: " + params.size() + ", required " + paramTypes.length);
+                }
+
+                args = new Object[paramTypes.length];
+
+                for (int i = 0; i < params.size(); ++i) {
+                    try {
+                        args[i] = protocol.getObjectMapper().treeToValue(params.get(i), paramTypes[i]);
+                    } catch (JsonProcessingException ex) {
+                        throw new MessageDeserializationException(ex);
+                    }
+                }
+            } else {
+                throw new UnsupportedOperationException("Object is not supported as 'params' member");
+            }
+        }
+        return new RequestObject(methodName, args);
+    }
+
+    @Override
+    public ResponseObject getResponseObject(Class<?> returnType) throws MessageDeserializationException {
+        if (this.response != null) {
+            return this.response;
+        }
+
+        if (this.kind != Kind.RESPONSE || this.kind != Kind.EXCEPTION) {
+            throw new IllegalStateException("not a response message");
+        }
+
+        if (this.kind == Kind.RESPONSE) {
+            try {
+                return new Message.ResponseObject(
+                        protocol.getObjectMapper().treeToValue(this.params, returnType), false);
+            } catch (JsonProcessingException ex) {
+               throw new MessageDeserializationException(ex);
+            }
+        } else {
+            JsonRpcError jsonRpcError;
+            try {
+                jsonRpcError = protocol.getObjectMapper().treeToValue(this.error, JsonRpcError.class);
+            } catch (JsonProcessingException ex) {
+                throw new MessageDeserializationException(ex);
+            }
+            return new Message.ResponseObject(
+                        new GenericRemoteException(jsonRpcError.getMessage(), jsonRpcError.getCode(), jsonRpcError.getData()),
+                        true);
+        }
     }
 
 }

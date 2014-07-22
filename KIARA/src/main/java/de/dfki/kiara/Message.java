@@ -71,9 +71,9 @@ public interface Message {
      */
     public ByteBuffer getMessageData() throws IOException;
 
-    public RequestObject getRequestObject();
+    public RequestObject getRequestObject(Class<?>[] paramTypes) throws MessageDeserializationException;
 
-    public ResponseObject getResponseObject();
+    public ResponseObject getResponseObject(Class<?> returnType) throws MessageDeserializationException;
 
     public void setGenericError(int errorCode, String errorMessage);
 }

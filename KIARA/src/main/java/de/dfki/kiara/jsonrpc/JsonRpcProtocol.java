@@ -30,6 +30,7 @@ import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
+import de.dfki.kiara.MessageDeserializationException;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RemoteInterface;
 import de.dfki.kiara.util.ByteBufferInputStream;
@@ -115,6 +116,16 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         return objectMapper.readTree(new ByteBufferInputStream(data));
     }
 
+    @Override
+    public Message createRequestMessageFromData(ByteBuffer data) throws IOException {
+        return new JsonRpcMessage(this, Message.Kind.REQUEST, data);
+    }
+
+    @Override
+    public Message createResponseMessageFromData(ByteBuffer data) throws IOException {
+        return new JsonRpcMessage(this, Message.Kind.RESPONSE, data);
+    }
+
     /**
      *
      * @param data
@@ -128,12 +139,12 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         return createRequestMessageFromData(node, paramTypes);
     }
 
-    public static Object parseMessageId(JsonNode messageNode) throws IOException {
+    public static Object parseMessageId(JsonNode messageNode) throws MessageDeserializationException {
         JsonNode idNode = messageNode.get("id");
         Object id = null;
         if (idNode != null) {
             if (!idNode.isTextual() && !idNode.isNumber() && !idNode.isNull()) {
-                throw new IOException("Invalid 'id' member");
+                throw new MessageDeserializationException("Invalid 'id' member");
             }
             if (idNode.isTextual()) {
                 id = idNode.textValue();
@@ -142,6 +153,10 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
             }
         }
         return id;
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
     }
 
     public JsonRpcMessage createRequestMessageFromData(JsonNode node, Class<?>[] paramTypes) throws IOException {
@@ -229,13 +244,15 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     }
 
     public static boolean equalIds(Object id1, Object id2) {
-        if (id1 == id2)
+        if (id1 == id2) {
             return true;
-        if (id1 == null || id2 == null)
+        }
+        if (id1 == null || id2 == null) {
             return false;
+        }
 
         if (isIntegral(id1) && isIntegral(id2)) {
-            if (((Number)id1).longValue() == ((Number)id2).longValue()) {
+            if (((Number) id1).longValue() == ((Number) id2).longValue()) {
                 return true;
             }
         }
@@ -248,7 +265,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
 
     @Override
     public Message createRequestMessage(String methodName) {
-        return new JsonRpcMessage(this, methodName, getNextId());
+        return new JsonRpcMessage(this, methodName, getNextId(), null);
     }
 
     @Override
@@ -283,25 +300,25 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         return interfaceClass.cast(impl);
     }
 
-    public ByteBuffer convertMessageToData(JsonRpcMessage message) throws IOException {
+    public ByteBuffer convertMessageToData(JsonRpcMessage message, Class<?>[] paramTypes, Class<?> returnType) throws IOException {
         ByteBuffer buf = null;
         switch (message.getMessageKind()) {
             case REQUEST: {
-                Message.RequestObject ro = message.getRequestObject();
+                Message.RequestObject ro = message.getRequestObject(paramTypes);
                 JsonRpcHeader header = new JsonRpcHeader(message.getMethodName(), ro.args, message.getId());
 
                 buf = ByteBuffer.wrap(objectMapper.writeValueAsBytes(header));
             }
             break;
             case RESPONSE: {
-                Message.ResponseObject ro = message.getResponseObject();
+                Message.ResponseObject ro = message.getResponseObject(returnType);
                 JsonRpcHeader header = new JsonRpcHeader(ro.result, message.getId());
 
                 buf = ByteBuffer.wrap(objectMapper.writeValueAsBytes(header));
             }
             break;
             case EXCEPTION: {
-                Message.ResponseObject ro = message.getResponseObject();
+                Message.ResponseObject ro = message.getResponseObject(returnType);
                 // FIXME process errors correctly
                 JsonRpcHeader header = new JsonRpcHeader(ro.result, message.getId());
 

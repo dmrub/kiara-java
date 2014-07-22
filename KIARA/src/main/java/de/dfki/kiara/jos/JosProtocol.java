@@ -27,7 +27,6 @@ import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 
@@ -37,9 +36,9 @@ import java.nio.ByteBuffer;
  */
 public class JosProtocol implements Protocol, InterfaceCodeGen {
 
-    private final static int JOS_REQUEST = 0;
-    private final static int JOS_RESPONSE = 1;
-    private final static int JOS_EXCEPTION = 2;
+    public final static int JOS_REQUEST = 0;
+    public final static int JOS_RESPONSE = 1;
+    public final static int JOS_EXCEPTION = 2;
 
     private Connection connection;
 
@@ -73,6 +72,11 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
 
     @Override
     public Message createRequestMessageFromData(ByteBuffer data, Class<?>[] paramTypes) throws IOException {
+        return createRequestMessageFromData(data);
+    }
+
+    @Override
+    public Message createRequestMessageFromData(ByteBuffer data) throws IOException {
         ByteBufferInputStream is = new ByteBufferInputStream(data);
         ObjectInputStream ois = new ObjectInputStream(is);
         byte requestCode = ois.readByte();
@@ -90,10 +94,16 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
             throw new IOException("Could not read response message", e);
         }
         return new JosMessage(this, new Message.RequestObject(methodName, args));
+
     }
 
     @Override
     public Message createResponseMessageFromData(ByteBuffer data, Class<?> returnType) throws IOException {
+        return createResponseMessageFromData(data);
+    }
+
+    @Override
+    public Message createResponseMessageFromData(ByteBuffer data) throws IOException {
         ByteBufferInputStream is = new ByteBufferInputStream(data);
         ObjectInputStream ois = new ObjectInputStream(is);
         byte responseCode = ois.readByte();
@@ -121,26 +131,26 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
         return new JosMessage(this, Message.Kind.RESPONSE);
     }
 
-    public ByteBuffer convertMessageToData(Message message) throws IOException {
+    public ByteBuffer convertMessageToData(Message message, Class<?>[] paramTypes, Class<?> returnType) throws IOException {
         NoCopyByteArrayOutputStream os = new NoCopyByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(os);
         switch (message.getMessageKind()) {
             case REQUEST: {
                 oos.writeByte(JOS_REQUEST);
                 oos.writeUTF(message.getMethodName());
-                Message.RequestObject ro = message.getRequestObject();
+                Message.RequestObject ro = message.getRequestObject(paramTypes);
                 oos.writeObject(ro.args);
             }
             break;
             case RESPONSE: {
                 oos.writeByte(JOS_RESPONSE);
-                Message.ResponseObject ro = message.getResponseObject();
+                Message.ResponseObject ro = message.getResponseObject(returnType);
                 oos.writeObject(ro.result);
             }
             break;
             case EXCEPTION: {
                 oos.writeByte(JOS_EXCEPTION);
-                Message.ResponseObject ro = message.getResponseObject();
+                Message.ResponseObject ro = message.getResponseObject(returnType);
                 oos.writeObject(ro.result);
             }
             break;
@@ -170,5 +180,7 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     public Message createResponseMessage(Message.ResponseObject response) {
         return new JosMessage(this, response);
     }
+
+
 
 }

@@ -216,7 +216,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
             }
         } else if (Util.isDeserializer(method)) {
             Message msg = (Message) os[0];
-            Message.ResponseObject ro = msg.getResponseObject();
+            Message.ResponseObject ro = msg.getResponseObject(method.getReturnType());
 
             if (ro.isException) {
                 if (ro.result instanceof Exception) {
@@ -244,7 +244,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
 
                                     @Override
                                     public Object call() throws Exception {
-                                        Message.ResponseObject ro = response.getResponseObject();
+                                        Message.ResponseObject ro = response.getResponseObject(returnType);
 
                                         if (ro.isException) {
                                             if (ro.result instanceof Exception) {
@@ -282,7 +282,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
 
                                 @Override
                                 public Object call() throws Exception {
-                                    Message.ResponseObject ro = response.getResponseObject();
+                                    Message.ResponseObject ro = response.getResponseObject(returnType);
 
                                     if (ro.isException) {
                                         if (ro.result instanceof Exception) {
@@ -301,7 +301,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
 
                 } else {
                     Message response = responseFuture.get();
-                    Message.ResponseObject ro = response.getResponseObject();
+                    Message.ResponseObject ro = response.getResponseObject(returnType);
 
                     if (ro.isException) {
                         if (ro.result instanceof Exception) {

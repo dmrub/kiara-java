@@ -20,7 +20,9 @@ package de.dfki.kiara.jos;
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
+import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 
 /**
@@ -84,16 +86,40 @@ public class JosMessage implements Message {
 
     @Override
     public ByteBuffer getMessageData() throws IOException {
-        return protocol.convertMessageToData(this);
+        NoCopyByteArrayOutputStream os = new NoCopyByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(os);
+        switch (getMessageKind()) {
+            case REQUEST: {
+                oos.writeByte(JosProtocol.JOS_REQUEST);
+                oos.writeUTF(getMethodName());
+                Message.RequestObject ro = getRequestObject(null);
+                oos.writeObject(ro.args);
+            }
+            break;
+            case RESPONSE: {
+                oos.writeByte(JosProtocol.JOS_RESPONSE);
+                Message.ResponseObject ro = getResponseObject(null);
+                oos.writeObject(ro.result);
+            }
+            break;
+            case EXCEPTION: {
+                oos.writeByte(JosProtocol.JOS_EXCEPTION);
+                Message.ResponseObject ro = getResponseObject(null);
+                oos.writeObject(ro.result);
+            }
+            break;
+        }
+        oos.flush();
+        return ByteBuffer.wrap(os.toByteArray(), 0, os.size());
     }
 
     @Override
-    public RequestObject getRequestObject() {
+    public RequestObject getRequestObject(Class<?>[] paramTypes) {
         return this.request;
     }
 
     @Override
-    public ResponseObject getResponseObject() {
+    public ResponseObject getResponseObject(Class<?> returnType) {
         return this.response;
     }
 

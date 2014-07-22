@@ -15,29 +15,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara.jsonrpc;
+package de.dfki.kiara;
 
-import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.util.Pipeline;
+import java.io.IOException;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class JsonRpcMessageDecoder implements Pipeline.Handler {
-
-    private final JsonRpcProtocol protocol;
-
-    public JsonRpcMessageDecoder(JsonRpcProtocol protocol) {
-        this.protocol = protocol;
+public class MessageSerializationException extends IOException {
+    
+    public MessageSerializationException() {
     }
 
-    @Override
-    public Object process(Object input) throws Exception {
-        if (!(input instanceof TransportMessage))
-            throw new IllegalArgumentException();
-        TransportMessage response = (TransportMessage)input;
-        return protocol.parseMessageData(response.getPayload());
+    public MessageSerializationException(String message) {
+        super(message);
     }
 
+    public MessageSerializationException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public MessageSerializationException(Throwable cause) {
+        super(cause);
+    }
 }

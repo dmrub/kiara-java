@@ -67,7 +67,7 @@ public class JosInvocationHandler extends AbstractInvocationHandler {
         } else if (Util.isDeserializer(method)) {
             Message msg = (Message) os[0];
 
-            Message.ResponseObject ro = msg.getResponseObject();
+            Message.ResponseObject ro = msg.getResponseObject(method.getReturnType());
 
             if (ro.isException) {
                 if (ro.result instanceof Exception) {

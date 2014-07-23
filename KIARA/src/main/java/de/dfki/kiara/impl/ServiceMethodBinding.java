@@ -16,7 +16,6 @@
  */
 package de.dfki.kiara.impl;
 
-import de.dfki.kiara.Binder;
 import de.dfki.kiara.ServiceMethodBinder;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -26,15 +25,14 @@ import java.util.Map;
  *
  * @author shahzad
  */
-public class BinderImpl implements Binder {
+public class ServiceMethodBinding {
 
     private Map<String, ServiceMethodBinder> internalMapping = null;
 
-    public BinderImpl() {
+    public ServiceMethodBinding() {
         internalMapping = new HashMap<>();
     }
 
-    @Override
     public void bindServiceMethod(String idlMethodName, Object serviceClass,
             String serviceMethodName) throws NoSuchMethodException, SecurityException {
         Method method = null;
@@ -47,7 +45,6 @@ public class BinderImpl implements Binder {
         internalMapping.put(idlMethodName, new ServiceMethodBinder(serviceClass, method));
     }
 
-    @Override
     public void bindServiceMethod(String idlMethodName, Object serviceClass,
             String serviceMethodName, Class<?>[] parameterTypes) throws
             NoSuchMethodException, SecurityException {
@@ -55,12 +52,10 @@ public class BinderImpl implements Binder {
         internalMapping.put(idlMethodName, new ServiceMethodBinder(serviceClass, method));
     }
 
-    @Override
     public ServiceMethodBinder getServiceMethod(String idlMethodName) {
         return internalMapping.get(idlMethodName);
     }
 
-    @Override
     public void unbindServiceMethod(String idlMethodName) throws NoSuchMethodException {
         if (internalMapping.containsKey(idlMethodName)) {
             internalMapping.remove(idlMethodName);

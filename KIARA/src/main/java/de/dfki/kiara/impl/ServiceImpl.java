@@ -16,23 +16,17 @@
  */
 package de.dfki.kiara.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.dfki.kiara.*;
 import de.dfki.kiara.idl.KiaraKTDConstructor;
 import de.dfki.kiara.idl.KiaraLexer;
 import de.dfki.kiara.idl.KiaraParser;
-import de.dfki.kiara.jsonrpc.JsonRpcMessage;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.World;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -44,12 +38,12 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
  */
 public class ServiceImpl implements Service {
 
-    private final Binder binder;
+    private final ServiceMethodBinding serviceMethodBinding;
     private final World world;
     private final Module module;
 
     public ServiceImpl(Context context) {
-        this.binder = new BinderImpl();
+        this.serviceMethodBinding = new ServiceMethodBinding();
         world = new World();
         module = new Module(world, "kiara");
     }
@@ -84,10 +78,10 @@ public class ServiceImpl implements Service {
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
                                         String serviceMethodName) throws MethodAlreadyBoundException,
             NoSuchMethodException, SecurityException {
-        if (binder.getServiceMethod(idlMethodName) != null) {
+        if (serviceMethodBinding.getServiceMethod(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        binder.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName);
+        serviceMethodBinding.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName);
     }
 
     /**
@@ -102,15 +96,15 @@ public class ServiceImpl implements Service {
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
                                         String serviceMethodName, Class<?>... parameterTypes)
             throws MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
-        if (binder.getServiceMethod(idlMethodName) != null) {
+        if (serviceMethodBinding.getServiceMethod(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        binder.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName, parameterTypes);
+        serviceMethodBinding.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName, parameterTypes);
     }
 
     @Override
     public void unregisterServiceFunction(String idlMethodName) throws NoSuchMethodException {
-        binder.unbindServiceMethod(idlMethodName);
+        serviceMethodBinding.unbindServiceMethod(idlMethodName);
     }
 
     private void loadIDL(InputStream stream, String fileName) throws IOException {
@@ -156,7 +150,7 @@ public class ServiceImpl implements Service {
         Message rpcMessage = protocol.createRequestMessageFromData(payload);
         String methodName = rpcMessage.getMethodName();
 
-        ServiceMethodBinder serviceMethod = binder.getServiceMethod(methodName);
+        ServiceMethodBinder serviceMethod = serviceMethodBinding.getServiceMethod(methodName);
 
         return serviceMethod.getBoundedMethod().invoke(
                 serviceMethod.getImplementedClass(), rpcMessage.getRequestObject(serviceMethod.getBoundedMethod().getParameterTypes()).args.toArray());

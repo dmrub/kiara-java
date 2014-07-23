@@ -82,11 +82,16 @@ public final class InterfaceMapping<T> {
         boundMethods = new HashMap<>(binder.getBoundMethods());
         methodEntries = new HashMap<>(boundMethods.size());
 
-        MethodKind kind = MethodKind.SYNCHRONOUS;
+        MethodKind kind;
         java.lang.reflect.Type futureParamOfReturnType;
-        boolean hasFutureParams = false;
-        boolean hasListeningFutureParams = false;
+        boolean hasFutureParams;
+        boolean hasListeningFutureParams;
         for (Method m : boundMethods.keySet()) {
+            kind = MethodKind.SYNCHRONOUS;
+            futureParamOfReturnType = null;
+            hasFutureParams = false;
+            hasListeningFutureParams = false;
+
             // serializers
             if (Util.isSerializer(m)) {
                 kind = MethodKind.SERIALIZER;
@@ -99,7 +104,7 @@ public final class InterfaceMapping<T> {
             // check for Future
             final java.lang.reflect.Type[] genericParamTypes = m.getGenericParameterTypes();
             final Class<?>[] serParamTypes = new Class<?>[genericParamTypes.length];
-            final Function<?, ?>[] paramConverters = new Function<?, ?>[10];
+            final Function<?, ?>[] paramConverters = new Function<?, ?>[genericParamTypes.length];
 
             Util.ClassAndConverter classAndConverter = null;
 

@@ -85,87 +85,87 @@ public class AosTestServer {
             Kiara.shutdownGracefully();
         }
     }
-}
 
-class GetSetLocationsImpl {
+    public static class GetSetLocationsImpl {
 
-    public static class Vec3f {
+        public static class Vec3f {
 
-        public float x;
-        public float y;
-        public float z;
+            public float x;
+            public float y;
+            public float z;
 
-        public Vec3f() {
+            public Vec3f() {
+            }
+
+            public Vec3f(float x, float y, float z) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+
         }
 
-        public Vec3f(float x, float y, float z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
+        public static class Quatf {
+
+            public float r;
+            public Vec3f v;
+
+            public Quatf() {
+            }
+
+            public Quatf(float r, Vec3f v) {
+                this.r = r;
+                this.v = v;
+            }
         }
 
-    }
+        public static class Location {
 
-    public static class Quatf {
+            public Vec3f position;
+            public Quatf rotation;
 
-        public float r;
-        public Vec3f v;
+            public Location() {
+            }
 
-        public Quatf() {
+            public Location(Vec3f position, Quatf rotation) {
+                this.position = position;
+                this.rotation = rotation;
+            }
         }
 
-        public Quatf(float r, Vec3f v) {
-            this.r = r;
-            this.v = v;
-        }
-    }
+        public static class LocationList {
 
-    public static class Location {
+            public List<Location> locations;
 
-        public Vec3f position;
-        public Quatf rotation;
+            public LocationList() {
+            }
 
-        public Location() {
-        }
+            public LocationList(List<Location> locations) {
+                this.locations = locations;
+            }
 
-        public Location(Vec3f position, Quatf rotation) {
-            this.position = position;
-            this.rotation = rotation;
-        }
-    }
-
-    public static class LocationList {
-
-        public List<Location> locations;
-
-        public LocationList() {
         }
 
-        public LocationList(List<Location> locations) {
-            this.locations = locations;
+        private LocationList locationList = null;
+
+        public void setLocations(LocationList locations) {
+            int num = locations.locations.size();
+            for (int i = 0; i < num; ++i) {
+                System.out.printf("Location.position %f %f %f\nLocation.rotation %f %f %f %f\n",
+                        locations.locations.get(i).position.x,
+                        locations.locations.get(i).position.y,
+                        locations.locations.get(i).position.z,
+                        locations.locations.get(i).rotation.r,
+                        locations.locations.get(i).rotation.v.x,
+                        locations.locations.get(i).rotation.v.y,
+                        locations.locations.get(i).rotation.v.z);
+            }
+
+            this.locationList = locations;
         }
 
-    }
-
-    private LocationList locationList = null;
-
-    public void setLocations(LocationList locations) {
-        int num = locations.locations.size();
-        for (int i = 0; i < num; ++i) {
-            System.out.printf("Location.position %f %f %f\nLocation.rotation %f %f %f %f\n",
-                    locations.locations.get(i).position.x,
-                    locations.locations.get(i).position.y,
-                    locations.locations.get(i).position.z,
-                    locations.locations.get(i).rotation.r,
-                    locations.locations.get(i).rotation.v.x,
-                    locations.locations.get(i).rotation.v.y,
-                    locations.locations.get(i).rotation.v.z);
+        public LocationList getLocations() {
+            return locationList;
         }
-
-        this.locationList = locations;
-    }
-
-    public LocationList getLocations() {
-        return locationList;
     }
 }

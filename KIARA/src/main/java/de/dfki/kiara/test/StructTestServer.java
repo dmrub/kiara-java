@@ -89,6 +89,20 @@ public class StructTestServer {
             service.registerServiceFunction("StructTest.setLocation", structImpl, "setLocation");
             service.registerServiceFunction("StructTest.getLocation", structImpl, "getLocation");
             service.registerServiceFunction("StructTest.throwException", structImpl, "throwException");
+
+            // Debugging calls start
+            service.DbgSimulateCall(
+                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.pack\", \"params\": [23, \"TEST\"], \"id\": 1}");
+            service.DbgSimulateCall(
+                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getInteger\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 2}");
+            service.DbgSimulateCall(
+                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getString\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 3}");
+            service.DbgSimulateCall(
+                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getString\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 3}");
+            service.DbgSimulateCall(
+                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.throwException\", \"params\": [202, \"NOT FOUND\"], \"id\": 4}");
+            // Debugging calls end
+
             System.out.printf("Starting server...\n");
             Server server = context.newServer("0.0.0.0", port, "/service");
             server.addService("/rpc/struct", protocol, service);
@@ -100,100 +114,100 @@ public class StructTestServer {
             Kiara.shutdownGracefully();
         }
     }
-}
 
-class StructTestImpl {
+    public static class StructTestImpl {
 
-    public static class Data {
+        public static class Data {
 
-        public long ival;
-        public String sval;
+            public long ival;
+            public String sval;
 
-        Data() {
+            Data() {
+            }
+
+            public Data(long ival, String sval) {
+                this.ival = ival;
+                this.sval = sval;
+            }
         }
 
-        public Data(long ival, String sval) {
-            this.ival = ival;
-            this.sval = sval;
-        }
-    }
+        public static class Vec3f {
 
-    public static class Vec3f {
+            public float x;
+            public float y;
+            public float z;
 
-        public float x;
-        public float y;
-        public float z;
+            public Vec3f() {
+            }
 
-        public Vec3f() {
-        }
+            public Vec3f(float x, float y, float z) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
 
-        public Vec3f(float x, float y, float z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
         }
 
-    }
+        public static class Quatf {
 
-    public static class Quatf {
+            public float r;
+            public Vec3f v;
 
-        public float r;
-        public Vec3f v;
+            public Quatf() {
+            }
 
-        public Quatf() {
+            public Quatf(float r, Vec3f v) {
+                this.r = r;
+                this.v = v;
+            }
         }
 
-        public Quatf(float r, Vec3f v) {
-            this.r = r;
-            this.v = v;
+        public static class Location {
+
+            public Vec3f position;
+            public Quatf rotation;
+
+            public Location() {
+            }
+
+            public Location(Vec3f position, Quatf rotation) {
+                this.position = position;
+                this.rotation = rotation;
+            }
         }
-    }
 
-    public static class Location {
-
-        public Vec3f position;
-        public Quatf rotation;
-
-        public Location() {
+        public Data pack(long ival, String sval) {
+            return new Data(ival, sval);
         }
 
-        public Location(Vec3f position, Quatf rotation) {
-            this.position = position;
-            this.rotation = rotation;
+        public long getInteger(Data data) {
+            return data.ival;
         }
-    }
 
-    public Data pack(long ival, String sval) {
-        return new Data(ival, sval);
-    }
+        public String getString(Data data) {
+            return data.sval;
+        }
 
-    public long getInteger(Data data) {
-        return data.ival;
-    }
+        public Location getLocation() {
+            return location;
+        }
 
-    public String getString(Data data) {
-        return data.sval;
-    }
+        private Location location = null;
 
-    public Location getLocation() {
-        return location;
-    }
+        public void setLocation(Location location) {
+            System.out.printf("Location.position %f %f %f\nLocation.rotation %f %f %f %f\n",
+                    location.position.x,
+                    location.position.y,
+                    location.position.z,
+                    location.rotation.r,
+                    location.rotation.v.x,
+                    location.rotation.v.y,
+                    location.rotation.v.z);
+            this.location = location;
+        }
 
-    private Location location = null;
-
-    public void setLocation(Location location) {
-        System.out.printf("Location.position %f %f %f\nLocation.rotation %f %f %f %f\n",
-                location.position.x,
-                location.position.y,
-                location.position.z,
-                location.rotation.r,
-                location.rotation.v.x,
-                location.rotation.v.y,
-                location.rotation.v.z);
-        this.location = location;
-    }
-
-    public void throwException(int code, String message) throws GenericRemoteException {
-        throw new GenericRemoteException(message, code);
+        public void throwException(int code, String message) throws GenericRemoteException {
+            throw new GenericRemoteException(message, code);
+        }
     }
 }

@@ -65,8 +65,16 @@ public class CalcTestServer {
             service.registerServiceFunction("calc.int32ToString", impl, "int32ToString");
             System.out.printf("Starting server...\n");
 
+            // Debugging calls start
             service.DbgSimulateCall(
                     "{\"jsonrpc\": \"2.0\", \"method\": \"calc.add\", \"params\": [42, 23], \"id\": 1}");
+            service.DbgSimulateCall(
+                         "{\"jsonrpc\": \"2.0\", \"method\": \"calc.addf\", \"params\": [21.1, 32.2], \"id\": 2}");
+            service.DbgSimulateCall(
+                         "{\"jsonrpc\": \"2.0\", \"method\": \"calc.stringToInt32\", \"params\": [\"45\"], \"id\": 3}");
+            service.DbgSimulateCall(
+                         "{\"jsonrpc\": \"2.0\", \"method\": \"calc.int32ToString\", \"params\": [132], \"id\": 4}");
+            // Debugging calls end
 
             Server server = context.newServer("0.0.0.0", port, "/service");
             server.addService("/rpc/calc", protocol, service);

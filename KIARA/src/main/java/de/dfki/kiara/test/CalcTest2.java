@@ -24,6 +24,7 @@ import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import java.nio.ByteBuffer;
 
 /**
@@ -63,7 +64,6 @@ public class CalcTest2 {
             Calc calc = connection.generateClientFunctions(binder);
             RemoteInterface ri = (RemoteInterface) calc;
             Connection conn = ri.getConnection();
-
             Message msg = calc.add_serializer(10, 12);
             System.out.println("Message data: " + new String(msg.getMessageData().array()));
 
@@ -86,8 +86,7 @@ public class CalcTest2 {
             System.out.println("Performed remote call: " + a + "+" + b + " = " + temp.get());
 
             String res = "{\"jsonrpc\":\"2.0\", \"result\": 22}";
-            Message responseMsg = msg.getProtocol().createResponseMessageFromData(ByteBuffer.wrap(res.getBytes("UTF-8")),
-                    Calc.class.getMethod("add_deserializer", new Class<?>[]{de.dfki.kiara.Message.class}).getReturnType());
+            Message responseMsg = msg.getProtocol().createResponseMessageFromData(ByteBuffer.wrap(res.getBytes("UTF-8")));
             result = calc.add_deserializer(responseMsg);
             System.out.println("Result of deserialization of: " + res + " -> " + result);
 

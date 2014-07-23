@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import de.dfki.kiara.Connection;
-import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
@@ -126,19 +125,6 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         return new JsonRpcMessage(this, Message.Kind.RESPONSE, data);
     }
 
-    /**
-     *
-     * @param data
-     * @param paramTypes
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public Message createRequestMessageFromData(ByteBuffer data, Class<?>[] paramTypes) throws IOException {
-        JsonNode node = objectMapper.readTree(new ByteBufferInputStream(data));
-        return createRequestMessageFromData(node, paramTypes);
-    }
-
     public static Object parseMessageId(JsonNode messageNode) throws MessageDeserializationException {
         JsonNode idNode = messageNode.get("id");
         Object id = null;
@@ -159,88 +145,8 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         return objectMapper;
     }
 
-    public JsonRpcMessage createRequestMessageFromData(JsonNode node, Class<?>[] paramTypes) throws IOException {
-        JsonNode jsonrpcNode = node.get("jsonrpc");
-        if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
-            throw new IOException("Not a jsonrpc protocol");
-        }
-
-        if (!"2.0".equals(jsonrpcNode.textValue())) {
-            throw new IOException("Not a jsonrpc 2.0");
-        }
-
-        JsonNode methodNode = node.get("method");
-        if (methodNode == null) {
-            throw new IOException("No 'method' member in the request object");
-        }
-
-        if (!methodNode.isTextual()) {
-            throw new IOException("Member 'method' in request object is not a string");
-        }
-
-        JsonNode paramsNode = node.get("params");
-
-        Object[] args = null;
-        if (paramsNode != null) {
-            if (!paramsNode.isArray() && !paramsNode.isObject()) {
-                throw new IOException("Member 'params' is neither array nor object");
-            }
-
-            if (paramsNode.isArray()) {
-                if (paramTypes.length != paramsNode.size()) {
-                    throw new IOException("Member 'params' size is: " + paramsNode.size() + ", required " + paramTypes.length);
-                }
-
-                args = new Object[paramTypes.length];
-
-                for (int i = 0; i < paramsNode.size(); ++i) {
-                    args[i] = objectMapper.treeToValue(paramsNode.get(i), paramTypes[i]);
-                }
-            } else {
-                throw new UnsupportedOperationException("Object is not supported as 'params' member");
-            }
-        }
-
-        Object id = parseMessageId(node);
-
-        return new JsonRpcMessage(this,
-                new Message.RequestObject(methodNode.textValue(), args), id);
-    }
-
-    @Override
-    public Message createResponseMessageFromData(ByteBuffer data, Class<?> returnType) throws IOException {
-        JsonNode node = objectMapper.readTree(new ByteBufferInputStream(data));
-        return createResponseMessageFromData(node, returnType);
-    }
-
     public JsonRpcMessage createResponseMessageFromData(JsonNode node, Class<?> returnType) throws IOException {
-        JsonNode jsonrpcNode = node.get("jsonrpc");
-        if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
-            throw new IOException("Not a jsonrpc protocol");
-        }
-
-        if (!"2.0".equals(jsonrpcNode.textValue())) {
-            throw new IOException("Not a jsonrpc 2.0");
-        }
-
-        JsonNode resultNode = node.get("result");
-        JsonNode errorNode = node.get("error");
-
-        if (resultNode == null && errorNode == null) {
-            throw new IOException("Neither 'error' nor 'result' member in the response object");
-        }
-
-        if (resultNode != null) {
-            return new JsonRpcMessage(this,
-                    new Message.ResponseObject(
-                            objectMapper.treeToValue(resultNode, returnType), false));
-        } else {
-            JsonRpcError error = objectMapper.treeToValue(errorNode, JsonRpcError.class);
-            return new JsonRpcMessage(this,
-                    new Message.ResponseObject(
-                            new GenericRemoteException(error.getMessage(), error.getCode(), error.getData()),
-                            true));
-        }
+        return new JsonRpcMessage(this, Message.Kind.RESPONSE, node);
     }
 
     public static boolean equalIds(Object id1, Object id2) {

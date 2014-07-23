@@ -55,9 +55,8 @@ public class JsonRpcMessage implements Message {
      */
     private JsonNode error;
 
-    public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind, ByteBuffer data) throws IOException {
-        final ObjectMapper objectMapper = protocol.getObjectMapper();
-        body = objectMapper.readTree(new ByteBufferInputStream(data));
+    public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind, JsonNode node) throws IOException {
+        this.body = node;
         JsonNode jsonrpcNode = body.get("jsonrpc");
         if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
             throw new IOException("Not a jsonrpc protocol");
@@ -77,6 +76,7 @@ public class JsonRpcMessage implements Message {
                 throw new IOException("Member 'method' in request object is not a string");
             }
 
+            this.kind = kind;
             this.methodName = methodNode.textValue();
             this.params = body.get("params");
             this.id = parseMessageId(body);
@@ -91,19 +91,25 @@ public class JsonRpcMessage implements Message {
             this.methodName = null;
 
             if (resultNode != null) {
+                this.kind = Kind.RESPONSE;
                 this.params = resultNode;
                 this.error = null;
             } else {
+                this.kind = Kind.EXCEPTION;
                 this.error = errorNode;
                 this.params = errorNode.get("data");
 
-                JsonRpcError jsonRpcError = objectMapper.treeToValue(errorNode, JsonRpcError.class);
+                JsonRpcError jsonRpcError = protocol.getObjectMapper().treeToValue(errorNode, JsonRpcError.class);
                 this.response = new Message.ResponseObject(
                         new GenericRemoteException(jsonRpcError.getMessage(), jsonRpcError.getCode(), jsonRpcError.getData()),
                         true);
             }
         }
         this.protocol = protocol;
+    }
+
+    public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind, ByteBuffer data) throws IOException {
+        this(protocol, kind, protocol.getObjectMapper().readTree(new ByteBufferInputStream(data)));
     }
 
     /**
@@ -277,7 +283,7 @@ public class JsonRpcMessage implements Message {
             return this.response;
         }
 
-        if (this.kind != Kind.RESPONSE || this.kind != Kind.EXCEPTION) {
+        if (this.kind != Kind.RESPONSE && this.kind != Kind.EXCEPTION) {
             throw new IllegalStateException("not a response message");
         }
 

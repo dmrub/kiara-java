@@ -19,7 +19,6 @@ package de.dfki.kiara.jsonrpc;
 import com.fasterxml.jackson.databind.JsonNode;
 import de.dfki.kiara.util.Pipeline;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 

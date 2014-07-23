@@ -41,10 +41,10 @@ public interface Protocol {
     public Message createRequestMessageFromData(ByteBuffer data) throws IOException;
 
     public Message createResponseMessageFromData(ByteBuffer data) throws IOException;
-
-    public Message createRequestMessageFromData(ByteBuffer data, Class<?>[] paramTypes) throws IOException;
-
-    public Message createResponseMessageFromData(ByteBuffer data, Class<?> returnType) throws IOException;
+//
+//    public Message createRequestMessageFromData(ByteBuffer data, Class<?>[] paramTypes) throws IOException;
+//
+//    public Message createResponseMessageFromData(ByteBuffer data, Class<?> returnType) throws IOException;
 
     /** Create message for calling service method name.
      *

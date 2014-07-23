@@ -48,10 +48,12 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
 
     @Override
     public void initConnection(Connection connection) {
-        if (connection == null)
+        if (connection == null) {
             throw new IllegalArgumentException("connection can't be null");
-        if (this.connection != null)
+        }
+        if (this.connection != null) {
             throw new IllegalStateException("connection was already initialized");
+        }
         this.connection = connection;
     }
 
@@ -68,11 +70,6 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     @Override
     public InterfaceCodeGen getInterfaceCodeGen() {
         return this;
-    }
-
-    @Override
-    public Message createRequestMessageFromData(ByteBuffer data, Class<?>[] paramTypes) throws IOException {
-        return createRequestMessageFromData(data);
     }
 
     @Override
@@ -95,11 +92,6 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
         }
         return new JosMessage(this, new Message.RequestObject(methodName, args));
 
-    }
-
-    @Override
-    public Message createResponseMessageFromData(ByteBuffer data, Class<?> returnType) throws IOException {
-        return createResponseMessageFromData(data);
     }
 
     @Override
@@ -180,7 +172,5 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     public Message createResponseMessage(Message.ResponseObject response) {
         return new JosMessage(this, response);
     }
-
-
 
 }

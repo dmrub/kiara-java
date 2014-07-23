@@ -106,7 +106,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
             @Override
             public Message apply(TransportMessage input) {
                 try {
-                    return protocol.createResponseMessageFromData(input.getPayload(), method.getReturnType());
+                    return protocol.createResponseMessageFromData(input.getPayload());
                 } catch (IOException ex) {
                     return null;
                 }
@@ -128,7 +128,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
         ListenableFuture<TransportMessage> responseFuture = tc.receive(null);
         TransportMessage transportResponse = responseFuture.get();
 
-        return protocol.createResponseMessageFromData(transportResponse.getPayload(), method.getReturnType());
+        return protocol.createResponseMessageFromData(transportResponse.getPayload());
     }
 
     public ListenableFuture<Message> performAsyncCall2(final Message request, final Class<?> returnType, ListeningExecutorService executor) throws IOException {

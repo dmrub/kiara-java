@@ -160,6 +160,10 @@ public final class Util {
         return paramTypes.length == 1 && paramTypes[0].equals(de.dfki.kiara.Message.class);
     }
 
+    public static ByteBuffer stringToBuffer(String string, String charsetName) throws UnsupportedEncodingException {
+        return ByteBuffer.wrap(string.getBytes(charsetName));
+    }
+
     public static String bufferToString(ByteBuffer buffer) {
         if (buffer.hasArray()) {
             return new String(buffer.array(), buffer.arrayOffset(), buffer.remaining());

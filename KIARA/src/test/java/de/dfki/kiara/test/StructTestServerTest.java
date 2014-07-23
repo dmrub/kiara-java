@@ -16,22 +16,129 @@
  */
 package de.dfki.kiara.test;
 
-import de.dfki.kiara.Context;
-import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MethodAlreadyBoundException;
-import de.dfki.kiara.Service;
+import de.dfki.kiara.*;
+
 import java.io.IOException;
+
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.junit.Assert.*;
 
 /**
  *
  * @author Shahzad
  */
 public class StructTestServerTest {
+
+
+    public static class StructTestImpl {
+
+        public static class Data {
+
+            public long ival;
+            public String sval;
+
+            Data() {
+            }
+
+            public Data(long ival, String sval) {
+                this.ival = ival;
+                this.sval = sval;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (!(obj instanceof Data))
+                    return false;
+                Data other = (Data)obj;
+                return this.ival == other.ival && this.sval.equals(other.sval);
+            }
+        }
+
+        public static class Vec3f {
+
+            public float x;
+            public float y;
+            public float z;
+
+            public Vec3f() {
+            }
+
+            public Vec3f(float x, float y, float z) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+
+        }
+
+        public static class Quatf {
+
+            public float r;
+            public Vec3f v;
+
+            public Quatf() {
+            }
+
+            public Quatf(float r, Vec3f v) {
+                this.r = r;
+                this.v = v;
+            }
+        }
+
+        public static class Location {
+
+            public Vec3f position;
+            public Quatf rotation;
+
+            public Location() {
+            }
+
+            public Location(Vec3f position, Quatf rotation) {
+                this.position = position;
+                this.rotation = rotation;
+            }
+        }
+
+        public Data pack(long ival, String sval) {
+            return new Data(ival, sval);
+        }
+
+        public long getInteger(Data data) {
+            return data.ival;
+        }
+
+        public String getString(Data data) {
+            return data.sval;
+        }
+
+        public Location getLocation() {
+            return location;
+        }
+
+        private Location location = null;
+
+        public void setLocation(Location location) {
+            System.out.printf("Location.position %f %f %f\nLocation.rotation %f %f %f %f\n",
+                    location.position.x,
+                    location.position.y,
+                    location.position.z,
+                    location.rotation.r,
+                    location.rotation.v.x,
+                    location.rotation.v.y,
+                    location.rotation.v.z);
+            this.location = location;
+        }
+
+        public void throwException(int code, String message) throws GenericRemoteException {
+            throw new GenericRemoteException(message, code);
+        }
+    }
+
 
     private static Service service = null;
 
@@ -79,7 +186,7 @@ public class StructTestServerTest {
                     + "} "
             );
 
-            StructTestServer.StructTestImpl structImpl = new StructTestServer.StructTestImpl();
+            StructTestImpl structImpl = new StructTestImpl();
             service.registerServiceFunction("StructTest.pack", structImpl, "pack");
             service.registerServiceFunction("StructTest.getInteger", structImpl, "getInteger");
             service.registerServiceFunction("StructTest.getString", structImpl, "getString");
@@ -109,26 +216,28 @@ public class StructTestServerTest {
      * Test of main method, of class StructTestServer.
      */
     @Test
-    public void testStructPack() {
-        service.DbgSimulateCall(
-                "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.pack\", \"params\": [23, \"TEST\"], \"id\": 1}");
+    public void testStructPack() throws Exception {
+        assertEquals(new StructTestImpl.Data(23, "TEST"),
+        service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer("{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.pack\", \"params\": [23, \"TEST\"], \"id\": 1}", "UTF-8")));
     }
 
     @Test
-    public void testStructGetInteger() {
-        service.DbgSimulateCall(
-                "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getInteger\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 2}");
+    public void testStructGetInteger() throws Exception {
+        assertEquals(45L,
+                service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer(
+                "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getInteger\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 2}", "UTF-8")));
     }
 
     @Test
-    public void testStructGetString() {
-        service.DbgSimulateCall(
-                "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getString\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 3}");
+    public void testStructGetString() throws Exception {
+        assertEquals("BLAH",
+        service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer(
+                "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getString\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 3}", "UTF-8")));
     }
 
-    @Test
-    public void testStructThrowException() {
-        service.DbgSimulateCall(
-                "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.throwException\", \"params\": [202, \"NOT FOUND\"], \"id\": 4}");
+    @Test(expected = Exception.class)
+    public void testStructThrowException() throws Exception {
+        service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer(
+                "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.throwException\", \"params\": [202, \"NOT FOUND\"], \"id\": 4}", "UTF-8"));
     }
 }

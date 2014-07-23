@@ -91,16 +91,15 @@ public class StructTestServer {
             service.registerServiceFunction("StructTest.throwException", structImpl, "throwException");
 
             // Debugging calls start
-            service.DbgSimulateCall(
-                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.pack\", \"params\": [23, \"TEST\"], \"id\": 1}");
-            service.DbgSimulateCall(
-                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getInteger\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 2}");
-            service.DbgSimulateCall(
-                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getString\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 3}");
-            service.DbgSimulateCall(
-                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getString\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 3}");
-            service.DbgSimulateCall(
-                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.throwException\", \"params\": [202, \"NOT FOUND\"], \"id\": 4}");
+            service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer("{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.pack\", \"params\": [23, \"TEST\"], \"id\": 1}", "UTF-8"));
+            service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer(
+                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getInteger\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 2}", "UTF-8"));
+            service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer(
+                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getString\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 3}", "UTF-8"));
+            service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer(
+                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getString\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 3}", "UTF-8"));
+            service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer(
+                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.throwException\", \"params\": [202, \"NOT FOUND\"], \"id\": 4}", "UTF-8"));
             // Debugging calls end
 
             System.out.printf("Starting server...\n");

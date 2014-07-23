@@ -25,6 +25,7 @@ import de.dfki.kiara.jsonrpc.JsonRpcMessage;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.World;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -32,13 +33,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 /**
- *
  * @author shahzad
  */
 public class ServiceImpl implements Service {
@@ -73,7 +74,6 @@ public class ServiceImpl implements Service {
     }
 
     /**
-     *
      * @param idlMethodName
      * @param serviceMethodName
      * @param serviceImpl
@@ -82,7 +82,7 @@ public class ServiceImpl implements Service {
      */
     @Override
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
-            String serviceMethodName) throws MethodAlreadyBoundException,
+                                        String serviceMethodName) throws MethodAlreadyBoundException,
             NoSuchMethodException, SecurityException {
         if (binder.getServiceMethod(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
@@ -91,7 +91,6 @@ public class ServiceImpl implements Service {
     }
 
     /**
-     *
      * @param idlMethodName
      * @param serviceMethodName
      * @param serviceImpl
@@ -101,7 +100,7 @@ public class ServiceImpl implements Service {
      */
     @Override
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
-            String serviceMethodName, Class<?>... parameterTypes)
+                                        String serviceMethodName, Class<?>... parameterTypes)
             throws MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
         if (binder.getServiceMethod(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
@@ -148,24 +147,19 @@ public class ServiceImpl implements Service {
     }
 
     /**
-     *
      * @param messageString
      */
     @Override
-    public void DbgSimulateCall(String messageString) {
+    public Object dbgSimulateCall(ByteBuffer payload) throws Exception {
         JsonRpcProtocol protocol = new JsonRpcProtocol();
 
-        try {
-            Message rpcMessage = protocol.createRequestMessageFromData(ByteBuffer.wrap(messageString.getBytes("UTF-8")));
-            String methodName = rpcMessage.getMethodName();
+        Message rpcMessage = protocol.createRequestMessageFromData(payload);
+        String methodName = rpcMessage.getMethodName();
 
-            ServiceMethodBinder serviceMethod = binder.getServiceMethod(methodName);
+        ServiceMethodBinder serviceMethod = binder.getServiceMethod(methodName);
 
-            System.out.println(serviceMethod.getBoundedMethod().invoke(
-                    serviceMethod.getImplementedClass(), rpcMessage.getRequestObject(serviceMethod.getBoundedMethod().getParameterTypes()).args.toArray()));
+        return serviceMethod.getBoundedMethod().invoke(
+                serviceMethod.getImplementedClass(), rpcMessage.getRequestObject(serviceMethod.getBoundedMethod().getParameterTypes()).args.toArray());
 
-        } catch (IOException | InvocationTargetException | IllegalAccessException | IllegalArgumentException ex) {
-            ex.printStackTrace();
-        }
     }
 }

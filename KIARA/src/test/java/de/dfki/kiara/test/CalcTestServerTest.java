@@ -20,15 +20,19 @@ import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.MethodAlreadyBoundException;
 import de.dfki.kiara.Service;
+
 import java.io.IOException;
+
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 /**
- *
  * @author Shahzad
  */
 public class CalcTestServerTest {
@@ -46,12 +50,12 @@ public class CalcTestServerTest {
             service = context.newService();
             service.loadServiceIDLFromString("KIARA",
                     "namespace * calc "
-                    + "service calc { "
-                    + "    i32 add(i32 a, i32 b) "
-                    + "    float addf(float a, float b) "
-                    + "    i32 stringToInt32(string s) "
-                    + "    string int32ToString(i32 i) "
-                    + "} "
+                            + "service calc { "
+                            + "    i32 add(i32 a, i32 b) "
+                            + "    float addf(float a, float b) "
+                            + "    i32 stringToInt32(string s) "
+                            + "    string int32ToString(i32 i) "
+                            + "} "
             );
 
             CalcTestServer.CalcImpl impl = new CalcTestServer.CalcImpl();
@@ -82,26 +86,24 @@ public class CalcTestServerTest {
      * Test of main method, of class CalcTestServer.
      */
     @Test
-    public void testCalcAdd() {
-        service.DbgSimulateCall(
-                "{\"jsonrpc\": \"2.0\", \"method\": \"calc.add\", \"params\": [42, 23], \"id\": 1}");
+    public void testCalcAdd() throws Exception {
+        assertEquals(42 + 23, service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer("{\"jsonrpc\": \"2.0\", \"method\": \"calc.add\", \"params\": [42, 23], \"id\": 1}", "UTF-8")));
     }
 
     @Test
-    public void testCalcAddFloat() {
-        service.DbgSimulateCall(
-                "{\"jsonrpc\": \"2.0\", \"method\": \"calc.addf\", \"params\": [21.1, 32.2], \"id\": 2}");
+    public void testCalcAddFloat() throws Exception {
+        assertEquals(21.1 + 32.2,
+                (float) service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer("{\"jsonrpc\": \"2.0\", \"method\": \"calc.addf\", \"params\": [21.1, 32.2], \"id\": 2}", "UTF-8")),
+                0.01);
     }
 
     @Test
-    public void testCalcStringToInt32() {
-        service.DbgSimulateCall(
-                "{\"jsonrpc\": \"2.0\", \"method\": \"calc.stringToInt32\", \"params\": [\"45\"], \"id\": 3}");
+    public void testCalcStringToInt32() throws Exception {
+        assertEquals(45, service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer("{\"jsonrpc\": \"2.0\", \"method\": \"calc.stringToInt32\", \"params\": [\"45\"], \"id\": 3}", "UTF-8")));
     }
 
     @Test
-    public void testCalcInt32ToString() {
-        service.DbgSimulateCall(
-                "{\"jsonrpc\": \"2.0\", \"method\": \"calc.int32ToString\", \"params\": [132], \"id\": 4}");
+    public void testCalcInt32ToString() throws Exception {
+        assertEquals("132", service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer("{\"jsonrpc\": \"2.0\", \"method\": \"calc.int32ToString\", \"params\": [132], \"id\": 4}", "UTF-8")));
     }
 }

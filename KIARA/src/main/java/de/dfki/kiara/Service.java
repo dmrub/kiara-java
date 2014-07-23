@@ -16,6 +16,8 @@
  */
 package de.dfki.kiara;
 
+import java.nio.ByteBuffer;
+
 /**
  *
  * @author shahzad
@@ -38,5 +40,5 @@ public interface Service {
 
     public void unregisterServiceFunction(String idlMethodName) throws NoSuchMethodException;
 
-    public void DbgSimulateCall(String messageString);
+    public Object dbgSimulateCall(ByteBuffer payload) throws Exception;
 }

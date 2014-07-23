@@ -78,7 +78,7 @@ public class CalcTest2 {
                     Futures.<Integer>immediateFuture(b));
             int result = calc.add(temp, Futures.<Integer>immediateFuture(c)).get();
 
-            System.out.println("Performed remote call: " + a + "+" + b + " = " + result);
+            System.out.println("Performed remote call: " + a + "+" + b + "+" + c + " = " + result);
 
             temp = calc.add1(
                     Futures.<Integer>immediateFuture(a),

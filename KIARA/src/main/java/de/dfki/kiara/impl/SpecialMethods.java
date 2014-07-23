@@ -18,12 +18,12 @@
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.RemoteInterface;
+
 import java.lang.reflect.Method;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public final class SpecialMethods {

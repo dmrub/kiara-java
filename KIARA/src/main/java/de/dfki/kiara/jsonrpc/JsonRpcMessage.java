@@ -22,13 +22,15 @@ import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageDeserializationException;
 import de.dfki.kiara.Protocol;
+
 import static de.dfki.kiara.jsonrpc.JsonRpcProtocol.parseMessageId;
+
 import de.dfki.kiara.util.ByteBufferInputStream;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class JsonRpcMessage implements Message {
@@ -290,7 +292,7 @@ public class JsonRpcMessage implements Message {
                 return new Message.ResponseObject(
                         protocol.getObjectMapper().treeToValue(this.params, returnType), false);
             } catch (JsonProcessingException ex) {
-               throw new MessageDeserializationException(ex);
+                throw new MessageDeserializationException(ex);
             }
         } else {
             JsonRpcError jsonRpcError;
@@ -300,8 +302,8 @@ public class JsonRpcMessage implements Message {
                 throw new MessageDeserializationException(ex);
             }
             return new Message.ResponseObject(
-                        new GenericRemoteException(jsonRpcError.getMessage(), jsonRpcError.getCode(), jsonRpcError.getData()),
-                        true);
+                    new GenericRemoteException(jsonRpcError.getMessage(), jsonRpcError.getCode(), jsonRpcError.getData()),
+                    true);
         }
     }
 

@@ -25,9 +25,8 @@ import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 
 /**
- *
- * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  * @param <T>
+ * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class InterfaceGeneratorImpl<T> implements InterfaceGenerator<T> {
 

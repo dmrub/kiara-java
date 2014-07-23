@@ -17,10 +17,10 @@
 package de.dfki.kiara.jsonrpc;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import java.util.List;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 @JsonSerialize(using = JsonRpcHeaderSerializer.class)

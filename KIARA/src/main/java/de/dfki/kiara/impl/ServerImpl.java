@@ -20,18 +20,18 @@ import de.dfki.kiara.Server;
 import de.dfki.kiara.Service;
 
 /**
- *
  * @author shahzad
  */
-public class ServerImpl implements Server{    
+public class ServerImpl implements Server {
     private final String host;
     private final int port;
     private final String configPath;
-    public ServerImpl(String host, int port, String configPath){
+
+    public ServerImpl(String host, int port, String configPath) {
         this.host = host;
         this.port = port;
         this.configPath = configPath;
-    }        
+    }
 
     @Override
     public void addService(String path, String protocol, Service service) {

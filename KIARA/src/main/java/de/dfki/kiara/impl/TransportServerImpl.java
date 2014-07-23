@@ -30,16 +30,17 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.net.ssl.SSLException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class TransportServerImpl implements TransportServer, RunningService {
@@ -61,7 +62,7 @@ public class TransportServerImpl implements TransportServer, RunningService {
         }
 
     }
-    
+
     private static final Logger logger = LoggerFactory.getLogger(TransportServerImpl.class);
 
     private final List<ServerEntry> serverEntries = new ArrayList<>();
@@ -77,9 +78,9 @@ public class TransportServerImpl implements TransportServer, RunningService {
     @Override
     public void listen(String address, String port, Transport transport, Handler<TransportConnection> handler) {
         if (!(transport instanceof AbstractTransport))
-            throw new IllegalArgumentException("transport is not an instance of "+AbstractTransport.class.getName()+" class");
+            throw new IllegalArgumentException("transport is not an instance of " + AbstractTransport.class.getName() + " class");
         synchronized (serverEntries) {
-            serverEntries.add(new ServerEntry(address, port, (AbstractTransport)transport, handler));
+            serverEntries.add(new ServerEntry(address, port, (AbstractTransport) transport, handler));
         }
     }
 

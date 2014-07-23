@@ -17,11 +17,11 @@
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.MessageIO;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class MessageStream implements MessageIO {

@@ -36,6 +36,7 @@ import de.dfki.kiara.Util;
 import de.dfki.kiara.WrappedRemoteException;
 import de.dfki.kiara.impl.SpecialMethods;
 import de.dfki.kiara.util.Pipeline;
+
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -44,11 +45,11 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class JsonRpcInvocationHandler extends AbstractInvocationHandler implements Handler<TransportMessage>, RunningService {
@@ -153,7 +154,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
                     public Message call() throws Exception {
                         boolean interrupted = false;
                         try {
-                            for (;;) {
+                            for (; ; ) {
                                 try {
                                     Object value = dispatcher.getQueue().take();
                                     if (value instanceof Exception) {

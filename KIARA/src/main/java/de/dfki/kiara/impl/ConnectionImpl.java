@@ -35,11 +35,13 @@ import de.dfki.kiara.idl.KiaraParser;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.World;
 import de.dfki.kiara.util.URILoader;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
+
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -48,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class ConnectionImpl implements Connection {

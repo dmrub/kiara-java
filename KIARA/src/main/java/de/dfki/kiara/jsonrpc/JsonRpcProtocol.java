@@ -32,13 +32,13 @@ import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageDeserializationException;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RemoteInterface;
+
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
@@ -51,7 +51,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         JsonNode methodNode = messageNode.get("method");
         Object method = null;
         if (methodNode != null) {
-            if (!methodNode.isTextual()  && !methodNode.isNull()) {
+            if (!methodNode.isTextual() && !methodNode.isNull()) {
                 throw new IOException("Invalid 'id' member");
             }
             method = methodNode.textValue();

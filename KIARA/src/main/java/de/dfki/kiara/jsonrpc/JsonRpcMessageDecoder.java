@@ -21,7 +21,6 @@ import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.util.Pipeline;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class JsonRpcMessageDecoder implements Pipeline.Handler {
@@ -36,7 +35,7 @@ public class JsonRpcMessageDecoder implements Pipeline.Handler {
     public Object process(Object input) throws Exception {
         if (!(input instanceof TransportMessage))
             throw new IllegalArgumentException();
-        TransportMessage response = (TransportMessage)input;
+        TransportMessage response = (TransportMessage) input;
         return protocol.createResponseMessageFromData(response.getPayload());
     }
 

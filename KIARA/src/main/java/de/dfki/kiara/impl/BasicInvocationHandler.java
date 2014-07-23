@@ -21,13 +21,13 @@ import com.google.common.reflect.AbstractInvocationHandler;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.MessageSerializer;
+
 import java.lang.reflect.Method;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class BasicInvocationHandler extends AbstractInvocationHandler  {
+public class BasicInvocationHandler extends AbstractInvocationHandler {
     private final InterfaceMapping<?> interfaceMapping;
     private Class<? extends MessageSerializer> messageSerializerClass;
 
@@ -58,7 +58,7 @@ public class BasicInvocationHandler extends AbstractInvocationHandler  {
             return getConnection();
         }
 
-        throw new UnsupportedOperationException("Unknown method: "+method);
+        throw new UnsupportedOperationException("Unknown method: " + method);
     }
 
 }

@@ -21,10 +21,10 @@ import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Server;
 import de.dfki.kiara.Service;
+
 import java.io.IOException;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class ContextImpl implements Context {

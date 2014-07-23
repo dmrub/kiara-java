@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 shahzad
+ * Copyright (C) 2014 German Research Center for Artificial Intelligence (DFKI)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,27 +17,27 @@
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.ServiceMethodBinder;
+
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
  * @author shahzad
  */
 public class ServiceMethodBinding {
 
-    private Map<String, ServiceMethodBinder> internalMapping = null;
+    private final Map<String, ServiceMethodBinder> internalMapping;
 
     public ServiceMethodBinding() {
         internalMapping = new HashMap<>();
     }
 
     public void bindServiceMethod(String idlMethodName, Object serviceClass,
-            String serviceMethodName) throws NoSuchMethodException, SecurityException {
+                                  String serviceMethodName) throws NoSuchMethodException, SecurityException {
         Method method = null;
-        for(Method m: serviceClass.getClass().getMethods()){
-            if(m.getName().equals(serviceMethodName)){
+        for (Method m : serviceClass.getClass().getMethods()) {
+            if (m.getName().equals(serviceMethodName)) {
                 method = m;
                 break;
             }
@@ -46,7 +46,7 @@ public class ServiceMethodBinding {
     }
 
     public void bindServiceMethod(String idlMethodName, Object serviceClass,
-            String serviceMethodName, Class<?>[] parameterTypes) throws
+                                  String serviceMethodName, Class<?>[] parameterTypes) throws
             NoSuchMethodException, SecurityException {
         Method method = serviceClass.getClass().getMethod(serviceMethodName, parameterTypes);
         internalMapping.put(idlMethodName, new ServiceMethodBinder(serviceClass, method));

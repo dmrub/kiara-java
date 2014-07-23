@@ -18,9 +18,8 @@ package de.dfki.kiara;
 
 import de.dfki.kiara.http.HttpTransport;
 import de.dfki.kiara.impl.ContextImpl;
-import de.dfki.kiara.impl.TransportServerImpl;
-import de.dfki.kiara.impl.KiaraServiceImpl;
 import de.dfki.kiara.impl.ServiceImpl;
+import de.dfki.kiara.impl.TransportServerImpl;
 import de.dfki.kiara.jos.JosProtocol;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import de.dfki.kiara.tcp.TcpBlockTransport;
@@ -91,8 +90,8 @@ public class Kiara {
         }
     }
 
-    public static KiaraService createService(Context context) {
-        return new KiaraServiceImpl(context);
+    public static Service createService(Context context) {
+        return new ServiceImpl(context);
     }
 
 

@@ -17,11 +17,7 @@
 package de.dfki.kiara.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import de.dfki.kiara.MethodAlreadyBoundException;
-import de.dfki.kiara.Binder;
-import de.dfki.kiara.IDLParseException;
-import de.dfki.kiara.Service;
-import de.dfki.kiara.ServiceMethodBinder;
+import de.dfki.kiara.*;
 import de.dfki.kiara.idl.KiaraKTDConstructor;
 import de.dfki.kiara.idl.KiaraLexer;
 import de.dfki.kiara.idl.KiaraParser;
@@ -51,7 +47,7 @@ public class ServiceImpl implements Service {
     private final World world;
     private final Module module;
 
-    public ServiceImpl() {
+    public ServiceImpl(Context context) {
         this.binder = new BinderImpl();
         world = new World();
         module = new Module(world, "kiara");
@@ -160,13 +156,13 @@ public class ServiceImpl implements Service {
         JsonRpcProtocol protocol = new JsonRpcProtocol();
 
         try {
-            JsonNode jsonNode = protocol.parseMessageData(ByteBuffer.wrap(messageString.getBytes("UTF-8")));
-            String methodName = (String) protocol.parseMessageName(jsonNode);
+            Message rpcMessage = protocol.createRequestMessageFromData(ByteBuffer.wrap(messageString.getBytes("UTF-8")));
+            String methodName = rpcMessage.getMethodName();
+
             ServiceMethodBinder serviceMethod = binder.getServiceMethod(methodName);
-            JsonRpcMessage rpcMessage = protocol.createRequestMessageFromData(jsonNode, serviceMethod.getBoundedMethod().getParameterTypes());
 
             System.out.println(serviceMethod.getBoundedMethod().invoke(
-                    serviceMethod.getImplementedClass(), rpcMessage.getRequestObject().args.toArray()));
+                    serviceMethod.getImplementedClass(), rpcMessage.getRequestObject(serviceMethod.getBoundedMethod().getParameterTypes()).args.toArray()));
 
         } catch (IOException | InvocationTargetException | IllegalAccessException | IllegalArgumentException ex) {
             ex.printStackTrace();

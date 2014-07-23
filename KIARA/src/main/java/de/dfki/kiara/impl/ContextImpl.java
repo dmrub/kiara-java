@@ -45,7 +45,7 @@ public class ContextImpl implements Context {
 
     @Override
     public Service newService() {
-        return new ServiceImpl();
+        return new ServiceImpl(this);
     }
 
 }

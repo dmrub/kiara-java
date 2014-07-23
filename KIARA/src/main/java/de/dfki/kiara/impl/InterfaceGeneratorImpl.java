@@ -40,9 +40,8 @@ public class InterfaceGeneratorImpl<T> implements InterfaceGenerator<T> {
     @Override
     public T generateClientFunctions(Connection connection) {
         Class<T> interfaceClass = interfaceMapping.getInterfaceClass();
-        T impl = Reflection.newProxy(interfaceClass,
+        return Reflection.newProxy(interfaceClass,
                 new JsonRpcInvocationHandler(connection, interfaceMapping, new JsonRpcProtocol()));
-        return impl;
     }
 
 }

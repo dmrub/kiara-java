@@ -136,7 +136,7 @@ public class JsonRpcInvocationHandler extends AbstractInvocationHandler implemen
         final TransportMessage transportRequest = tc.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
         transportRequest.setPayload(request.getMessageData());
-        final JsonRpcMessageDispatcher dispatcher = new JsonRpcMessageDispatcher(protocol, ((JsonRpcMessage) request).getId(), returnType);
+        final JsonRpcMessageDispatcher dispatcher = new JsonRpcMessageDispatcher(protocol, ((JsonRpcMessage) request).getId());
         pipeline.addHandler(dispatcher);
 
         ListenableFuture<Void> reqSent = tc.send(transportRequest);

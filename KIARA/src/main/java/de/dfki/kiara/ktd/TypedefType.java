@@ -30,7 +30,7 @@ public class TypedefType extends Type {
                 typeDeclType.getCanonicalType());
     }
 
-    public static final TypedefType create(String name, Type typeDeclType) {
+    public static TypedefType create(String name, Type typeDeclType) {
         return (TypedefType) typeDeclType.getWorld().getOrCreate(
                 new TypedefType(name, typeDeclType));
     }

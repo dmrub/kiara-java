@@ -929,7 +929,7 @@ public class KiaraKTDConstructor implements KiaraListener {
 
             StructType sty = (StructType)ty;
             AnnotationTypeAttr atr = sty.getAttributeValue(AnnotationTypeAttr.class);
-            if (atr == null || atr.getValue() == false) {
+            if (atr == null || !atr.getValue()) {
                 perror(ctx, "Type '"+typeId+"' is not an annotation type");
                 return;
             }

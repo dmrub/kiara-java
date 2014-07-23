@@ -16,7 +16,6 @@
  */
 package de.dfki.kiara.test;
 
-import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLong;
 import com.google.common.primitives.UnsignedLongs;
 import de.dfki.kiara.Connection;

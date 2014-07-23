@@ -25,7 +25,7 @@ public class AnyType extends Type {
         super(world, "any", NodeKind.NODE_ANYTYPE, 0);
     }
 
-    public static final AnyType get(World world) {
+    public static AnyType get(World world) {
         return world.type_any();
     }
 }

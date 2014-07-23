@@ -99,7 +99,7 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
         ByteBufferInputStream is = new ByteBufferInputStream(data);
         ObjectInputStream ois = new ObjectInputStream(is);
         byte responseCode = ois.readByte();
-        if (responseCode != JOS_RESPONSE || responseCode != JOS_EXCEPTION) {
+        if (responseCode != JOS_RESPONSE && responseCode != JOS_EXCEPTION) {
             throw new IOException("Invalid response code: " + responseCode);
         }
         Object result;
@@ -121,38 +121,6 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     @Override
     public Message createResponseMessage(Message requestMessage) {
         return new JosMessage(this, Message.Kind.RESPONSE);
-    }
-
-    public ByteBuffer convertMessageToData(Message message, Class<?>[] paramTypes, Class<?> returnType) throws IOException {
-        NoCopyByteArrayOutputStream os = new NoCopyByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(os);
-        switch (message.getMessageKind()) {
-            case REQUEST: {
-                oos.writeByte(JOS_REQUEST);
-                oos.writeUTF(message.getMethodName());
-                Message.RequestObject ro = message.getRequestObject(paramTypes);
-                oos.writeObject(ro.args);
-            }
-            break;
-            case RESPONSE: {
-                oos.writeByte(JOS_RESPONSE);
-                Message.ResponseObject ro = message.getResponseObject(returnType);
-                oos.writeObject(ro.result);
-            }
-            break;
-            case EXCEPTION: {
-                oos.writeByte(JOS_EXCEPTION);
-                Message.ResponseObject ro = message.getResponseObject(returnType);
-                oos.writeObject(ro.result);
-            }
-            break;
-        }
-        oos.flush();
-        return ByteBuffer.wrap(os.toByteArray(), 0, os.size());
-    }
-
-    @Override
-    public void sendMessageSync(Message outMsg, Message inMsg) throws IOException {
     }
 
     @Override

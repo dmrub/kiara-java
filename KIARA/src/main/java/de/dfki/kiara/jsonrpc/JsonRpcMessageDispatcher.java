@@ -16,27 +16,21 @@
  */
 package de.dfki.kiara.jsonrpc;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.dfki.kiara.util.Pipeline;
-import java.io.IOException;
+
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class JsonRpcMessageDispatcher implements Pipeline.Handler {
 
-    private final JsonRpcProtocol protocol;
     private final Object messageId;
-    private final Class<?> returnType;
     private final BlockingQueue<Object> messageQueue;
 
-    JsonRpcMessageDispatcher(JsonRpcProtocol protocol, Object messageId, Class<?> returnType) {
-        this.protocol = protocol;
+    JsonRpcMessageDispatcher(JsonRpcProtocol protocol, Object messageId) {
         this.messageId = messageId;
-        this.returnType = returnType;
         this.messageQueue = new ArrayBlockingQueue<>(1);
     }
 
@@ -46,20 +40,14 @@ public class JsonRpcMessageDispatcher implements Pipeline.Handler {
 
     @Override
     public Object process(Object input) throws Exception {
-        if (!(input instanceof JsonNode)) {
+        if (!(input instanceof JsonRpcMessage)) {
             return input;
         }
 
-        JsonNode node = (JsonNode) input;
-        Object id = JsonRpcProtocol.parseMessageId(node);
+        JsonRpcMessage message = (JsonRpcMessage) input;
 
-        if (JsonRpcProtocol.equalIds(id, messageId)) {
-            try {
-                JsonRpcMessage message = protocol.createResponseMessageFromData(node, returnType);
-                messageQueue.add(message);
-            } catch (IOException ex) {
-                messageQueue.add(ex);
-            }
+        if (JsonRpcProtocol.equalIds(messageId, message.getId())) {
+            messageQueue.add(message);
             return null; // stop processing
         }
         return input;

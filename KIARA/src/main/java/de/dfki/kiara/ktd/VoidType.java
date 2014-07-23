@@ -25,7 +25,7 @@ public class VoidType extends Type {
         super(world, "void", NodeKind.NODE_VOIDTYPE, 0);
     }
 
-    public static final VoidType get(World world) {
+    public static VoidType get(World world) {
         return world.type_void();
     }
 }

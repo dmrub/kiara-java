@@ -37,7 +37,7 @@ public class Namespace extends KTDObject {
         this.typeMap = new HashMap<>();
     }
 
-    public static final Namespace create(World world, String name) {
+    public static Namespace create(World world, String name) {
         return new Namespace(world, name);
     }
 

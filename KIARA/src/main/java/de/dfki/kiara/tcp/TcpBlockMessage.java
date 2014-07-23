@@ -16,15 +16,9 @@
  */
 package de.dfki.kiara.tcp;
 
-import com.google.common.escape.ArrayBasedEscaperMap;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpRequest;
+
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;

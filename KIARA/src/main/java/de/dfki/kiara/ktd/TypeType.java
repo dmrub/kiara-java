@@ -25,7 +25,7 @@ public class TypeType extends Type {
         super(world, "type", NodeKind.NODE_TYPETYPE, 0);
     }
 
-    public static final TypeType get(World world) {
+    public static TypeType get(World world) {
         return world.type_type();
     }
 }

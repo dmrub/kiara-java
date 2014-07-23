@@ -37,7 +37,7 @@ public class JsonRpcMessageDecoder implements Pipeline.Handler {
         if (!(input instanceof TransportMessage))
             throw new IllegalArgumentException();
         TransportMessage response = (TransportMessage)input;
-        return protocol.parseMessageData(response.getPayload());
+        return protocol.createResponseMessageFromData(response.getPayload());
     }
 
 }

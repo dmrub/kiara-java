@@ -31,7 +31,7 @@ public class Lists {
         return l;
     }
 
-    public static final <T> void resizeList(ArrayList<T> list, int newSize) {
+    public static <T> void resizeList(ArrayList<T> list, int newSize) {
         list.ensureCapacity(newSize);
         // trim
         while (list.size() > newSize) {
@@ -43,7 +43,7 @@ public class Lists {
         }
     }
 
-    public static final <T> void resizeList(List<T> list, int newSize) {
+    public static <T> void resizeList(List<T> list, int newSize) {
         // trim
         while (list.size() > newSize) {
             list.remove(list.size()-1);

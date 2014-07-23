@@ -18,7 +18,6 @@ package de.dfki.kiara.jsonrpc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageDeserializationException;
@@ -27,8 +26,6 @@ import static de.dfki.kiara.jsonrpc.JsonRpcProtocol.parseMessageId;
 import de.dfki.kiara.util.ByteBufferInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -104,6 +101,7 @@ public class JsonRpcMessage implements Message {
                         new GenericRemoteException(jsonRpcError.getMessage(), jsonRpcError.getCode(), jsonRpcError.getData()),
                         true);
             }
+            this.id = parseMessageId(body);
         }
         this.protocol = protocol;
     }

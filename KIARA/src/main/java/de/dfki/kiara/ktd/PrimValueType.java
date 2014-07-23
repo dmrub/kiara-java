@@ -131,9 +131,7 @@ public class PrimValueType extends Type {
             return false;
         if (!getValue().equals(otherTy.getValue()))
             return false;
-        if (isUnsigned() != otherTy.isUnsigned())
-            return false;
-        return true;
+        return isUnsigned() == otherTy.isUnsigned();
     }
 
 }

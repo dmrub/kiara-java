@@ -24,7 +24,7 @@ public class ElementData extends AttributeHolder {
     private String name;
 
     public ElementData() {
-        this(new String());
+        this("");
     }
 
     public ElementData(String name) {

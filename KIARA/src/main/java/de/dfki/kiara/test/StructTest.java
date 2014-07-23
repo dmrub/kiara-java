@@ -22,8 +22,6 @@ import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.RemoteInterface;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  *

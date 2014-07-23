@@ -25,7 +25,7 @@ public class UnresolvedSymbolType extends Type {
         super(world, "unresolved_symbol", NodeKind.NODE_UNRESOLVEDSYMBOLTYPE, 0);
     }
 
-    public static final UnresolvedSymbolType get(World world) {
+    public static UnresolvedSymbolType get(World world) {
         return world.type_unresolved_symbol();
     }
 }

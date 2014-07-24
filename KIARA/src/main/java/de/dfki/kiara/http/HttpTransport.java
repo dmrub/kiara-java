@@ -18,6 +18,7 @@ package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Handler;
+import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.netty.AbstractTransport;
@@ -32,8 +33,11 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.security.cert.CertificateException;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
 
 /**
@@ -66,13 +70,21 @@ public class HttpTransport extends AbstractTransport {
     }
 
     @Override
-    public TransportAddress createAddress(String uri) {
-        return null;
+    public TransportAddress createAddress(String uriStr) throws InvalidAddressException, UnknownHostException {
+        try {
+            return new HttpAddress(this, new URI(uriStr));
+        } catch (URISyntaxException ex) {
+            throw new InvalidAddressException(ex);
+        }
     }
 
     @Override
-    public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws IOException, URISyntaxException {
-        return openConnection(new URI(uri), settings);
+    public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws IOException, InvalidAddressException {
+        try {
+            return openConnection(new URI(uri), settings);
+        } catch (URISyntaxException ex) {
+            throw new InvalidAddressException(ex);
+        }
     }
 
     public ChannelFutureAndConnection connect(URI uri, Map<String, Object> settings) throws IOException {

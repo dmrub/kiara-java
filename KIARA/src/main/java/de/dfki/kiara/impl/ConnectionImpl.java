@@ -20,6 +20,7 @@ import de.dfki.kiara.ConnectException;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
+import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ProtocolRegistry;
@@ -174,7 +175,7 @@ public class ConnectionImpl implements Connection {
 
         try {
             transportConnection = transport.openConnection(transportUri.toString(), null).get();
-        } catch (URISyntaxException ex) {
+        } catch (InvalidAddressException ex) {
             throw new ConnectException(ex);
         } catch (InterruptedException ex) {
             throw new ConnectException(ex);

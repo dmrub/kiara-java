@@ -16,28 +16,24 @@
  */
 package de.dfki.kiara;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
-import java.util.Map;
-
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Transport {
+public class InvalidAddressException extends Exception {
 
-    public String getName();
+    public InvalidAddressException() {
+    }
 
-    public int getPriority();
+    public InvalidAddressException(String message) {
+        super(message);
+    }
 
-    public boolean isHttpTransport();
+    public InvalidAddressException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-    public boolean isSecureTransport();
-
-    public TransportAddress createAddress(String uri) throws InvalidAddressException, UnknownHostException;
-
-    public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws InvalidAddressException, IOException;
-
+    public InvalidAddressException(Throwable cause) {
+        super(cause);
+    }
 }

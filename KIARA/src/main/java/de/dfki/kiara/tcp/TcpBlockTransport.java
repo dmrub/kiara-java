@@ -18,8 +18,10 @@ package de.dfki.kiara.tcp;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Handler;
+import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.http.HttpAddress;
 import de.dfki.kiara.netty.AbstractTransport;
 import de.dfki.kiara.netty.ChannelFutureAndConnection;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -32,8 +34,11 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.security.cert.CertificateException;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
 
 /**
@@ -66,15 +71,25 @@ public class TcpBlockTransport extends AbstractTransport {
     }
 
     @Override
-    public TransportAddress createAddress(String uri) {
-        return null;
+    public TransportAddress createAddress(String uri) throws InvalidAddressException, UnknownHostException {
+        if (uri == null)
+            throw new NullPointerException("uri");
+        try {
+            return new TcpBlockAddress(this, new URI(uri));
+        } catch (URISyntaxException ex) {
+            throw new InvalidAddressException(ex);
+        }
     }
 
     @Override
-    public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws URISyntaxException, IOException {
+    public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws InvalidAddressException, IOException {
         if (uri == null)
             throw new NullPointerException("uri");
-        return openConnection(new URI(uri), settings);
+        try {
+            return openConnection(new URI(uri), settings);
+        } catch (URISyntaxException ex) {
+            throw new InvalidAddressException(ex);
+        }
     }
 
     public ChannelFutureAndConnection connect(URI uri, Map<String, Object> settings) throws IOException {

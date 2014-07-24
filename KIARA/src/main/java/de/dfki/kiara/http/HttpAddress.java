@@ -16,9 +16,11 @@
  */
 package de.dfki.kiara.http;
 
+import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 
 /**
@@ -32,6 +34,24 @@ public class HttpAddress implements TransportAddress {
     private final int port;
     private final String path;
     private final InetAddress address;
+
+    public HttpAddress(HttpTransport transport, URI uri) throws InvalidAddressException, UnknownHostException {
+        if (transport == null) {
+            throw new NullPointerException("transport");
+        }
+        if (uri == null) {
+            throw new NullPointerException("uri");
+        }
+
+        if (!"http".equals(uri.getScheme()) && !"https".equals(uri.getScheme())) {
+            throw new InvalidAddressException("only http and https scheme is allowed");
+        }
+        this.transport = transport;
+        this.hostName = uri.getHost();
+        this.port = uri.getPort();
+        this.path = uri.getPath();
+        this.address = InetAddress.getByName(this.hostName);
+    }
 
     public HttpAddress(HttpTransport transport, String hostName, int port, String path) throws UnknownHostException {
         if (transport == null) {

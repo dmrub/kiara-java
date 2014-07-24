@@ -16,9 +16,11 @@
  */
 package de.dfki.kiara.tcp;
 
+import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 
 /**
@@ -31,6 +33,23 @@ public class TcpBlockAddress implements TransportAddress {
     private final String hostName;
     private final int port;
     private final InetAddress address;
+
+    public TcpBlockAddress(TcpBlockTransport transport, URI uri) throws InvalidAddressException, UnknownHostException {
+        if (transport == null) {
+            throw new NullPointerException("transport");
+        }
+        if (uri == null) {
+            throw new NullPointerException("uri");
+        }
+        if (!"tcp".equals(uri.getScheme()) && !"tcps".equals(uri.getScheme())) {
+            throw new InvalidAddressException("only tcp and tcps scheme is allowed");
+        }
+
+        this.transport = transport;
+        this.hostName = uri.getHost();
+        this.port = uri.getPort();
+        this.address = InetAddress.getByName(this.hostName);
+    }
 
     public TcpBlockAddress(TcpBlockTransport transport, String hostName, int port) throws UnknownHostException {
         if (transport == null) {

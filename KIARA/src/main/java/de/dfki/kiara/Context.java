@@ -19,6 +19,7 @@ package de.dfki.kiara;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 /**
  *
@@ -26,6 +27,6 @@ import java.io.IOException;
  */
 public interface Context extends Closeable {
     public Connection openConnection(String url) throws IOException;
-    public Server newServer(String host, int port, String configPath);
+    public Server newServer(String host, int port, String configPath) throws URISyntaxException;
     public Service newService();
 }

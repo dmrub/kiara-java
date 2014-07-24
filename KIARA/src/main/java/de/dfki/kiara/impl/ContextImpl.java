@@ -21,8 +21,8 @@ import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Server;
 import de.dfki.kiara.Service;
-
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
@@ -39,7 +39,7 @@ public class ContextImpl implements Context {
     }
 
     @Override
-    public Server newServer(String host, int port, String configPath) {
+    public Server newServer(String host, int port, String configPath) throws URISyntaxException {
         return new ServerImpl(host, port, configPath);
     }
 

@@ -23,6 +23,7 @@ import java.io.IOException;
  * @author shahzad
  */
 public interface Server {
-    public void addService(String path, String protocol, Service service);
+    public void addService(String path, String protocol, Service service) throws IOException;
+    public boolean removeService(Service service);
     public void run() throws IOException;
 }

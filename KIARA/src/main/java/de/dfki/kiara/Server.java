@@ -16,13 +16,14 @@
  */
 package de.dfki.kiara;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
  *
  * @author shahzad
  */
-public interface Server {
+public interface Server extends Closeable {
     public void addService(String path, String protocol, Service service) throws IOException;
     public boolean removeService(Service service);
     public void run() throws IOException;

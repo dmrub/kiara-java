@@ -21,7 +21,6 @@ import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.http.HttpAddress;
 import de.dfki.kiara.netty.AbstractTransport;
 import de.dfki.kiara.netty.ChannelFutureAndConnection;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -37,8 +36,6 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.security.cert.CertificateException;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
 
 /**

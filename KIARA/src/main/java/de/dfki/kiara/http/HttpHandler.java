@@ -172,12 +172,13 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
                 HttpResponse httpResponse;
                 if (responseTransportMessage != null) {
+                    logger.debug("RESPONSE CONTENT: {}", responseTransportMessage.getContent().content().toString(StandardCharsets.UTF_8));
                     httpResponse = responseTransportMessage.finalizeResponse();
                 } else {
                     httpResponse = new DefaultFullHttpResponse(
                             HTTP_1_1, BAD_REQUEST, Unpooled.copiedBuffer("Could not handle request", CharsetUtil.UTF_8));
                 }
-                logger.debug("RESPONSE CONTENT: {}", responseTransportMessage.getContent().content().toString(StandardCharsets.UTF_8));
+
                 ctx.write(httpResponse);
 
                 if (!keepAlive) {

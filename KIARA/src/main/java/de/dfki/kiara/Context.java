@@ -27,6 +27,6 @@ import java.net.URISyntaxException;
  */
 public interface Context extends Closeable {
     public Connection openConnection(String url) throws IOException;
-    public Server newServer(String host, int port, String configPath) throws URISyntaxException;
+    public Server newServer(String host, int port, String configPath) throws IOException, URISyntaxException;
     public Service newService();
 }

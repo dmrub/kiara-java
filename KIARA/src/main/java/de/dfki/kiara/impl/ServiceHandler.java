@@ -17,35 +17,34 @@
 
 package de.dfki.kiara.impl;
 
-import de.dfki.kiara.Connection;
-import de.dfki.kiara.Context;
-import de.dfki.kiara.Server;
+import de.dfki.kiara.Protocol;
+import de.dfki.kiara.ProtocolRegistry;
 import de.dfki.kiara.Service;
-import java.io.IOException;
-import java.net.URISyntaxException;
+import de.dfki.kiara.Transport;
+import de.dfki.kiara.config.ProtocolInfo;
+import java.io.Closeable;
 
 /**
+ *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ContextImpl implements Context {
+public class ServiceHandler implements Closeable {
+    private final Service service;
+    private final ProtocolInfo protocolInfo;
+    private final Protocol protocol;
 
-    @Override
-    public Connection openConnection(String url) throws IOException {
-        return new ConnectionImpl(url);
+    public ServiceHandler(Service service, Transport transport, String protocolName) throws InstantiationException, IllegalAccessException {
+        this.service = service;
+        this.protocolInfo = new ProtocolInfo();
+        this.protocolInfo.name = protocolName;
+        this.protocol = ProtocolRegistry.newProtocolByName(protocolName);
+    }
+
+    public Service getService() {
+        return service;
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
     }
-
-    @Override
-    public Server newServer(String host, int port, String configPath) throws IOException, URISyntaxException {
-        return new ServerImpl(host, port, configPath);
-    }
-
-    @Override
-    public Service newService() {
-        return new ServiceImpl(this);
-    }
-
 }

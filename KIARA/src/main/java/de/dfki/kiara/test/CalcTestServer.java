@@ -22,7 +22,6 @@ import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
 import de.dfki.kiara.Service;
 
-import java.nio.ByteBuffer;
 
 /**
  *
@@ -83,7 +82,7 @@ public class CalcTestServer {
             System.out.printf("Error: could not parse IDL: %s", e.getMessage());
             System.exit(1);
         } finally {
-            Kiara.shutdownGracefully();
+            //Kiara.shutdownGracefully();
         }
     }
 

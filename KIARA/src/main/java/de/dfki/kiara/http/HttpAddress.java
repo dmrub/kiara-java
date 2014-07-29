@@ -21,6 +21,7 @@ import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import java.net.InetAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
 /**
@@ -43,6 +44,8 @@ public class HttpAddress implements TransportAddress {
             throw new NullPointerException("uri");
         }
 
+        uri = uri.normalize();
+
         if (!"http".equals(uri.getScheme()) && !"https".equals(uri.getScheme())) {
             throw new InvalidAddressException("only http and https scheme is allowed");
         }
@@ -53,33 +56,8 @@ public class HttpAddress implements TransportAddress {
         this.address = InetAddress.getByName(this.hostName);
     }
 
-    public HttpAddress(HttpTransport transport, String hostName, int port, String path) throws UnknownHostException {
-        if (transport == null) {
-            throw new NullPointerException("transport");
-        }
-        if (hostName == null) {
-            throw new NullPointerException("hostName");
-        }
-        if (path == null) {
-            throw new NullPointerException("path");
-        }
-
-        this.transport = transport;
-        this.hostName = hostName;
-        this.port = port;
-        this.address = InetAddress.getByName(hostName);
-
-        // FIXME normalize path
-        String tmpPath = path;
-
-        if (tmpPath.isEmpty()) {
-            tmpPath = "/";
-        } else {
-            if (tmpPath.charAt(0) != '/') {
-                tmpPath = "/" + tmpPath;
-            }
-        }
-        this.path = tmpPath;
+    public HttpAddress(HttpTransport transport, String hostName, int port, String path) throws InvalidAddressException, UnknownHostException, URISyntaxException  {
+        this(transport, new URI(transport.getName(), null, hostName, port, path, null, null));
     }
 
     @Override
@@ -97,6 +75,9 @@ public class HttpAddress implements TransportAddress {
         return hostName;
     }
 
+    /**
+     * Returns null if path is undefined
+     */
     public String getPath() {
         return path;
     }

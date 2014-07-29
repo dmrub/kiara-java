@@ -16,8 +16,15 @@
  */
 package de.dfki.kiara.tcp;
 
+import de.dfki.kiara.InvalidAddressException;
+import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.http.HttpAddress;
+import de.dfki.kiara.http.HttpTransport;
+import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -49,6 +56,22 @@ public class TcpBlockMessage extends TransportMessage {
     @Override
     public Object get(String name) {
         return properties.get(name);
+    }
+
+    @Override
+    public TransportAddress getLocalTransportAddress() {
+        try {
+            final TransportConnection connection = getConnection();
+            final HttpTransport transport = (HttpTransport)connection.getTransport();
+            final InetSocketAddress sa = ((InetSocketAddress)connection.getLocalAddress());
+            return new HttpAddress(transport, sa.getHostName(), sa.getPort(), null);
+        } catch (UnknownHostException ex) {
+            return null;
+        } catch (InvalidAddressException ex) {
+            return null;
+        } catch (URISyntaxException ex) {
+            return null;
+        }
     }
 
 }

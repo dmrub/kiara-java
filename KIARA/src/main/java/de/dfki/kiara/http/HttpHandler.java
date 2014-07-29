@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.RequestHandler;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
@@ -58,7 +59,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,8 +91,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
                 return new HttpAddress(transport, uri);
             else {
                 InetSocketAddress sa = ((InetSocketAddress)getLocalAddress());
-                return new HttpAddress(transport,
-                        new URI(transport.getName(), null, sa.getHostName(), sa.getPort(), null, null, null));
+                return new HttpAddress(transport, sa.getHostName(), sa.getPort(), "");
             }
         } catch (InvalidAddressException ex) {
             throw new IllegalStateException(ex);
@@ -101,6 +100,11 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         } catch (URISyntaxException ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    @Override
+    public Transport getTransport() {
+        return transport;
     }
 
     static enum Mode {

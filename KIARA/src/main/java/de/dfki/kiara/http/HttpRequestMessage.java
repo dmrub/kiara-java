@@ -16,6 +16,8 @@
  */
 package de.dfki.kiara.http;
 
+import de.dfki.kiara.InvalidAddressException;
+import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import io.netty.buffer.ByteBuf;
@@ -25,6 +27,12 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -102,6 +110,22 @@ public class HttpRequestMessage extends TransportMessage {
             return request.getMethod().name();
         }
         return null;
+    }
+
+    @Override
+    public TransportAddress getLocalTransportAddress() {
+        try {
+            final TransportConnection connection = getConnection();
+            final HttpTransport transport = (HttpTransport)connection.getTransport();
+            final InetSocketAddress sa = ((InetSocketAddress)connection.getLocalAddress());
+            return new HttpAddress(transport, sa.getHostName(), sa.getPort(), request.getUri());
+        } catch (UnknownHostException ex) {
+            return null;
+        } catch (InvalidAddressException ex) {
+            return null;
+        } catch (URISyntaxException ex) {
+            return null;
+        }
     }
 
 }

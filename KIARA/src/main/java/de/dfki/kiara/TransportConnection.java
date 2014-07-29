@@ -26,6 +26,7 @@ import java.net.SocketAddress;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public interface TransportConnection extends Closeable {
+    public Transport getTransport();
     public SocketAddress getLocalAddress();
     public SocketAddress getRemoteAddress();
 

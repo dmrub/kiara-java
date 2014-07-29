@@ -98,19 +98,23 @@ public class StructTestServer {
                     "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getString\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 3}", "UTF-8"));
             service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer(
                     "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.getString\", \"params\": [{\"ival\" : 45, \"sval\" : \"BLAH\"}], \"id\": 3}", "UTF-8"));
-            service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer(
-                    "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.throwException\", \"params\": [202, \"NOT FOUND\"], \"id\": 4}", "UTF-8"));
+            try {
+                service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer(
+                        "{\"jsonrpc\": \"2.0\", \"method\": \"StructTest.throwException\", \"params\": [202, \"NOT FOUND\"], \"id\": 4}", "UTF-8"));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
             // Debugging calls end
 
             System.out.printf("Starting server...\n");
-            Server server = context.newServer("0.0.0.0", port, "/service");
+            Server server = context.newServer("0.0.0.0", port, "/service2");
             server.addService("/rpc/struct", protocol, service);
             server.run();
         } catch (IDLParseException e) {
             System.out.printf("Error: could not parse IDL: %s", e.getMessage());
             System.exit(1);
         } finally {
-            Kiara.shutdownGracefully();
+            // Kiara.shutdownGracefully();
         }
     }
 

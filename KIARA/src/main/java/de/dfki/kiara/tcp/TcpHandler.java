@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.RequestHandler;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
@@ -77,6 +78,11 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         } catch (UnknownHostException ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    @Override
+    public Transport getTransport() {
+        return transport;
     }
 
     static enum Mode {

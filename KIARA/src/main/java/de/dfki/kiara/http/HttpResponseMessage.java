@@ -16,6 +16,8 @@
  */
 package de.dfki.kiara.http;
 
+import de.dfki.kiara.InvalidAddressException;
+import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import io.netty.buffer.ByteBuf;
@@ -25,6 +27,9 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
 import io.netty.handler.codec.http.HttpResponse;
+import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 
 /**
  *
@@ -110,6 +115,11 @@ public class HttpResponseMessage extends TransportMessage {
             return headers.get("x-kiara-session");
         }
         return null;
+    }
+
+    @Override
+    public TransportAddress getLocalTransportAddress() {
+        throw new UnsupportedOperationException("response message does not have transport address");
     }
 
 }

@@ -143,4 +143,9 @@ public class TransportConnectionReceiver implements Handler<TransportMessage>, T
     public TransportAddress getLocalTransportAddress() {
         return connection.getLocalTransportAddress();
     }
+
+    @Override
+    public Transport getTransport() {
+        return connection.getTransport();
+    }
 }

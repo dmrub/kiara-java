@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +51,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     private final int configPort;
     private final String configPath;
     private final URI configUri;
-    private final Set<Service> services;
+    private final Set<ServiceImpl> services;
     private final List<TransportAddressAndServiceHandler> serviceHandlers;
     private final SortedMap<HostAndPort, TransportEntry> transportEntries;
     private final TransportServer transportServer;
@@ -150,6 +149,8 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     public void addService(String path, String protocol, Service service) throws IOException {
         URI uri = configUri.resolve(path);
 
+        final ServiceImpl serviceImpl = (ServiceImpl)service;
+
         logger.debug("Server::addService: {}", uri);
 
         Transport transport = TransportRegistry.getTransportByName(uri.getScheme());
@@ -160,7 +161,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
 
         ServiceHandler handler;
         try {
-            handler = new ServiceHandler(service, transport, protocol);
+            handler = new ServiceHandler(serviceImpl, transport, protocol);
         } catch (InstantiationException ex) {
             throw new IOException(ex);
         } catch (IllegalAccessException ex) {
@@ -200,7 +201,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         }
 
         synchronized (services) {
-            services.add(service);
+            services.add(serviceImpl);
         }
     }
 

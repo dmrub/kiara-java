@@ -24,19 +24,19 @@ import java.lang.reflect.Method;
  * @author Shahzad
  */
 public class ServiceMethodBinder {
-    final private Object implementedClass;
-    final private Method boundedMethod;
+    private final Object implementedClass;
+    private final Method boundMethod;
 
     public ServiceMethodBinder(Object implementedClass, Method boundedMethod) {
         this.implementedClass = implementedClass;
-        this.boundedMethod = boundedMethod;
+        this.boundMethod = boundedMethod;
     }
 
     public Object getImplementedClass(){
         return implementedClass;
     }
 
-    public Method getBoundedMethod(){
-        return boundedMethod;
+    public Method getBoundMethod(){
+        return boundMethod;
     }
 }

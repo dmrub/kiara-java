@@ -17,23 +17,29 @@
 
 package de.dfki.kiara.impl;
 
+import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ProtocolRegistry;
 import de.dfki.kiara.Service;
+import de.dfki.kiara.ServiceMethodBinder;
 import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.config.ProtocolInfo;
+import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import java.io.Closeable;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class ServiceHandler implements Closeable {
-    private final Service service;
+    private final ServiceImpl service;
     private final ProtocolInfo protocolInfo;
     private final Protocol protocol;
 
-    public ServiceHandler(Service service, Transport transport, String protocolName) throws InstantiationException, IllegalAccessException {
+    public ServiceHandler(ServiceImpl service, Transport transport, String protocolName) throws InstantiationException, IllegalAccessException {
         this.service = service;
         this.protocolInfo = new ProtocolInfo();
         this.protocolInfo.name = protocolName;
@@ -50,5 +56,41 @@ public class ServiceHandler implements Closeable {
 
     @Override
     public void close() {
+    }
+
+    void performCall(TransportMessage request, TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException {
+        /*
+        byte[] array;
+        int arrayOffset;
+        int arrayLength;
+        if (request.getPayload().hasArray()) {
+            array = request.getPayload().array();
+            arrayOffset = request.getPayload().arrayOffset();
+            arrayLength = request.getPayloadSize();
+        } else {
+            array = new byte[request.getPayloadSize()];
+            request.getPayload().get(array);
+            arrayOffset = 0;
+            arrayLength = 0;
+        }
+        */
+
+        Message requestMessage = protocol.createRequestMessageFromData(request.getPayload());
+        String methodName = requestMessage.getMethodName();
+
+        ServiceMethodBinder serviceMethod = service.getMethodBinding().getServiceMethod(methodName);
+
+        Object result;
+        boolean isException = false;
+        try {
+            result = serviceMethod.getBoundMethod().invoke(
+                    serviceMethod.getImplementedClass(), requestMessage.getRequestObject(serviceMethod.getBoundMethod().getParameterTypes()).args.toArray());
+        } catch (InvocationTargetException ex) {
+            isException = true;
+            result = ex.getTargetException();
+        }
+        Message responseMessage = protocol.createResponseMessage(new Message.ResponseObject(result, isException));
+        response.setPayload(responseMessage.getMessageData());
+        response.setContentType(protocol.getMimeType());
     }
 }

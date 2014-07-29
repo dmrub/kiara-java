@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -42,12 +43,12 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
  */
 public class ServiceImpl implements Service {
 
-    private final ServiceMethodBinding serviceMethodBinding;
+    private final ServiceMethodBinding methodBinding;
     private final World world;
     private final Module module;
 
     public ServiceImpl(Context context) {
-        this.serviceMethodBinding = new ServiceMethodBinding();
+        this.methodBinding = new ServiceMethodBinding();
         world = new World();
         module = new Module(world, "kiara");
     }
@@ -92,10 +93,10 @@ public class ServiceImpl implements Service {
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
             String serviceMethodName) throws MethodAlreadyBoundException,
             NoSuchMethodException, SecurityException {
-        if (serviceMethodBinding.getServiceMethod(idlMethodName) != null) {
+        if (methodBinding.getServiceMethod(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        serviceMethodBinding.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName);
+        methodBinding.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName);
     }
 
     /**
@@ -110,15 +111,15 @@ public class ServiceImpl implements Service {
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
             String serviceMethodName, Class<?>... parameterTypes)
             throws MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
-        if (serviceMethodBinding.getServiceMethod(idlMethodName) != null) {
+        if (methodBinding.getServiceMethod(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        serviceMethodBinding.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName, parameterTypes);
+        methodBinding.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName, parameterTypes);
     }
 
     @Override
     public void unregisterServiceFunction(String idlMethodName) throws NoSuchMethodException {
-        serviceMethodBinding.unbindServiceMethod(idlMethodName);
+        methodBinding.unbindServiceMethod(idlMethodName);
     }
 
     private void loadIDL(InputStream stream, String fileName) throws IOException {
@@ -164,10 +165,17 @@ public class ServiceImpl implements Service {
         Message rpcMessage = protocol.createRequestMessageFromData(payload);
         String methodName = rpcMessage.getMethodName();
 
-        ServiceMethodBinder serviceMethod = serviceMethodBinding.getServiceMethod(methodName);
+        ServiceMethodBinder serviceMethod = methodBinding.getServiceMethod(methodName);
 
-        return serviceMethod.getBoundedMethod().invoke(
-                serviceMethod.getImplementedClass(), rpcMessage.getRequestObject(serviceMethod.getBoundedMethod().getParameterTypes()).args.toArray());
+        try {
+        return serviceMethod.getBoundMethod().invoke(
+                serviceMethod.getImplementedClass(), rpcMessage.getRequestObject(serviceMethod.getBoundMethod().getParameterTypes()).args.toArray());
+        } catch (InvocationTargetException ex) {
+            throw (Exception)ex.getTargetException();
+        }
+    }
 
+    public ServiceMethodBinding getMethodBinding() {
+        return methodBinding;
     }
 }

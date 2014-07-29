@@ -46,6 +46,8 @@ public abstract class TransportMessage {
         this(connection, null);
     }
 
+    public abstract TransportAddress getLocalTransportAddress();
+
     public TransportConnection getConnection() {
         return connection;
     }

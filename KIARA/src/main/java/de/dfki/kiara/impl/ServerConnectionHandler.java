@@ -26,12 +26,16 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class ServerConnectionHandler implements RequestHandler<TransportMessage, TransportMessage> {
+
+    private static final Logger logger = LoggerFactory.getLogger(ServerConnectionHandler.class);
 
     private final ServerImpl server;
     private final ServiceHandler serviceHandler;
@@ -41,55 +45,67 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
         this.serviceHandler = serviceHandler;
     }
 
+    public ServiceHandler getServiceHandler() {
+        return serviceHandler;
+    }
+
     @Override
     public TransportMessage onRequest(TransportMessage message) {
-        byte[] array;
-        int arrayOffset;
-        int arrayLength;
-        if (message.getPayload().hasArray()) {
-            array = message.getPayload().array();
-            arrayOffset = message.getPayload().arrayOffset();
-            arrayLength = message.getPayloadSize();
-        } else {
-            array = new byte[message.getPayloadSize()];
-            message.getPayload().get(array);
-            arrayOffset = 0;
-            arrayLength = 0;
-        }
-
         final TransportConnection connection = message.getConnection();
         final TransportMessage response = connection.createResponse(message);
 
-        String responseText;
-        String contentType;
+        if ("http".equals(message.getConnection().getTransport().getName())) {
 
-        try {
-            URI requestUri = new URI(message.getRequestUri());
+            String responseText;
+            String contentType;
 
-            if (server.getConfigUri().getPath().equals(requestUri.getPath())) {
-                ServerConfiguration config = server.generateServerConfiguration(
-                        ((InetSocketAddress) connection.getLocalAddress()).getHostName(),
-                        ((InetSocketAddress) connection.getRemoteAddress()).getHostName());
+            try {
+                URI requestUri = new URI(message.getRequestUri());
 
-                responseText = config.toJson();
-                contentType = "application/json";
-            } else {
-                responseText = "WELCOME TO THE WILD WILD WEB SERVER";
+                if (server.getConfigUri().getPath().equals(requestUri.getPath())) {
+                    ServerConfiguration config = server.generateServerConfiguration(
+                            ((InetSocketAddress) connection.getLocalAddress()).getHostName(),
+                            ((InetSocketAddress) connection.getRemoteAddress()).getHostName());
+
+                    responseText = config.toJson();
+                    contentType = "application/json";
+                } else {
+                    ServiceHandler serviceHandler = server.findAcceptingServiceHandler(message.getLocalTransportAddress());
+                    if (serviceHandler == null) {
+                        responseText = "Unknown service"; // FIXME should be an error response
+                        contentType = "text/plain; charset=UTF-8";
+                    } else {
+                        try {
+                            serviceHandler.performCall(message, response);
+                            return response;
+                        } catch (IOException ex) {
+                            responseText = ex.toString();
+                            contentType = "text/plain; charset=UTF-8";
+
+                        } catch (IllegalAccessException ex) {
+                            responseText = ex.toString();
+                            contentType = "text/plain; charset=UTF-8";
+
+                        } catch (IllegalArgumentException ex) {
+                            responseText = ex.toString();
+                            contentType = "text/plain; charset=UTF-8";
+                        }
+                    }
+                }
+            } catch (URISyntaxException ex) {
+                responseText = ex.toString();
+                contentType = "text/plain; charset=UTF-8";
+            } catch (IOException ex) {
+                responseText = ex.toString();
                 contentType = "text/plain; charset=UTF-8";
             }
-        } catch (URISyntaxException ex) {
-            responseText = ex.toString();
-            contentType = "text/plain; charset=UTF-8";
-        } catch (IOException ex) {
-            responseText = ex.toString();
-            contentType = "text/plain; charset=UTF-8";
-        }
 
-        try {
-            response.setPayload(ByteBuffer.wrap(responseText.getBytes("UTF-8")));
-            response.setContentType(contentType);
-        } catch (UnsupportedEncodingException ex) {
-
+            try {
+                response.setPayload(ByteBuffer.wrap(responseText.getBytes("UTF-8")));
+                response.setContentType(contentType);
+            } catch (UnsupportedEncodingException ex) {
+                logger.error("No UTF-8 encoding", ex);
+            }
         }
         return response;
     }

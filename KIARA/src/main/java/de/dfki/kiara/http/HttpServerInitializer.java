@@ -33,10 +33,12 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
     private final Handler<TransportConnection> connectionHandler;
+    private final HttpTransport transport;
 
-    public HttpServerInitializer(SslContext sslCtx, Handler<TransportConnection> connectionHandler) {
+    public HttpServerInitializer(HttpTransport transport, SslContext sslCtx, Handler<TransportConnection> connectionHandler) {
         this.sslCtx = sslCtx;
         this.connectionHandler = connectionHandler;
+        this.transport = transport;
     }
 
     @Override
@@ -54,6 +56,6 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         // Remove the following line if you don't want automatic content compression.
         //p.addLast(new HttpContentCompressor());
         p.addLast("aggregator", new HttpObjectAggregator(1048576));
-        p.addLast(new HttpHandler(connectionHandler));
+        p.addLast(new HttpHandler(transport, connectionHandler));
     }
 }

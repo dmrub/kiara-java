@@ -17,15 +17,19 @@
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.*;
+import de.dfki.kiara.idl.IDLWriter;
 import de.dfki.kiara.idl.KiaraKTDConstructor;
 import de.dfki.kiara.idl.KiaraLexer;
 import de.dfki.kiara.idl.KiaraParser;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.World;
+import java.io.ByteArrayOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -64,7 +68,17 @@ public class ServiceImpl implements Service {
 
     @Override
     public String getIDLContents() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        try {
+            IDLWriter idlWriter = new IDLWriter(module);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintStream ps = new PrintStream(baos);
+            idlWriter.write(ps);
+            ps.close();
+            return baos.toString("UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+            // TODO add log message
+            return "";
+        }
     }
 
     /**
@@ -76,7 +90,7 @@ public class ServiceImpl implements Service {
      */
     @Override
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
-                                        String serviceMethodName) throws MethodAlreadyBoundException,
+            String serviceMethodName) throws MethodAlreadyBoundException,
             NoSuchMethodException, SecurityException {
         if (serviceMethodBinding.getServiceMethod(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
@@ -94,7 +108,7 @@ public class ServiceImpl implements Service {
      */
     @Override
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
-                                        String serviceMethodName, Class<?>... parameterTypes)
+            String serviceMethodName, Class<?>... parameterTypes)
             throws MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
         if (serviceMethodBinding.getServiceMethod(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");

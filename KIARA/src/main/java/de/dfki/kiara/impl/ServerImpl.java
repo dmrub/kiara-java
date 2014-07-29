@@ -26,6 +26,8 @@ import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportRegistry;
 import de.dfki.kiara.TransportServer;
+import de.dfki.kiara.config.ServerConfiguration;
+import de.dfki.kiara.config.ServerInfo;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,6 +39,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,18 +56,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     private final List<TransportAddressAndServiceHandler> serviceHandlers;
     private final SortedMap<HostAndPort, TransportEntry> transportEntries;
     private final TransportServer transportServer;
-
-    @Override
-    public boolean onSuccess(TransportConnection result) {
-        // FIXME
-        return true;
-    }
-
-    @Override
-    public boolean onFailure(Throwable t) {
-        logger.error("Could not open connection", t);
-        return true;
-    }
+    private final List<ServerConnectionHandler> connectionHandlers;
 
     private static class HostAndPort implements Comparable<HostAndPort> {
 
@@ -102,18 +94,16 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
 
     private static class TransportEntry {
 
-        public final String transportName;
         public final Transport transport;
         public int numServices;
 
-        public TransportEntry(String transportName, Transport transport, int numServices) {
-            this.transportName = transportName;
+        public TransportEntry(Transport transport, int numServices) {
             this.transport = transport;
             this.numServices = numServices;
         }
 
-        public TransportEntry(String transportName, Transport transport) {
-            this(transportName, transport, 0);
+        public TransportEntry(Transport transport) {
+            this(transport, 0);
         }
 
     }
@@ -124,11 +114,12 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         this.configHost = host;
         this.configPort = port;
         this.configPath = configPath;
-        this.configUri = new URI("http://" + configHost + ":" + Integer.toString(configPort) + "/" + configPath);
+        this.configUri = new URI("http://" + configHost + ":" + Integer.toString(configPort) + "/" + configPath).normalize();
         this.services = new HashSet<>();
         this.serviceHandlers = new ArrayList<>();
         this.transportEntries = new TreeMap<>();
         this.transportServer = Kiara.createTransportServer();
+        this.connectionHandlers = new ArrayList<>();
         // listen for negotiation connection
         addPortListener(configHost, configPort, "http");
     }
@@ -143,15 +134,14 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         HostAndPort hostAndPort = new HostAndPort(host, port);
         TransportEntry entry = transportEntries.get(hostAndPort);
         if (entry != null) {
-            if (!transportName.equals(entry.transportName)) {
-                throw new IOException("Port " + port + " already bound to transport " + entry.transportName);
+            if (!transportName.equals(entry.transport.getName())) {
+                throw new IOException("Port " + port + " already bound to transport " + entry.transport.getName());
             }
             return;
         }
 
-
-        Transport transport = TransportRegistry.getTransportByName(transportName);
-        transportEntries.put(hostAndPort, new TransportEntry(transportName, transport));
+        final Transport transport = TransportRegistry.getTransportByName(transportName);
+        transportEntries.put(hostAndPort, new TransportEntry(transport));
 
         transportServer.listen(host, Integer.toString(port), transport, this);
     }
@@ -193,32 +183,40 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
 
         boolean added = false;
 
-        for (TransportAddressAndServiceHandler element : serviceHandlers) {
-            if (element.transportAddress.equals(address)) {
-                if (element.serviceHandler != null) {
-                    element.serviceHandler.close();
-                    element.serviceHandler = handler;
-                    added = true;
+        synchronized (serviceHandlers) {
+            for (TransportAddressAndServiceHandler element : serviceHandlers) {
+                if (element.transportAddress.equals(address)) {
+                    if (element.serviceHandler != null) {
+                        element.serviceHandler.close();
+                        element.serviceHandler = handler;
+                        added = true;
+                    }
                 }
+            }
+
+            if (!added) {
+                serviceHandlers.add(new TransportAddressAndServiceHandler(address, handler));
             }
         }
 
-        if (!added) {
-            serviceHandlers.add(new TransportAddressAndServiceHandler(address, handler));
+        synchronized (services) {
+            services.add(service);
         }
     }
 
     @Override
     public boolean removeService(Service service) {
         boolean removed = false;
-        for (Iterator<TransportAddressAndServiceHandler> iter = serviceHandlers.iterator();
-                iter.hasNext();) {
-            TransportAddressAndServiceHandler element = iter.next();
-            if (element.serviceHandler != null) {
-                if (element.serviceHandler.getService().equals(service)) {
-                    element.serviceHandler.close();
-                    iter.remove();
-                    removed = true;
+        synchronized (serviceHandlers) {
+            for (Iterator<TransportAddressAndServiceHandler> iter = serviceHandlers.iterator();
+                    iter.hasNext();) {
+                TransportAddressAndServiceHandler element = iter.next();
+                if (element.serviceHandler != null) {
+                    if (element.serviceHandler.getService().equals(service)) {
+                        element.serviceHandler.close();
+                        iter.remove();
+                        removed = true;
+                    }
                 }
             }
         }
@@ -234,12 +232,76 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     @Override
     public void close() throws IOException {
         transportServer.close();
-        for (TransportAddressAndServiceHandler element : serviceHandlers) {
-            if (element.serviceHandler != null) {
-                element.serviceHandler.close();
-                element.serviceHandler = null;
+        synchronized (serviceHandlers) {
+            for (TransportAddressAndServiceHandler element : serviceHandlers) {
+                if (element.serviceHandler != null) {
+                    element.serviceHandler.close();
+                    element.serviceHandler = null;
+                }
+            }
+            serviceHandlers.clear();
+        }
+    }
+
+    public ServiceHandler findAcceptingServiceHandler(TransportAddress transportAddress) {
+        synchronized (serviceHandlers) {
+            for (TransportAddressAndServiceHandler element : serviceHandlers) {
+                if (element.transportAddress.acceptConnection(transportAddress)) {
+                    return element.serviceHandler;
+                }
             }
         }
-        serviceHandlers.clear();
+        return null;
     }
+
+    public ServerConfiguration generateServerConfiguration(String localHostName, String remoteHostName) {
+        ServerConfiguration serverConfiguration = new ServerConfiguration();
+        synchronized (serviceHandlers) {
+            for (TransportAddressAndServiceHandler element : serviceHandlers) {
+                ServerInfo serverInfo = new ServerInfo();
+                serverInfo.protocol = element.serviceHandler.getProtocolInfo();
+                serverInfo.services.add("*");
+                serverInfo.transport.name = element.transportAddress.getTransport().getName();
+                try {
+                    URI uri = new URI(element.transportAddress.toString());
+                    if ("0.0.0.0".equals(uri.getHost())) {
+                        uri = new URI(uri.getScheme(),
+                                uri.getUserInfo(), localHostName, uri.getPort(),
+                                uri.getPath(), uri.getQuery(),
+                                uri.getFragment());
+                    }
+                    serverInfo.transport.url = uri.toString();
+                    serverConfiguration.servers.add(serverInfo);
+                } catch (URISyntaxException ex) {
+                    continue;
+                }
+            }
+        }
+        synchronized (services) {
+            StringBuilder builder = new StringBuilder();
+            for (Service service : services) {
+                builder.append(service.getIDLContents());
+            }
+            serverConfiguration.idlContents = builder.toString();
+        }
+        return serverConfiguration;
+    }
+
+    @Override
+    public boolean onSuccess(TransportConnection result) {
+        System.out.printf("Opened connection %s, local address %s, remote address %s%n",
+                result, result.getLocalAddress(), result.getRemoteAddress());
+        ServiceHandler serviceHandler = findAcceptingServiceHandler(result.getLocalTransportAddress());
+        ServerConnectionHandler handler = new ServerConnectionHandler(this, serviceHandler);
+        result.addRequestHandler(handler);
+        connectionHandlers.add(handler);
+        return true;
+    }
+
+    @Override
+    public boolean onFailure(Throwable t) {
+        logger.error("Could not open connection", t);
+        return true;
+    }
+
 }

@@ -18,7 +18,6 @@ package de.dfki.kiara;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Map;
 

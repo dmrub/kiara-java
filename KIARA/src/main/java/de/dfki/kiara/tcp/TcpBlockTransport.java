@@ -47,14 +47,20 @@ public class TcpBlockTransport extends AbstractTransport {
     public static final int DEFAULT_TCP_PORT = 1111;
     public static final int DEFAULT_TCPS_PORT = 1112;
 
+    private final boolean secure;
+
+    public TcpBlockTransport(boolean secure) {
+        this.secure = secure;
+    }
+
     @Override
     public String getName() {
-        return "tcp";
+        return secure ? "tcp" : "tcps";
     }
 
     @Override
     public int getPriority() {
-        return 10;
+        return secure ? 9 : 10;
     }
 
     @Override
@@ -64,13 +70,14 @@ public class TcpBlockTransport extends AbstractTransport {
 
     @Override
     public boolean isSecureTransport() {
-        return false;
+        return secure;
     }
 
     @Override
     public TransportAddress createAddress(String uri) throws InvalidAddressException, UnknownHostException {
-        if (uri == null)
+        if (uri == null) {
             throw new NullPointerException("uri");
+        }
         try {
             return new TcpBlockAddress(this, new URI(uri));
         } catch (URISyntaxException ex) {
@@ -80,8 +87,9 @@ public class TcpBlockTransport extends AbstractTransport {
 
     @Override
     public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws InvalidAddressException, IOException {
-        if (uri == null)
+        if (uri == null) {
             throw new NullPointerException("uri");
+        }
         try {
             return openConnection(new URI(uri), settings);
         } catch (URISyntaxException ex) {
@@ -90,13 +98,15 @@ public class TcpBlockTransport extends AbstractTransport {
     }
 
     public ChannelFutureAndConnection connect(URI uri, Map<String, Object> settings) throws IOException {
-        if (uri == null)
+        if (uri == null) {
             throw new NullPointerException("uri");
+        }
 
         final String scheme = uri.getScheme();
 
-        if (!"tcp".equalsIgnoreCase(scheme) && !"tcps".equalsIgnoreCase(scheme))
+        if (!"tcp".equalsIgnoreCase(scheme) && !"tcps".equalsIgnoreCase(scheme)) {
             throw new IllegalArgumentException("URI has neither tcp nor tcps scheme");
+        }
 
         final String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         int port = uri.getPort();
@@ -118,7 +128,7 @@ public class TcpBlockTransport extends AbstractTransport {
         }
 
         // Configure the client.
-        final TcpHandler httpClientHandler = new TcpHandler(uri, HttpMethod.POST);
+        final TcpHandler httpClientHandler = new TcpHandler(this, uri, HttpMethod.POST);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
@@ -134,7 +144,7 @@ public class TcpBlockTransport extends AbstractTransport {
     @Override
     public ChannelHandler createServerChildHandler(Handler<TransportConnection> connectionHandler) {
         try {
-            return new TcpServerInitializer(createServerSslContext(), connectionHandler);
+            return new TcpServerInitializer(this, createServerSslContext(), connectionHandler);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

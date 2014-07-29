@@ -126,16 +126,21 @@ public class TransportConnectionReceiver implements Handler<TransportMessage>, T
 
     @Override
     public void addRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler) {
-        throw new UnsupportedOperationException();
+        connection.addRequestHandler(handler);
     }
 
     @Override
     public void removeRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler) {
-        throw new UnsupportedOperationException();
+        connection.removeRequestHandler(handler);
     }
 
     @Override
     public TransportMessage createResponse(TransportMessage request) {
-        throw new UnsupportedOperationException();
+        return connection.createResponse(request);
+    }
+
+    @Override
+    public TransportAddress getLocalTransportAddress() {
+        return connection.getLocalTransportAddress();
     }
 }

@@ -44,6 +44,10 @@ public class ServiceHandler implements Closeable {
         return service;
     }
 
+    public ProtocolInfo getProtocolInfo() {
+        return protocolInfo;
+    }
+
     @Override
     public void close() {
     }

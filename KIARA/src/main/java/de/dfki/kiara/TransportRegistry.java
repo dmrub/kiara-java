@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara;
 
 import java.net.URI;
@@ -27,7 +26,9 @@ import java.util.Map;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public final class TransportRegistry {
-    private TransportRegistry() { }
+
+    private TransportRegistry() {
+    }
 
     private static final Map<String, Transport> transports = new HashMap<>();
 
@@ -41,12 +42,30 @@ public final class TransportRegistry {
 
     public static synchronized Transport getTransportByURI(URI uri) {
         String scheme = uri.getScheme();
-        if (scheme == null)
+        if (scheme == null) {
             return null;
+        }
         return getTransportByName(scheme);
     }
 
     public static synchronized void registerTransport(String transportName, Transport transport) {
+        if (transport == null) {
+            throw new NullPointerException("transport");
+        }
+        if (transportName == null) {
+            throw new NullPointerException("transportName");
+        }
+        transports.put(transportName, transport);
+    }
+
+    public static synchronized void registerTransport(Transport transport) {
+        if (transport == null) {
+            throw new NullPointerException("transport");
+        }
+        final String transportName = transport.getName();
+        if (transportName == null) {
+            throw new NullPointerException("transportName");
+        }
         transports.put(transportName, transport);
     }
 }

@@ -36,8 +36,6 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.security.cert.CertificateException;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
 
 /**
@@ -46,17 +44,20 @@ import javax.net.ssl.SSLException;
  */
 public class HttpTransport extends AbstractTransport {
 
-    public HttpTransport() {
+    private final boolean secure;
+
+    public HttpTransport(boolean secure) {
+        this.secure = secure;
     }
 
     @Override
     public String getName() {
-        return "http";
+        return secure ? "https" : "http";
     }
 
     @Override
     public int getPriority() {
-        return 20;
+        return secure ? 19 : 20;
     }
 
     @Override
@@ -66,7 +67,7 @@ public class HttpTransport extends AbstractTransport {
 
     @Override
     public boolean isSecureTransport() {
-        return false;
+        return secure;
     }
 
     @Override
@@ -113,7 +114,7 @@ public class HttpTransport extends AbstractTransport {
         }
 
         // Configure the client.
-        final HttpHandler httpClientHandler = new HttpHandler(uri, HttpMethod.POST);
+        final HttpHandler httpClientHandler = new HttpHandler(this, uri, HttpMethod.POST);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
@@ -129,7 +130,7 @@ public class HttpTransport extends AbstractTransport {
     @Override
     public ChannelHandler createServerChildHandler(Handler<TransportConnection> connectionHandler) {
         try {
-            return new HttpServerInitializer(createServerSslContext(), connectionHandler);
+            return new HttpServerInitializer(this, createServerSslContext(), connectionHandler);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

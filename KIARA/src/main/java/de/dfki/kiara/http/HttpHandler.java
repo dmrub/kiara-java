@@ -18,7 +18,9 @@ package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Handler;
+import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.RequestHandler;
+import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -47,12 +49,16 @@ import static io.netty.handler.codec.http.HttpVersion.*;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.CharsetUtil;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +73,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     private HttpHeaders headers = null;
     private final NoCopyByteArrayOutputStream bout;
 
+    private final HttpTransport transport;
     private final URI uri;
     private final HttpMethod method;
 
@@ -76,6 +83,25 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
     private final List<RequestHandler<TransportMessage, TransportMessage>> requestHandlers = new ArrayList<>();
     private final List<Handler<TransportMessage>> responseHandlers = new ArrayList<>();
+
+    @Override
+    public TransportAddress getLocalTransportAddress() {
+        try {
+            if (uri != null)
+                return new HttpAddress(transport, uri);
+            else {
+                InetSocketAddress sa = ((InetSocketAddress)getLocalAddress());
+                return new HttpAddress(transport,
+                        new URI(transport.getName(), null, sa.getHostName(), sa.getPort(), null, null, null));
+            }
+        } catch (InvalidAddressException ex) {
+            throw new IllegalStateException(ex);
+        } catch (UnknownHostException ex) {
+            throw new IllegalStateException(ex);
+        } catch (URISyntaxException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
 
     static enum Mode {
 
@@ -94,13 +120,17 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     }
     private State state;
 
-    public HttpHandler(URI uri, HttpMethod method) {
+    public HttpHandler(HttpTransport transport, URI uri, HttpMethod method) {
+        if (transport == null) {
+            throw new NullPointerException("transport");
+        }
         if (uri == null) {
             throw new NullPointerException("uri");
         }
         if (method == null) {
             throw new NullPointerException("method");
         }
+        this.transport = transport;
         this.uri = uri;
         this.method = method;
         this.connectionHandler = null;
@@ -109,10 +139,14 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public HttpHandler(Handler<TransportConnection> connectionHandler) {
+    public HttpHandler(HttpTransport transport, Handler<TransportConnection> connectionHandler) {
+        if (transport == null) {
+            throw new NullPointerException("transport");
+        }
         if (connectionHandler == null) {
             throw new NullPointerException("connectionHandler");
         }
+        this.transport = transport;
         this.uri = null;
         this.method = null;
         this.connectionHandler = connectionHandler;

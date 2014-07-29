@@ -18,7 +18,9 @@ package de.dfki.kiara.tcp;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Handler;
+import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.RequestHandler;
+import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.Util;
@@ -35,9 +37,11 @@ import io.netty.handler.codec.http.HttpMethod;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +56,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     private HttpHeaders headers = null;
     private final NoCopyByteArrayOutputStream bout;
 
+    private final TcpBlockTransport transport;
     private final URI uri;
     private final HttpMethod method;
 
@@ -62,6 +67,17 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
 
     private final List<RequestHandler<TransportMessage, TransportMessage>> requestHandlers = new ArrayList<>();
     private final List<Handler<TransportMessage>> responseHandlers = new ArrayList<>();
+
+    @Override
+    public TransportAddress getLocalTransportAddress() {
+        try {
+            return new TcpBlockAddress(transport, uri);
+        } catch (InvalidAddressException ex) {
+            throw new IllegalStateException(ex);
+        } catch (UnknownHostException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
 
     static enum Mode {
 
@@ -80,13 +96,17 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     }
     private State state;
 
-    public TcpHandler(URI uri, HttpMethod method) {
+    public TcpHandler(TcpBlockTransport transport, URI uri, HttpMethod method) {
+        if (transport == null) {
+            throw new NullPointerException("transport");
+        }
         if (uri == null) {
             throw new NullPointerException("uri");
         }
         if (method == null) {
             throw new NullPointerException("method");
         }
+        this.transport = transport;
         this.uri = uri;
         this.method = method;
         this.connectionHandler = null;
@@ -95,10 +115,14 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public TcpHandler(Handler<TransportConnection> connectionHandler) {
+    public TcpHandler(TcpBlockTransport transport, Handler<TransportConnection> connectionHandler) {
+        if (transport == null) {
+            throw new NullPointerException("transport");
+        }
         if (connectionHandler == null) {
             throw new NullPointerException("connectionHandler");
         }
+        this.transport = transport;
         this.uri = null;
         this.method = null;
         this.connectionHandler = connectionHandler;

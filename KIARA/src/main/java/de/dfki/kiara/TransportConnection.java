@@ -29,6 +29,8 @@ public interface TransportConnection extends Closeable {
     public SocketAddress getLocalAddress();
     public SocketAddress getRemoteAddress();
 
+    public TransportAddress getLocalTransportAddress();
+
     public TransportMessage createRequest();
 
     public TransportMessage createResponse(TransportMessage request);

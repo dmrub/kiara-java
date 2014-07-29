@@ -155,7 +155,6 @@ public class HttpAddress implements TransportAddress {
 
     @Override
     public String toString() {
-        // FIXME what to do with different flavors of tcp (tcp, tcps) ?
-        return getTransport().getName() + "://" + hostName + ":" + port;
+        return getTransport().getName() + "://" + hostName + ":" + port + path;
     }
 }

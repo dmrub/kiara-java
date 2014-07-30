@@ -15,14 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara;
+package de.dfki.kiara.util;
+
+import java.util.concurrent.BlockingQueue;
 
 /**
- *
- * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
- * @param <REQ>
- * @param <RES>
+ * Created by Dmitri Rubinstein on 7/30/14.
  */
-public interface RequestHandler<REQ, RES> {
-    public RES onRequest(REQ request) throws Exception;
+public interface MessageDispatcher extends Pipeline.Handler {
+    public BlockingQueue<Object> getQueue();
 }

@@ -15,9 +15,30 @@
  */
 package de.dfki.kiara.util;
 
+import java.nio.ByteBuffer;
+
 public class HexDump {
 
     private final static char[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+    public static String dumpHexString(ByteBuffer data) {
+        byte[] array;
+        int arrayOffset;
+        int arrayLength;
+        int oldPos = data.position();
+        if (data.hasArray()) {
+            array = data.array();
+            arrayOffset = data.arrayOffset();
+            arrayLength = data.remaining();
+        } else {
+            array = new byte[data.remaining()];
+            data.get(array);
+            arrayOffset = 0;
+            arrayLength = array.length;
+        }
+        data.position(oldPos);
+        return dumpHexString(array, arrayOffset, arrayLength);
+    }
 
     public static String dumpHexString(byte[] array) {
         return dumpHexString(array, 0, array.length);

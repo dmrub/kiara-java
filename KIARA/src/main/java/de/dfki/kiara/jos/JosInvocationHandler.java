@@ -23,69 +23,27 @@ import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.WrappedRemoteException;
+import de.dfki.kiara.jsonrpc.DefaultInvocationHandler;
+import de.dfki.kiara.jsonrpc.JsonRpcMessage;
+import de.dfki.kiara.jsonrpc.JsonRpcMessageDispatcher;
+import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
+import de.dfki.kiara.util.MessageDecoder;
+import de.dfki.kiara.util.MessageDispatcher;
+
 import java.lang.reflect.Method;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class JosInvocationHandler extends AbstractInvocationHandler {
-
-    private final Connection connection;
-    private final InterfaceMapping<?> interfaceMapping;
-    private final JosProtocol protocol;
+public class JosInvocationHandler extends DefaultInvocationHandler<JosProtocol> {
 
     public JosInvocationHandler(Connection connection, InterfaceMapping<?> interfaceMapping, JosProtocol protocol) {
-        this.connection = connection;
-        this.interfaceMapping = interfaceMapping;
-        this.protocol = protocol;
-    }
-
-    public InterfaceMapping<?> getInterfaceMapping() {
-        return interfaceMapping;
-    }
-
-    public Connection getConnection() {
-        return connection;
+        super(connection, interfaceMapping, protocol, new MessageDecoder<JosProtocol>(protocol));
     }
 
     @Override
-    protected Object handleInvocation(Object o, Method method, Object[] os) throws Throwable {
-        if (method.equals(SpecialMethods.riGetConnection)) {
-            return getConnection();
-        }
-
-        InterfaceMapping<?> mapping = getInterfaceMapping();
-
-        final String idlMethodName = mapping.getIDLMethodName(method);
-        if (idlMethodName == null) {
-            throw new UnsupportedOperationException("Unknown method: " + method);
-        }
-
-        if (Util.isSerializer(method)) {
-            return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
-        } else if (Util.isDeserializer(method)) {
-            Message msg = (Message) os[0];
-
-            Message.ResponseObject ro = msg.getResponseObject(method.getReturnType());
-
-            if (ro.isException) {
-                if (ro.result instanceof Exception) {
-                    throw (Exception) ro.result;
-                }
-                throw new WrappedRemoteException(ro.result);
-            }
-
-            return ro.result;
-        } else {
-
-            // FIXME this is a hack
-            if (method.getReturnType().equals(int.class)) {
-                return 0;
-            }
-
-            return null;
-        }
+    public MessageDispatcher createMessageDispatcher(Message request) {
+        return new JosMessageDispatcher(protocol, ((JosMessage) request).getId());
     }
-
 }

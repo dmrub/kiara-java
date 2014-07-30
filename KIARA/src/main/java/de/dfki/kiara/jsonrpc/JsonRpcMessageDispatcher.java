@@ -16,6 +16,7 @@
  */
 package de.dfki.kiara.jsonrpc;
 
+import de.dfki.kiara.util.MessageDispatcher;
 import de.dfki.kiara.util.Pipeline;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -24,7 +25,7 @@ import java.util.concurrent.BlockingQueue;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class JsonRpcMessageDispatcher implements Pipeline.Handler {
+public class JsonRpcMessageDispatcher implements MessageDispatcher {
 
     private final Object messageId;
     private final BlockingQueue<Object> messageQueue;

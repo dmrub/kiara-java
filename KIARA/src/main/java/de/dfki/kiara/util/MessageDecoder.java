@@ -15,14 +15,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara;
+package de.dfki.kiara.util;
 
 /**
- *
- * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
- * @param <REQ>
- * @param <RES>
+ * Created by rubinste on 7/30/14.
  */
-public interface RequestHandler<REQ, RES> {
-    public RES onRequest(REQ request) throws Exception;
+
+import de.dfki.kiara.Protocol;
+import de.dfki.kiara.TransportMessage;
+
+public class MessageDecoder<PROTOCOL extends Protocol>  implements Pipeline.Handler {
+
+    private final PROTOCOL protocol;
+
+    public MessageDecoder(PROTOCOL protocol) {
+        this.protocol = protocol;
+    }
+
+    @Override
+    public Object process(Object input) throws Exception {
+        if (!(input instanceof TransportMessage))
+            throw new IllegalArgumentException();
+        TransportMessage response = (TransportMessage) input;
+        return protocol.createResponseMessageFromData(response.getPayload());
+    }
 }

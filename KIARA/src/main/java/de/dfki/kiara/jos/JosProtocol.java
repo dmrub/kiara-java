@@ -29,6 +29,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -41,9 +42,15 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     public final static int JOS_EXCEPTION = 2;
 
     private Connection connection;
+    private final AtomicLong nextId;
 
     public JosProtocol() {
         this.connection = null;
+        this.nextId = new AtomicLong(1);
+    }
+
+    public long getNextId() {
+        return nextId.getAndIncrement();
     }
 
     @Override
@@ -74,48 +81,17 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
 
     @Override
     public Message createRequestMessageFromData(ByteBuffer data) throws IOException {
-        ByteBufferInputStream is = new ByteBufferInputStream(data);
-        ObjectInputStream ois = new ObjectInputStream(is);
-        byte requestCode = ois.readByte();
-        if (requestCode != JOS_REQUEST) {
-            throw new IOException("Invalid request code: " + requestCode);
-        }
-        String methodName;
-        Object[] args;
-        try {
-            methodName = ois.readUTF();
-            args = (Object[]) ois.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new IOException("Could not read response message", e);
-        } catch (ClassCastException e) {
-            throw new IOException("Could not read response message", e);
-        }
-        return new JosMessage(this, new Message.RequestObject(methodName, args));
-
+        return new JosMessage(this, Message.Kind.REQUEST, data);
     }
 
     @Override
     public Message createResponseMessageFromData(ByteBuffer data) throws IOException {
-        ByteBufferInputStream is = new ByteBufferInputStream(data);
-        ObjectInputStream ois = new ObjectInputStream(is);
-        byte responseCode = ois.readByte();
-        if (responseCode != JOS_RESPONSE && responseCode != JOS_EXCEPTION) {
-            throw new IOException("Invalid response code: " + responseCode);
-        }
-        Object result;
-        try {
-            result = ois.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new IOException("Could not read response message", e);
-        }
-        return new JosMessage(this,
-                new Message.ResponseObject(result,
-                        responseCode == JOS_EXCEPTION));
+        return new JosMessage(this, Message.Kind.RESPONSE, data);
     }
 
     @Override
     public Message createRequestMessage(String methodName) {
-        return new JosMessage(this, methodName);
+        return new JosMessage(this, methodName, getNextId());
     }
 
     @Override
@@ -133,12 +109,12 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
 
     @Override
     public Message createRequestMessage(Message.RequestObject request) {
-        return new JosMessage(this, request);
+        return new JosMessage(this, request, getNextId());
     }
 
     @Override
     public Message createResponseMessage(Message requestMessage, Message.ResponseObject response) {
-        return new JosMessage(this, response);
+        return new JosMessage(this, response, ((JosMessage)requestMessage).getId());
     }
 
 }

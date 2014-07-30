@@ -52,7 +52,7 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
     }
 
     @Override
-    public TransportMessage onRequest(TransportMessage request) {
+    public TransportMessage onRequest(TransportMessage request) throws Exception {
         final TransportConnection connection = request.getConnection();
         final TransportMessage response = connection.createResponse(request);
         final Transport transport = connection.getTransport();
@@ -96,19 +96,8 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
             }
 
             if (sh != null) {
-                try {
-                    sh.performCall(request, response);
-                    return response;
-                } catch (IOException ex) {
-                    responseText = ex.toString();
-                    contentType = "text/plain; charset=UTF-8";
-                } catch (IllegalAccessException ex) {
-                    responseText = ex.toString();
-                    contentType = "text/plain; charset=UTF-8";
-                } catch (IllegalArgumentException ex) {
-                    responseText = ex.toString();
-                    contentType = "text/plain; charset=UTF-8";
-                }
+                sh.performCall(request, response);
+                return response;
             } else {
                 responseText = "No service handler for request";
                 contentType = "text/plain; charset=UTF-8";

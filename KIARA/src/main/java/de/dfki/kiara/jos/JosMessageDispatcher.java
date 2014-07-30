@@ -15,28 +15,44 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara.jsonrpc;
+package de.dfki.kiara.jos;
 
-import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.util.MessageDispatcher;
 import de.dfki.kiara.util.Pipeline;
+
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class JsonRpcMessageDecoder implements Pipeline.Handler {
+public class JosMessageDispatcher implements MessageDispatcher {
 
-    private final JsonRpcProtocol protocol;
+    private final long messageId;
+    private final BlockingQueue<Object> messageQueue;
 
-    public JsonRpcMessageDecoder(JsonRpcProtocol protocol) {
-        this.protocol = protocol;
+    JosMessageDispatcher(JosProtocol protocol, long messageId) {
+        this.messageId = messageId;
+        this.messageQueue = new ArrayBlockingQueue<>(1);
+    }
+
+    public BlockingQueue<Object> getQueue() {
+        return messageQueue;
     }
 
     @Override
     public Object process(Object input) throws Exception {
-        if (!(input instanceof TransportMessage))
-            throw new IllegalArgumentException();
-        TransportMessage response = (TransportMessage) input;
-        return protocol.createResponseMessageFromData(response.getPayload());
+        if (!(input instanceof JosMessage)) {
+            return input;
+        }
+
+        JosMessage message = (JosMessage) input;
+
+        if (messageId == message.getId()) {
+            messageQueue.add(message);
+            return null; // stop processing
+        }
+        return input;
     }
 
 }

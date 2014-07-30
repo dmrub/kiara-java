@@ -137,7 +137,7 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createResponseMessage(Message.ResponseObject response) {
+    public Message createResponseMessage(Message requestMessage, Message.ResponseObject response) {
         return new JosMessage(this, response);
     }
 

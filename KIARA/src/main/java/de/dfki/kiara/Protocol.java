@@ -55,6 +55,6 @@ public interface Protocol {
 
     public Message createResponseMessage(Message requestMessage);
 
-    public Message createResponseMessage(Message.ResponseObject response) throws IOException;
+    public Message createResponseMessage(Message requestMessage, Message.ResponseObject response) throws IOException;
 
 }

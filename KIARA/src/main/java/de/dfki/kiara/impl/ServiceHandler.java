@@ -89,7 +89,7 @@ public class ServiceHandler implements Closeable {
             isException = true;
             result = ex.getTargetException();
         }
-        Message responseMessage = protocol.createResponseMessage(new Message.ResponseObject(result, isException));
+        Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));
         response.setPayload(responseMessage.getMessageData());
         response.setContentType(protocol.getMimeType());
     }

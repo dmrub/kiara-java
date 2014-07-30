@@ -86,11 +86,13 @@ public class HttpResponseMessage extends TransportMessage {
     }
 
     public HttpResponse finalizeResponse() {
-        ByteBuf bbuf = Unpooled.wrappedBuffer(getPayload());
-
         HttpResponse httpResponse = getResponse();
         getContent().content().clear();
-        getContent().content().writeBytes(bbuf);
+
+        if (getPayload() != null) {
+            ByteBuf bbuf = Unpooled.wrappedBuffer(getPayload());
+            getContent().content().writeBytes(bbuf);
+        }
 
         httpResponse.headers().set(CONTENT_LENGTH, getContent().content().readableBytes());
 

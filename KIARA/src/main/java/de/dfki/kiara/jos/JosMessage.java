@@ -56,7 +56,7 @@ public class JosMessage implements Message {
     public JosMessage(JosProtocol protocol, ResponseObject response) {
         this.protocol = protocol;
         this.methodName = null;
-        this.kind = Kind.RESPONSE;
+        this.kind = response.isException ? Kind.EXCEPTION : Kind.RESPONSE;
         this.request = null;
         this.response = response;
     }

@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package de.dfki.kiara;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -31,9 +32,9 @@ public interface Transport {
 
     public int getPriority();
 
-    public boolean isHttpTransport();
-
     public boolean isSecureTransport();
+
+    public boolean isAddressContainsRequestPath();
 
     public TransportAddress createAddress(String uri) throws InvalidAddressException, UnknownHostException;
 

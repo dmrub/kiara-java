@@ -30,7 +30,7 @@ public class JsonRpcHeaderSerializer extends JsonSerializer<JsonRpcHeader> {
 
     @Override
     public void serialize(JsonRpcHeader value, JsonGenerator jgen, SerializerProvider sp) throws IOException, JsonProcessingException {
-        if (value.getResult() == null) {
+        if (value.isRequest()) {
             // header
             jgen.writeStartObject();
             jgen.writeStringField("jsonrpc", "2.0");
@@ -43,7 +43,7 @@ public class JsonRpcHeaderSerializer extends JsonSerializer<JsonRpcHeader> {
         } else {
             jgen.writeStartObject();
             jgen.writeStringField("jsonrpc", "2.0");
-            if (value.getResult() != null) {
+            if (value.getError() == null) {
                 jgen.writeObjectField("result", value.getResult());
             } else {
                 jgen.writeObjectField("error", value.getError());

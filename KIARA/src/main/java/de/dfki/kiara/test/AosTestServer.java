@@ -117,7 +117,7 @@ public class AosTestServer {
             System.out.printf("Error: could not parse IDL: %s", e.getMessage());
             System.exit(1);
         } finally {
-            Kiara.shutdownGracefully();
+            // Kiara.shutdownGracefully();
         }
     }
 

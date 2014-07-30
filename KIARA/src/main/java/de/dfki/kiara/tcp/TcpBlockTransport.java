@@ -64,13 +64,13 @@ public class TcpBlockTransport extends AbstractTransport {
     }
 
     @Override
-    public boolean isHttpTransport() {
-        return false;
+    public boolean isSecureTransport() {
+        return secure;
     }
 
     @Override
-    public boolean isSecureTransport() {
-        return secure;
+    public boolean isAddressContainsRequestPath() {
+        return true;
     }
 
     @Override
@@ -128,12 +128,12 @@ public class TcpBlockTransport extends AbstractTransport {
         }
 
         // Configure the client.
-        final TcpHandler httpClientHandler = new TcpHandler(this, uri, HttpMethod.POST);
+        final TcpHandler tcpClientHandler = new TcpHandler(this, uri, HttpMethod.POST);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
-                .handler(new TcpClientInitializer(sslCtx, httpClientHandler));
-        return new ChannelFutureAndConnection(b.connect(host, port), httpClientHandler);
+                .handler(new TcpClientInitializer(sslCtx, tcpClientHandler));
+        return new ChannelFutureAndConnection(b.connect(host, port), tcpClientHandler);
     }
 
     public ListenableFuture<TransportConnection> openConnection(URI uri, Map<String, Object> settings) throws IOException {

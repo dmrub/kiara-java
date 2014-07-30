@@ -56,6 +56,22 @@ public class JsonRpcHeader {
         this.id = id;
     }
 
+    boolean isRequest() {
+        return this.method != null;
+    }
+
+    boolean isResponse() {
+        return this.method == null;
+    }
+
+    boolean isResult() {
+        return isResponse() && this.error == null;
+    }
+
+    boolean isError() {
+        return isResponse() && this.error != null;
+    }
+
     public String getMethod() {
         return method;
     }

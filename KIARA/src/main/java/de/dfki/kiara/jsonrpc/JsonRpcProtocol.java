@@ -192,8 +192,8 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createResponseMessage(Message.ResponseObject response) {
-        return new JsonRpcMessage(this, response);
+    public Message createResponseMessage(Message requestMessage, Message.ResponseObject response) {
+        return new JsonRpcMessage(this, response, ((JsonRpcMessage)requestMessage).getId());
     }
 
     @Override

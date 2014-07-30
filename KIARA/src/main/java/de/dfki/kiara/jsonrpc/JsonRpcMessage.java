@@ -153,13 +153,13 @@ public class JsonRpcMessage implements Message {
         this.error = null;
     }
 
-    public JsonRpcMessage(JsonRpcProtocol protocol, ResponseObject response) {
+    public JsonRpcMessage(JsonRpcProtocol protocol, ResponseObject response, Object id) {
         this.protocol = protocol;
         this.methodName = null;
-        this.kind = Kind.RESPONSE;
+        this.kind = response.isException ? Kind.EXCEPTION : Kind.RESPONSE;
         this.request = null;
         this.response = response;
-        this.id = null;
+        this.id = id;
         this.params = null;
         this.error = null;
     }
@@ -224,9 +224,27 @@ public class JsonRpcMessage implements Message {
                 if (this.response == null) {
                     throw new NullPointerException("this.response");
                 }
-                // FIXME process errors correctly
-                JsonRpcHeader header = new JsonRpcHeader(this.response.result, getId());
 
+                int code;
+                String message;
+                Object data = null;
+
+                if (this.response.result instanceof GenericRemoteException) {
+                    GenericRemoteException ex = (GenericRemoteException)this.response.result;
+                    code = ex.getErrorCode();
+                    message = ex.getMessage();
+                } else if (this.response.result instanceof IllegalArgumentException) {
+                    IllegalArgumentException ex = (IllegalArgumentException)this.response.result;
+                    code = JsonRpcError.INVALID_PARAMS;
+                    message = ex.getMessage();
+                } else {
+                    code = JsonRpcError.INTERNAL_ERROR;
+                    message = this.response.result.toString();
+                    data = this.response.result;
+                }
+
+                final JsonRpcError jsonRpcError = new JsonRpcError(code, message, data);
+                final JsonRpcHeader header = new JsonRpcHeader(jsonRpcError, getId());
                 buf = ByteBuffer.wrap(protocol.getObjectMapper().writeValueAsBytes(header));
             }
             break;

@@ -61,13 +61,13 @@ public class HttpTransport extends AbstractTransport {
     }
 
     @Override
-    public boolean isHttpTransport() {
-        return true;
+    public boolean isSecureTransport() {
+        return secure;
     }
 
     @Override
-    public boolean isSecureTransport() {
-        return secure;
+    public boolean isAddressContainsRequestPath() {
+        return true;
     }
 
     @Override

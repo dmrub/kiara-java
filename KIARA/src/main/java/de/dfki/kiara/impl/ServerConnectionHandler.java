@@ -17,20 +17,22 @@
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.RequestHandler;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.config.ServerConfiguration;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class ServerConnectionHandler implements RequestHandler<TransportMessage, TransportMessage> {
@@ -50,17 +52,20 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
     }
 
     @Override
-    public TransportMessage onRequest(TransportMessage message) {
-        final TransportConnection connection = message.getConnection();
-        final TransportMessage response = connection.createResponse(message);
+    public TransportMessage onRequest(TransportMessage request) {
+        final TransportConnection connection = request.getConnection();
+        final TransportMessage response = connection.createResponse(request);
+        final Transport transport = connection.getTransport();
+        final String transportName = transport.getName();
 
-        if ("http".equals(message.getConnection().getTransport().getName())) {
+        String responseText = null;
+        String contentType = null;
+        boolean requestProcessed = false;
 
-            String responseText;
-            String contentType;
-
+        // process server configuration request
+        if ("http".equalsIgnoreCase(transportName) || "https".equalsIgnoreCase(transportName)) {
             try {
-                URI requestUri = new URI(message.getRequestUri());
+                URI requestUri = new URI(request.getRequestUri());
 
                 if (server.getConfigUri().getPath().equals(requestUri.getPath())) {
                     ServerConfiguration config = server.generateServerConfiguration(
@@ -69,44 +74,56 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
 
                     responseText = config.toJson();
                     contentType = "application/json";
-                } else {
-                    ServiceHandler serviceHandler = server.findAcceptingServiceHandler(message.getLocalTransportAddress());
-                    if (serviceHandler == null) {
-                        responseText = "Unknown service"; // FIXME should be an error response
-                        contentType = "text/plain; charset=UTF-8";
-                    } else {
-                        try {
-                            serviceHandler.performCall(message, response);
-                            return response;
-                        } catch (IOException ex) {
-                            responseText = ex.toString();
-                            contentType = "text/plain; charset=UTF-8";
-
-                        } catch (IllegalAccessException ex) {
-                            responseText = ex.toString();
-                            contentType = "text/plain; charset=UTF-8";
-
-                        } catch (IllegalArgumentException ex) {
-                            responseText = ex.toString();
-                            contentType = "text/plain; charset=UTF-8";
-                        }
-                    }
+                    requestProcessed = true;
                 }
             } catch (URISyntaxException ex) {
                 responseText = ex.toString();
                 contentType = "text/plain; charset=UTF-8";
+                requestProcessed = true;
             } catch (IOException ex) {
                 responseText = ex.toString();
                 contentType = "text/plain; charset=UTF-8";
-            }
-
-            try {
-                response.setPayload(ByteBuffer.wrap(responseText.getBytes("UTF-8")));
-                response.setContentType(contentType);
-            } catch (UnsupportedEncodingException ex) {
-                logger.error("No UTF-8 encoding", ex);
+                requestProcessed = true;
             }
         }
+
+        if (!requestProcessed) {
+            ServiceHandler sh;
+            if (serviceHandler == null || transport.isAddressContainsRequestPath()) {
+                sh = server.findAcceptingServiceHandler(request.getLocalTransportAddress());
+            } else {
+                sh = serviceHandler;
+            }
+
+            if (sh != null) {
+                try {
+                    sh.performCall(request, response);
+                    return response;
+                } catch (IOException ex) {
+                    responseText = ex.toString();
+                    contentType = "text/plain; charset=UTF-8";
+                } catch (IllegalAccessException ex) {
+                    responseText = ex.toString();
+                    contentType = "text/plain; charset=UTF-8";
+                } catch (IllegalArgumentException ex) {
+                    responseText = ex.toString();
+                    contentType = "text/plain; charset=UTF-8";
+                }
+            } else {
+                responseText = "No service handler for request";
+                contentType = "text/plain; charset=UTF-8";
+            }
+        }
+
+        try {
+            if (responseText != null && contentType != null) {
+                response.setPayload(ByteBuffer.wrap(responseText.getBytes("UTF-8")));
+                response.setContentType(contentType);
+            }
+        } catch (UnsupportedEncodingException ex) {
+            logger.error("No UTF-8 encoding", ex);
+        }
+
         return response;
     }
 

@@ -22,23 +22,19 @@ import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.*;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class HttpRequestMessage extends TransportMessage {
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(HttpRequestMessage.class);
 
     private final HttpRequest request;
     private final HttpContent content;
@@ -120,10 +116,13 @@ public class HttpRequestMessage extends TransportMessage {
             final InetSocketAddress sa = ((InetSocketAddress)connection.getLocalAddress());
             return new HttpAddress(transport, sa.getHostName(), sa.getPort(), request.getUri());
         } catch (UnknownHostException ex) {
+            logger.error("Could not create transport address", ex);
             return null;
         } catch (InvalidAddressException ex) {
+            logger.error("Could not create transport address", ex);
             return null;
         } catch (URISyntaxException ex) {
+            logger.error("Could not create transport address", ex);
             return null;
         }
     }

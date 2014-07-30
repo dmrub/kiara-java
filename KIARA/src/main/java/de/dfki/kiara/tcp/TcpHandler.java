@@ -35,7 +35,9 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.HttpHeaders;
 
 import io.netty.handler.codec.http.HttpMethod;
+
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -43,11 +45,11 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class TcpHandler extends SimpleChannelInboundHandler<Object> implements TransportConnection {
@@ -72,7 +74,12 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     @Override
     public TransportAddress getLocalTransportAddress() {
         try {
-            return new TcpBlockAddress(transport, uri);
+            if (uri != null)
+                return new TcpBlockAddress(transport, uri);
+            else {
+                InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
+                return new TcpBlockAddress(transport, sa.getHostName(), sa.getPort());
+            }
         } catch (InvalidAddressException ex) {
             throw new IllegalStateException(ex);
         } catch (UnknownHostException ex) {
@@ -90,6 +97,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         CLIENT,
         SERVER
     }
+
     private final Mode mode;
 
     static enum State {
@@ -100,6 +108,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         WAIT_CLOSE,
         CLOSED
     }
+
     private State state;
 
     public TcpHandler(TcpBlockTransport transport, URI uri, HttpMethod method) {

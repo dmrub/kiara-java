@@ -16,30 +16,27 @@
  */
 package de.dfki.kiara.tcp;
 
-import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.http.HttpAddress;
-import de.dfki.kiara.http.HttpTransport;
-import java.net.InetSocketAddress;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class TcpBlockMessage extends TransportMessage {
 
     private final Map<String, Object> properties = new HashMap<>();
+    private static final Logger logger = LoggerFactory.getLogger(TcpBlockMessage.class);
 
     /**
-     *
      * @param connection
      * @param payload
      */
@@ -62,14 +59,11 @@ public class TcpBlockMessage extends TransportMessage {
     public TransportAddress getLocalTransportAddress() {
         try {
             final TransportConnection connection = getConnection();
-            final HttpTransport transport = (HttpTransport)connection.getTransport();
-            final InetSocketAddress sa = ((InetSocketAddress)connection.getLocalAddress());
-            return new HttpAddress(transport, sa.getHostName(), sa.getPort(), null);
+            final TcpBlockTransport transport = (TcpBlockTransport) connection.getTransport();
+            final InetSocketAddress sa = ((InetSocketAddress) connection.getLocalAddress());
+            return new TcpBlockAddress(transport, sa.getHostName(), sa.getPort());
         } catch (UnknownHostException ex) {
-            return null;
-        } catch (InvalidAddressException ex) {
-            return null;
-        } catch (URISyntaxException ex) {
+            logger.error("Could not create transport address", ex);
             return null;
         }
     }

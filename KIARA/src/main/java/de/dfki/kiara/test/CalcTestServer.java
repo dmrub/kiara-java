@@ -16,6 +16,7 @@
  */
 package de.dfki.kiara.test;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.IDLParseException;
@@ -84,8 +85,8 @@ public class CalcTestServer {
 
     public static class CalcImpl {
 
-        public int add(ListenableFuture<Integer> a, Future<Integer> b) throws ExecutionException, InterruptedException {
-            return a.get() + b.get();
+        public Future<Integer> add(ListenableFuture<Integer> a, Future<Integer> b) throws ExecutionException, InterruptedException {
+            return Futures.immediateFuture(a.get() + b.get());
         }
 
         public int add(int a, int b) {

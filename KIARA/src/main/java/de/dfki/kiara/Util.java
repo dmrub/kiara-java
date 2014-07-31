@@ -58,6 +58,10 @@ public final class Util {
         return listenableFutureTok.isAssignableFrom(type) ? ((ParameterizedType) type).getActualTypeArguments()[0] : null;
     }
 
+    public static boolean isListenableFuture(java.lang.reflect.Type type) {
+        return listenableFutureTok.isAssignableFrom(type);
+    }
+
     public static class ClassAndConverter {
 
         /*
@@ -94,7 +98,7 @@ public final class Util {
 
     }
 
-    private static class ConvertFutureToListenableFuture implements Function<Object, Object> {
+    public static class ConvertFutureToListenableFuture implements Function<Object, Object> {
 
         @Override
         public Object apply(Object input) {

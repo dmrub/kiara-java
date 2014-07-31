@@ -18,14 +18,18 @@
 package de.dfki.kiara.impl;
 
 import com.google.common.base.Function;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.*;
 import de.dfki.kiara.*;
+import de.dfki.kiara.Service;
 import de.dfki.kiara.config.ProtocolInfo;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 /**
  *
@@ -35,6 +39,7 @@ public class ServiceHandler implements Closeable {
     private final ServiceImpl service;
     private final ProtocolInfo protocolInfo;
     private final Protocol protocol;
+    private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
 
     public ServiceHandler(ServiceImpl service, Transport transport, String protocolName) throws InstantiationException, IllegalAccessException {
         this.service = service;
@@ -55,7 +60,7 @@ public class ServiceHandler implements Closeable {
     public void close() {
     }
 
-    void performCall(TransportMessage request, TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException {
+    void performCall(TransportMessage request, TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
         /*
         byte[] array;
         int arrayOffset;
@@ -84,7 +89,6 @@ public class ServiceHandler implements Closeable {
             final int numArgs = args.size();
             for (int i = 0; i < numArgs; ++i) {
                 if (methodEntry.isFutureParam.get(i)) {
-                    System.err.println("FUP SPT "+methodEntry.serializationParamTypes[i]);
                     final Function<Object, Object> f = ((Function<Object, Object>) methodEntry.serializationToParamConverters[i]);
                     args.set(i, f.apply(args.get(i)));
                 }
@@ -99,7 +103,34 @@ public class ServiceHandler implements Closeable {
             isException = true;
             result = ex.getTargetException();
         }
-        Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));
+
+        Message responseMessage;
+        if (methodEntry.futureParamOfReturnType != null) {
+
+            ListenableFuture<Object> futureResult =
+                    (ListenableFuture<Object>)(methodEntry.returnTypeConverter != null ?
+                            ((Function<Object, Object>)(methodEntry.returnTypeConverter)).apply(result) :
+                            result);
+
+            AsyncFunction<Object, Message> f = new AsyncFunction<Object, Message>() {
+
+                @Override
+                public ListenableFuture<Message> apply(final Object input) throws Exception {
+                    return executor.submit(new Callable<Message>() {
+
+                        @Override
+                        public Message call() throws Exception {
+                            return protocol.createResponseMessage(requestMessage, new Message.ResponseObject(input, false));
+                        }
+                    });
+                }
+            };
+            ListenableFuture<Message> futureMessage = Futures.transform(futureResult, f);
+            responseMessage = futureMessage.get();
+        } else {
+            responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));
+        }
+
         response.setPayload(responseMessage.getMessageData());
         response.setContentType(protocol.getMimeType());
     }

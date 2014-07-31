@@ -37,6 +37,7 @@ public class MethodEntry {
 
     public final MethodKind kind;
     public final java.lang.reflect.Type futureParamOfReturnType;
+    public final Function<?, ?> returnTypeConverter;
     public final boolean hasFutureParams;
     public final boolean hasListeningFutureParams;
     public final Class<?>[] serializationParamTypes;
@@ -69,6 +70,7 @@ public class MethodEntry {
         kind = MethodKind.DEFAULT;
         hasFutureParams = false;
         hasListeningFutureParams = false;
+        Function<?, ?> returnTypeConverter = null;
 
         // serializers
         if (Util.isSerializer(method)) {
@@ -78,6 +80,12 @@ public class MethodEntry {
         }
         java.lang.reflect.Type genericReturnType = method.getGenericReturnType();
         futureParamOfReturnType = genericReturnType != null ? Util.getFutureParameterType(genericReturnType) : null;
+
+        if (futureParamOfReturnType != null) {
+            if (!Util.isListenableFuture(genericReturnType)) {
+                returnTypeConverter = new Util.ConvertFutureToListenableFuture();
+            }
+        }
 
         // check for Future
         final java.lang.reflect.Type[] genericParamTypes = method.getGenericParameterTypes();
@@ -125,6 +133,7 @@ public class MethodEntry {
         this.paramConverters = paramConverters;
         this.serializationToParamConverters = serializationToParamConverters;
         this.isFutureParam = isFutureParam;
+        this.returnTypeConverter = returnTypeConverter;
     }
 
 }

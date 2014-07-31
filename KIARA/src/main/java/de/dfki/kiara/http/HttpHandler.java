@@ -165,7 +165,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     }
 
     @Override
-    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
         channel = ctx.channel();
         switch (state) {
             case UNINITIALIZED:

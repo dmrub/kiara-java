@@ -147,9 +147,10 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     }
 
     private static final byte[] EMPTY_ARRAY = new byte[0];
+    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(EMPTY_ARRAY);
 
     @Override
-    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
         channel = ctx.channel();
         switch (state) {
             case UNINITIALIZED:
@@ -160,7 +161,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
                 }
                 if (mode == Mode.CLIENT) {
                     // FIXME send sessionID
-                    ctx.writeAndFlush(EMPTY_ARRAY);
+                    ctx.writeAndFlush(EMPTY_BUFFER);
                 }
                 break;
             case WAIT_CLOSE:

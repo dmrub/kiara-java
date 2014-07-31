@@ -51,8 +51,8 @@ public interface TransportConnection extends Closeable {
 
     public ListenableFuture<Void> send(TransportMessage message);
 
-    public void addRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler);
+    public void addRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler);
 
-    public void removeRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler);
+    public void removeRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler);
 
 }

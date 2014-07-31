@@ -68,7 +68,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
 
     private final Handler<TransportConnection> connectionHandler;
 
-    private final List<RequestHandler<TransportMessage, TransportMessage>> requestHandlers = new ArrayList<>();
+    private final List<RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>> requestHandlers = new ArrayList<>();
     private final List<Handler<TransportMessage>> responseHandlers = new ArrayList<>();
 
     @Override
@@ -191,18 +191,15 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
                     }
                     sessionId = Util.bufferToString(transportMessage.getPayload(), "UTF-8");
                 } else {
-                    TcpBlockMessage responseTransportMessage = null;
-                    for (RequestHandler<TransportMessage, TransportMessage> requestHandler : requestHandlers) {
-                        TransportMessage tm = requestHandler.onRequest(transportMessage);
+                    ListenableFuture<TransportMessage> tm = null;
+                    for (RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> requestHandler : requestHandlers) {
+                        tm = requestHandler.onRequest(transportMessage);
                         if (tm != null) {
-                            if (!(tm instanceof TcpBlockMessage)) {
-                                // FIXME handle error
-                                continue;
-                            }
-                            responseTransportMessage = (TcpBlockMessage) tm;
                             break;
                         }
                     }
+
+                    TcpBlockMessage responseTransportMessage = tm != null ? (TcpBlockMessage)tm.get() : null;
 
                     if (responseTransportMessage != null && responseTransportMessage.getPayload() != null) {
                         logger.debug("RESPONSE CONTENT: {}", Util.bufferToString(responseTransportMessage.getPayload()));
@@ -328,7 +325,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     }
 
     @Override
-    public void addRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler) {
+    public void addRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler) {
         if (handler == null) {
             throw new NullPointerException("handler");
         }
@@ -338,7 +335,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     }
 
     @Override
-    public void removeRequestHandler(RequestHandler<TransportMessage, TransportMessage> handler) {
+    public void removeRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler) {
         if (handler == null) {
             throw new NullPointerException("handler");
         }

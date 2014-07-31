@@ -16,6 +16,8 @@
  */
 package de.dfki.kiara.test;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.RequestHandler;
@@ -64,7 +66,7 @@ public class TransportServerTest {
         config.servers.add(si);
     }
 
-    private static class ServerHandler implements Handler<TransportConnection>, RequestHandler<TransportMessage, TransportMessage> {
+    private static class ServerHandler implements Handler<TransportConnection>, RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> {
 
         @Override
         public boolean onSuccess(TransportConnection result) {
@@ -82,7 +84,7 @@ public class TransportServerTest {
         }
 
         @Override
-        public TransportMessage onRequest(TransportMessage message) {
+        public ListenableFuture<TransportMessage> onRequest(TransportMessage message) {
             byte[] array;
             int arrayOffset;
             int arrayLength;
@@ -134,7 +136,7 @@ public class TransportServerTest {
             } catch (UnsupportedEncodingException ex) {
 
             }
-            return response;
+            return Futures.immediateFuture(response);
         }
 
     }

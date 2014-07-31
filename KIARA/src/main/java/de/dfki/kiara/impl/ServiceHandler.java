@@ -60,7 +60,7 @@ public class ServiceHandler implements Closeable {
     public void close() {
     }
 
-    void performCall(TransportMessage request, TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
+    ListenableFuture<TransportMessage> performCall(TransportMessage request, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
         /*
         byte[] array;
         int arrayOffset;
@@ -104,34 +104,34 @@ public class ServiceHandler implements Closeable {
             result = ex.getTargetException();
         }
 
-        Message responseMessage;
         if (methodEntry.futureParamOfReturnType != null) {
-
             ListenableFuture<Object> futureResult =
                     (ListenableFuture<Object>)(methodEntry.returnTypeConverter != null ?
                             ((Function<Object, Object>)(methodEntry.returnTypeConverter)).apply(result) :
                             result);
 
-            AsyncFunction<Object, Message> f = new AsyncFunction<Object, Message>() {
+            AsyncFunction<Object, TransportMessage> f = new AsyncFunction<Object, TransportMessage>() {
 
                 @Override
-                public ListenableFuture<Message> apply(final Object input) throws Exception {
-                    return executor.submit(new Callable<Message>() {
+                public ListenableFuture<TransportMessage> apply(final Object input) throws Exception {
+                    return executor.submit(new Callable<TransportMessage>() {
 
                         @Override
-                        public Message call() throws Exception {
-                            return protocol.createResponseMessage(requestMessage, new Message.ResponseObject(input, false));
+                        public TransportMessage call() throws Exception {
+                            Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(input, false));
+                            response.setPayload(responseMessage.getMessageData());
+                            response.setContentType(protocol.getMimeType());
+                            return response;
                         }
                     });
                 }
             };
-            ListenableFuture<Message> futureMessage = Futures.transform(futureResult, f);
-            responseMessage = futureMessage.get();
-        } else {
-            responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));
+            return Futures.transform(futureResult, f);
         }
 
+        Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));
         response.setPayload(responseMessage.getMessageData());
         response.setContentType(protocol.getMimeType());
+        return Futures.immediateFuture(response);
     }
 }

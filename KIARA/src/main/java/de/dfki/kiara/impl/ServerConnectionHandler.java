@@ -16,6 +16,8 @@
  */
 package de.dfki.kiara.impl;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.RequestHandler;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
@@ -35,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServerConnectionHandler implements RequestHandler<TransportMessage, TransportMessage> {
+public class ServerConnectionHandler implements RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerConnectionHandler.class);
 
@@ -52,7 +54,7 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
     }
 
     @Override
-    public TransportMessage onRequest(TransportMessage request) throws Exception {
+    public ListenableFuture<TransportMessage> onRequest(TransportMessage request) throws Exception {
         final TransportConnection connection = request.getConnection();
         final TransportMessage response = connection.createResponse(request);
         final Transport transport = connection.getTransport();
@@ -96,8 +98,7 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
             }
 
             if (sh != null) {
-                sh.performCall(request, response);
-                return response;
+                return sh.performCall(request, response);
             } else {
                 responseText = "No service handler for request";
                 contentType = "text/plain; charset=UTF-8";
@@ -113,7 +114,7 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
             logger.error("No UTF-8 encoding", ex);
         }
 
-        return response;
+        return Futures.immediateFuture(response);
     }
 
 }

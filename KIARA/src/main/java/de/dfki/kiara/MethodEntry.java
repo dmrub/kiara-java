@@ -93,10 +93,10 @@ public class MethodEntry {
         final Function<?, ?>[] paramConverters = new Function<?, ?>[genericParamTypes.length];
         final Function<?, ?>[] serializationToParamConverters = new Function<?, ?>[genericParamTypes.length];
         final BitSet isFutureParam = new BitSet(genericParamTypes.length);
-        Util.ClassAndConverter classAndConverter;
+        Util.ClassAndConverters classAndConverters;
 
         for (int i = 0; i < genericParamTypes.length; ++i) {
-            classAndConverter = Util.getSerializationTypeAndCreateConverters(genericParamTypes[i]);
+            classAndConverters = Util.getSerializationTypeAndCreateConverters(genericParamTypes[i]);
             java.lang.reflect.Type futureParamType = Util.getFutureParameterType(genericParamTypes[i]);
             if (futureParamType != null) {
                 hasFutureParams = true;
@@ -107,8 +107,8 @@ public class MethodEntry {
                 }
             }
 
-            if (classAndConverter == null) {
-                classAndConverter = new Util.ClassAndConverter(
+            if (classAndConverters == null) {
+                classAndConverters = new Util.ClassAndConverters(
                         Util.toClass(genericParamTypes[i]),
                         new Function<Object, Object>() {
 
@@ -119,9 +119,9 @@ public class MethodEntry {
 
                         }, null);
             }
-            serializationParamTypes[i] = classAndConverter.serializationParamType;
-            paramConverters[i] = classAndConverter.paramToFutureConverter;
-            serializationToParamConverters[i] = classAndConverter.serializationToParamConverter;
+            serializationParamTypes[i] = classAndConverters.serializationParamType;
+            paramConverters[i] = classAndConverters.paramToFutureConverter;
+            serializationToParamConverters[i] = classAndConverters.serializationToParamConverter;
         }
         //System.err.format("Param classes: %s%n", Arrays.toString(serializationParamTypes));
 

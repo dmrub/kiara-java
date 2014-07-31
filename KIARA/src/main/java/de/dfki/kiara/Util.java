@@ -62,7 +62,7 @@ public final class Util {
         return listenableFutureTok.isAssignableFrom(type);
     }
 
-    public static class ClassAndConverter {
+    public static class ClassAndConverters {
 
         /*
          * Non future type that can be used in serialization
@@ -79,8 +79,8 @@ public final class Util {
 
         public final Function<Object, Object> serializationToParamConverter;
 
-        public ClassAndConverter(Class<?> paramClass, Function<Object, Object> paramToFutureConverter,
-                                 Function<Object, Object> serializationToParamConverter) {
+        public ClassAndConverters(Class<?> paramClass, Function<Object, Object> paramToFutureConverter,
+                                  Function<Object, Object> serializationToParamConverter) {
             this.serializationParamType = paramClass;
             this.paramToFutureConverter = paramToFutureConverter;
             this.serializationToParamConverter = serializationToParamConverter;
@@ -134,7 +134,7 @@ public final class Util {
         return toClass(paramType);
     }
 
-    public static ClassAndConverter getSerializationTypeAndCreateConverters(java.lang.reflect.Type type) {
+    public static ClassAndConverters getSerializationTypeAndCreateConverters(java.lang.reflect.Type type) {
         if (!(type instanceof ParameterizedType)) {
             return null;
         }
@@ -176,7 +176,7 @@ public final class Util {
                 }
             }
         }
-        return new ClassAndConverter(toClass(paramType),
+        return new ClassAndConverters(toClass(paramType),
                 paramConverter == null ? Functions.<Object>identity() : paramConverter,
                 serializationToParamConverter);
     }

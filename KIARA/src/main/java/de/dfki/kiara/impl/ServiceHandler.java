@@ -17,18 +17,15 @@
 
 package de.dfki.kiara.impl;
 
-import de.dfki.kiara.Message;
-import de.dfki.kiara.Protocol;
-import de.dfki.kiara.ProtocolRegistry;
-import de.dfki.kiara.Service;
-import de.dfki.kiara.ServiceMethodBinder;
-import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportMessage;
+import com.google.common.base.Function;
+import com.google.common.util.concurrent.ListenableFuture;
+import de.dfki.kiara.*;
 import de.dfki.kiara.config.ProtocolInfo;
-import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 /**
  *
@@ -75,16 +72,29 @@ public class ServiceHandler implements Closeable {
         }
         */
 
-        Message requestMessage = protocol.createRequestMessageFromData(request.getPayload());
-        String methodName = requestMessage.getMethodName();
+        final Message requestMessage = protocol.createRequestMessageFromData(request.getPayload());
+        final String methodName = requestMessage.getMethodName();
 
-        ServiceMethodBinder serviceMethod = service.getMethodBinding().getServiceMethod(methodName);
+        final ServiceMethodBinder serviceMethodBinder = service.getMethodBinding().getServiceMethodBinder(methodName);
+        final MethodEntry methodEntry = serviceMethodBinder.getMethodEntry();
+
+        final List<Object> args = requestMessage.getRequestObject(methodEntry.serializationParamTypes).args;
+
+        if (methodEntry.hasFutureParams) {
+            final int numArgs = args.size();
+            for (int i = 0; i < numArgs; ++i) {
+                if (methodEntry.isFutureParam.get(i)) {
+                    System.err.println("FUP SPT "+methodEntry.serializationParamTypes[i]);
+                    final Function<Object, Object> f = ((Function<Object, Object>) methodEntry.serializationToParamConverters[i]);
+                    args.set(i, f.apply(args.get(i)));
+                }
+            }
+        }
 
         Object result;
         boolean isException = false;
         try {
-            result = serviceMethod.getBoundMethod().invoke(
-                    serviceMethod.getImplementedClass(), requestMessage.getRequestObject(serviceMethod.getBoundMethod().getParameterTypes()).args.toArray());
+            result = serviceMethodBinder.getBoundMethod().invoke(serviceMethodBinder.getImplementedClass(), args.toArray());
         } catch (InvocationTargetException ex) {
             isException = true;
             result = ex.getTargetException();

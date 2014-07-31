@@ -81,7 +81,8 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         return connection;
     }
 
-    public ListenableFuture<Message> performAsyncCall(Message request, final Method method, final ListeningExecutorService executor) throws IOException {
+    @Deprecated
+    protected ListenableFuture<Message> performAsyncCallOld(Message request, final Method method, final ListeningExecutorService executor) throws IOException {
         final TransportConnection tc = connection.getTransportConnection();
         final TransportMessage transportRequest = tc.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
@@ -103,7 +104,8 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         return Futures.transform(transportResponse, f);
     }
 
-    public Message performSyncCall(Message request, Method method) throws InterruptedException, ExecutionException, IOException {
+    @Deprecated
+    protected Message performSyncCallOld(Message request, Method method) throws InterruptedException, ExecutionException, IOException {
         final TransportConnectionReceiver tc = new TransportConnectionReceiver(connection.getTransportConnection());
         final TransportMessage transportRequest = tc.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
@@ -120,7 +122,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
     public abstract MessageDispatcher createMessageDispatcher(Message request);
 
-    public ListenableFuture<Message> performAsyncCall2(final Message request, final Class<?> returnType, ListeningExecutorService executor) throws IOException {
+    protected ListenableFuture<Message> performAsyncCall(final Message request, final Class<?> returnType, ListeningExecutorService executor) throws IOException {
         final TransportConnection tc = connection.getTransportConnection();
         final TransportMessage transportRequest = tc.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
@@ -181,7 +183,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         }
 
         // check for Future<?>
-        final InterfaceMapping<?>.MethodEntry methodEntry = mapping.getMethodEntry(method);
+        final MethodEntry methodEntry = mapping.getMethodEntry(method);
 
         logger.debug("has future params {} has listeningfuture params {}", methodEntry.hasFutureParams, methodEntry.hasListeningFutureParams);
 
@@ -197,13 +199,13 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
             //System.out.format("futureParams = %s%n", Joiner.on(" ").join(futureParams.get()));
         }
 
-        if (Util.isSerializer(method)) {
+        if (methodEntry.kind == MethodEntry.MethodKind.SERIALIZER) {
             if (futureParams != null) {
                 return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, futureParams.get()));
             } else {
                 return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
             }
-        } else if (Util.isDeserializer(method)) {
+        } else if (methodEntry.kind == MethodEntry.MethodKind.DESERIALIZER) {
             Message msg = (Message) os[0];
             Message.ResponseObject ro = msg.getResponseObject(method.getReturnType());
 
@@ -224,7 +226,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                     public ListenableFuture<Object> apply(List<Object> params) throws Exception {
                         final Message request = protocol.createRequestMessage(new Message.RequestObject(idlMethodName, params));
                         final Class<?> returnType = Util.toClass(methodEntry.futureParamOfReturnType);
-                        final ListenableFuture<Message> responseFuture = performAsyncCall2(request, returnType, executor);
+                        final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, executor);
                         AsyncFunction<Message, Object> g = new AsyncFunction<Message, Object>() {
 
                             @Override
@@ -260,7 +262,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
                 final Class<?> returnType = methodEntry.futureParamOfReturnType != null ? Util.toClass(methodEntry.futureParamOfReturnType) : method.getReturnType();
 
-                final ListenableFuture<Message> responseFuture = performAsyncCall2(request, returnType, executor);
+                final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, executor);
 
                 if (methodEntry.futureParamOfReturnType != null) {
                     AsyncFunction<Message, Object> f = new AsyncFunction<Message, Object>() {
@@ -311,7 +313,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         try {
             Object processResult = pipeline.process(result);
             if (processResult != null) {
-                logger.warn("Unprocessed JSON-RPC transport message: {}: {}", processResult.getClass(), processResult);
+                logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
             }
         } catch (Exception ex) {
             logger.error("Pipeline processing failed", ex);

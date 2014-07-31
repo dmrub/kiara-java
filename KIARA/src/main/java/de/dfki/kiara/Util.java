@@ -22,6 +22,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ListenableFuture;
+
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -30,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public final class Util {
@@ -60,12 +60,26 @@ public final class Util {
 
     public static class ClassAndConverter {
 
-        public final Class<?> paramType;
-        public final Function<Object, Object> paramConverter;
+        /*
+         * Non future type that can be used in serialization
+         */
+        public final Class<?> serializationParamType;
+        /*
+         *
+         * Converts recursively
+         *          Future<X> -> ListenableFuture<X>
+         *          X -> X
+         *
+         */
+        public final Function<Object, Object> paramToFutureConverter;
 
-        public ClassAndConverter(Class<?> paramClass, Function<Object, Object> paramConverter) {
-            this.paramType = paramClass;
-            this.paramConverter = paramConverter;
+        public final Function<Object, Object> serializationToParamConverter;
+
+        public ClassAndConverter(Class<?> paramClass, Function<Object, Object> paramToFutureConverter,
+                                 Function<Object, Object> serializationToParamConverter) {
+            this.serializationParamType = paramClass;
+            this.paramToFutureConverter = paramToFutureConverter;
+            this.serializationToParamConverter = serializationToParamConverter;
         }
 
     }
@@ -92,6 +106,16 @@ public final class Util {
 
     }
 
+    private static class ConvertTypeToListenableFuture implements Function<Object, Object> {
+
+        @Override
+        public Object apply(Object input) {
+            return Futures.immediateFuture(input);
+        }
+
+    }
+
+
     public static Class<?> dereferenceFutureType(java.lang.reflect.Type type) {
         if (!(type instanceof ParameterizedType)) {
             return null;
@@ -106,7 +130,7 @@ public final class Util {
         return toClass(paramType);
     }
 
-    public static ClassAndConverter dereferenceFutureTypeAndCreateConverter(java.lang.reflect.Type type) {
+    public static ClassAndConverter getSerializationTypeAndCreateConverters(java.lang.reflect.Type type) {
         if (!(type instanceof ParameterizedType)) {
             return null;
         }
@@ -115,13 +139,17 @@ public final class Util {
             return null;
         }
         boolean isListenableFuture = listenableFutureTok.isAssignableFrom(type);
-        if (!isListenableFuture) {
-            return null;
-        }
+
         java.lang.reflect.Type paramType = ((ParameterizedType) type).getActualTypeArguments()[0];
         Function<Object, Object> paramConverter = null;
+        Function<Object, Object> serializationToParamConverter = null;
         if (!isListenableFuture) {
+            // rule ListenableFuture<X> -> Future<X>
             paramConverter = new ConvertFutureToListenableFuture();
+        }
+        if (isFuture) {
+            // rule X -> ListenableFuture<X>
+            serializationToParamConverter = new ConvertTypeToListenableFuture();
         }
         while (isFuture) {
             isFuture = futureTok.isAssignableFrom(paramType);
@@ -136,9 +164,17 @@ public final class Util {
                         paramConverter = Functions.compose(tmp, paramConverter);
                     }
                 }
+                Function<Object, Object> tmp = new ConvertTypeToListenableFuture();
+                if (serializationToParamConverter == null) {
+                    serializationToParamConverter = tmp;
+                } else {
+                    serializationToParamConverter = Functions.compose(tmp, serializationToParamConverter);
+                }
             }
         }
-        return new ClassAndConverter(toClass(paramType), paramConverter == null ? Functions.<Object>identity() : paramConverter);
+        return new ClassAndConverter(toClass(paramType),
+                paramConverter == null ? Functions.<Object>identity() : paramConverter,
+                serializationToParamConverter);
     }
 
     public static Class<?> toClass(java.lang.reflect.Type type) {
@@ -168,8 +204,10 @@ public final class Util {
         if (buffer.hasArray()) {
             return new String(buffer.array(), buffer.arrayOffset(), buffer.remaining());
         } else {
+            int oldPos = buffer.position();
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
+            buffer.position(oldPos);
             return new String(bytes);
         }
     }
@@ -178,8 +216,10 @@ public final class Util {
         if (buffer.hasArray()) {
             return new String(buffer.array(), buffer.arrayOffset(), buffer.remaining(), charsetName);
         } else {
+            int oldPos = buffer.position();
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
+            buffer.position(oldPos);
             return new String(bytes, charsetName);
         }
     }

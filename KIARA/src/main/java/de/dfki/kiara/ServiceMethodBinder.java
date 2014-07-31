@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Shahzad
+ * Copyright (C) 2014 German Research Center for Artificial Intelligence (DFKI)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,15 +21,17 @@ import java.lang.reflect.Method;
 
 /**
  *
- * @author Shahzad
+ * @author Shahzad, Dmitri Rubinstein
  */
 public class ServiceMethodBinder {
     private final Object implementedClass;
     private final Method boundMethod;
+    private final MethodEntry methodEntry;
 
-    public ServiceMethodBinder(Object implementedClass, Method boundedMethod) {
+    public ServiceMethodBinder(Object implementedClass, Method boundMethod) {
         this.implementedClass = implementedClass;
-        this.boundMethod = boundedMethod;
+        this.boundMethod = boundMethod;
+        this.methodEntry = new MethodEntry(boundMethod);
     }
 
     public Object getImplementedClass(){
@@ -38,5 +40,9 @@ public class ServiceMethodBinder {
 
     public Method getBoundMethod(){
         return boundMethod;
+    }
+
+    public MethodEntry getMethodEntry() {
+        return methodEntry;
     }
 }

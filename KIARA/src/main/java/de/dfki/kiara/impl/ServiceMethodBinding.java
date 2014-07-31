@@ -52,7 +52,7 @@ public class ServiceMethodBinding {
         internalMapping.put(idlMethodName, new ServiceMethodBinder(serviceClass, method));
     }
 
-    public ServiceMethodBinder getServiceMethod(String idlMethodName) {
+    public ServiceMethodBinder getServiceMethodBinder(String idlMethodName) {
         return internalMapping.get(idlMethodName);
     }
 

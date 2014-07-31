@@ -93,7 +93,7 @@ public class ServiceImpl implements Service {
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
             String serviceMethodName) throws MethodAlreadyBoundException,
             NoSuchMethodException, SecurityException {
-        if (methodBinding.getServiceMethod(idlMethodName) != null) {
+        if (methodBinding.getServiceMethodBinder(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
         methodBinding.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName);
@@ -111,7 +111,7 @@ public class ServiceImpl implements Service {
     public void registerServiceFunction(String idlMethodName, Object serviceImpl,
             String serviceMethodName, Class<?>... parameterTypes)
             throws MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
-        if (methodBinding.getServiceMethod(idlMethodName) != null) {
+        if (methodBinding.getServiceMethodBinder(idlMethodName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
         methodBinding.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName, parameterTypes);
@@ -165,7 +165,7 @@ public class ServiceImpl implements Service {
         Message rpcMessage = protocol.createRequestMessageFromData(payload);
         String methodName = rpcMessage.getMethodName();
 
-        ServiceMethodBinder serviceMethod = methodBinding.getServiceMethod(methodName);
+        ServiceMethodBinder serviceMethod = methodBinding.getServiceMethodBinder(methodName);
 
         try {
         return serviceMethod.getBoundMethod().invoke(

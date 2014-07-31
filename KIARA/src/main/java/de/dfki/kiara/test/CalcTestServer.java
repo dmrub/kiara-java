@@ -16,11 +16,15 @@
  */
 package de.dfki.kiara.test;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.IDLParseException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
 import de.dfki.kiara.Service;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 
 /**
@@ -60,20 +64,12 @@ public class CalcTestServer {
 
             System.out.printf("Register calc.add ....\n");
             CalcImpl impl = new CalcImpl();
-            service.registerServiceFunction("calc.add", impl, "add", Integer.TYPE, Integer.TYPE);
+            //service.registerServiceFunction("calc.add", impl, "add", Integer.TYPE, Integer.TYPE);
+            service.registerServiceFunction("calc.add", impl, "add", ListenableFuture.class, Future.class);
             service.registerServiceFunction("calc.addf", impl, "add", Float.TYPE, Float.TYPE);
             service.registerServiceFunction("calc.stringToInt32", impl, "stringToInt32");
             service.registerServiceFunction("calc.int32ToString", impl, "int32ToString");
             System.out.printf("Starting server...\n");
-
-
-            // Debugging calls start
-            System.out.println(service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer("{\"jsonrpc\": \"2.0\", \"method\": \"calc.add\", \"params\": [42, 23], \"id\": 1}", "UTF-8")));
-
-            System.out.println(service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer("{\"jsonrpc\": \"2.0\", \"method\": \"calc.addf\", \"params\": [21.1, 32.2], \"id\": 2}", "UTF-8")));
-            System.out.println(service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer("{\"jsonrpc\": \"2.0\", \"method\": \"calc.stringToInt32\", \"params\": [\"45\"], \"id\": 3}", "UTF-8")));
-            System.out.println(service.dbgSimulateCall(de.dfki.kiara.Util.stringToBuffer("{\"jsonrpc\": \"2.0\", \"method\": \"calc.int32ToString\", \"params\": [132], \"id\": 4}", "UTF-8")));
-            // Debugging calls end
 
             Server server = context.newServer("0.0.0.0", port, "/service");
             server.addService("/rpc/calc", protocol, service);
@@ -87,6 +83,10 @@ public class CalcTestServer {
     }
 
     public static class CalcImpl {
+
+        public int add(ListenableFuture<Integer> a, Future<Integer> b) throws ExecutionException, InterruptedException {
+            return a.get() + b.get();
+        }
 
         public int add(int a, int b) {
             return a + b;

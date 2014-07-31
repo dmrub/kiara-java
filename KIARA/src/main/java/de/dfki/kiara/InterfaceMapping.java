@@ -16,16 +16,13 @@
  */
 package de.dfki.kiara;
 
-import com.google.common.base.Function;
-import com.google.common.util.concurrent.Futures;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
- * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  * @param <T>
+ * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public final class InterfaceMapping<T> {
 
@@ -33,47 +30,7 @@ public final class InterfaceMapping<T> {
     private final Map<Method, String> boundMethods;
     private final Map<Method, MethodEntry> methodEntries;
 
-    public enum MethodKind {
-
-        SYNCHRONOUS,
-        ASYNCHRONOUS,
-        SERIALIZER,
-        DESERIALIZER
-    }
-
-    public enum ResultTypeKind {
-
-        DEFAULT,
-        FUTURE,
-        LISTENING
-    }
-
-    public final class MethodEntry {
-
-        public final MethodKind kind;
-        public final java.lang.reflect.Type futureParamOfReturnType;
-        public final boolean hasFutureParams;
-        public final boolean hasListeningFutureParams;
-        public final Class<?>[] serializationParamTypes;
-        public final Function<?, ?>[] paramConverters;
-
-        public MethodEntry(MethodKind kind,
-                java.lang.reflect.Type futureParamOfReturnType,
-                boolean hasFutureParams,
-                boolean hasListeningFutureParams,
-                Class<?>[] serializationParamTypes,
-                Function<?, ?>[] paramConverters) {
-            this.kind = kind;
-            this.futureParamOfReturnType = futureParamOfReturnType;
-            this.hasFutureParams = hasFutureParams;
-            this.hasListeningFutureParams = hasListeningFutureParams;
-            this.serializationParamTypes = serializationParamTypes;
-            this.paramConverters = paramConverters;
-        }
-    }
-
     /**
-     *
      * @param binder
      */
     public InterfaceMapping(MethodBinding<T> binder) {
@@ -81,61 +38,8 @@ public final class InterfaceMapping<T> {
         boundMethods = new HashMap<>(binder.getBoundMethods());
         methodEntries = new HashMap<>(boundMethods.size());
 
-        MethodKind kind;
-        java.lang.reflect.Type futureParamOfReturnType;
-        boolean hasFutureParams;
-        boolean hasListeningFutureParams;
-        for (Method m : boundMethods.keySet()) {
-            kind = MethodKind.SYNCHRONOUS;
-            futureParamOfReturnType = null;
-            hasFutureParams = false;
-            hasListeningFutureParams = false;
-
-            // serializers
-            if (Util.isSerializer(m)) {
-                kind = MethodKind.SERIALIZER;
-            } else if (Util.isDeserializer(m)) {
-                kind = MethodKind.DESERIALIZER;
-            }
-            java.lang.reflect.Type genericReturnType = m.getGenericReturnType();
-            futureParamOfReturnType = genericReturnType != null ? Util.getFutureParameterType(genericReturnType) : null;
-
-            // check for Future
-            final java.lang.reflect.Type[] genericParamTypes = m.getGenericParameterTypes();
-            final Class<?>[] serParamTypes = new Class<?>[genericParamTypes.length];
-            final Function<?, ?>[] paramConverters = new Function<?, ?>[genericParamTypes.length];
-
-            Util.ClassAndConverter classAndConverter = null;
-
-            for (int i = 0; i < genericParamTypes.length; ++i) {
-                classAndConverter = Util.dereferenceFutureTypeAndCreateConverter(genericParamTypes[i]);
-                java.lang.reflect.Type futureParamType = Util.getFutureParameterType(genericParamTypes[i]);
-                if (futureParamType != null) {
-                    hasFutureParams = true;
-                    futureParamType = Util.getListenableFutureParameterType(genericParamTypes[i]);
-                    if (futureParamType != null) {
-                        hasListeningFutureParams = true;
-                    }
-                }
-
-                if (classAndConverter == null) {
-                    classAndConverter = new Util.ClassAndConverter(
-                            Util.toClass(genericParamTypes[i]),
-                            new Function<Object, Object>() {
-
-                                @Override
-                                public Object apply(Object input) {
-                                    return Futures.immediateFuture(input);
-                                }
-
-                            });
-                }
-                serParamTypes[i] = classAndConverter.paramType;
-                paramConverters[i] = classAndConverter.paramConverter;
-            }
-            //System.err.format("Param classes: %s%n", Arrays.toString(serParamTypes));
-
-            methodEntries.put(m, new MethodEntry(kind, futureParamOfReturnType, hasFutureParams, hasListeningFutureParams, serParamTypes, paramConverters));
+        for (Method method : boundMethods.keySet()) {
+            methodEntries.put(method, new MethodEntry(method));
         }
     }
 

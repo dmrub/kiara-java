@@ -16,7 +16,11 @@
  */
 package de.dfki.kiara.tcp;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.RequestHandler;
@@ -32,7 +36,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.HttpHeaders;
 
 import io.netty.handler.codec.http.HttpMethod;
 
@@ -44,7 +47,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +59,6 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
 
     private static final Logger logger = LoggerFactory.getLogger(TcpHandler.class);
 
-    private HttpHeaders headers = null;
     private final NoCopyByteArrayOutputStream bout;
 
     private final TcpBlockTransport transport;
@@ -70,6 +72,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
 
     private final List<RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>> requestHandlers = new ArrayList<>();
     private final List<Handler<TransportMessage>> responseHandlers = new ArrayList<>();
+    private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
 
     @Override
     public TransportAddress getLocalTransportAddress() {
@@ -178,7 +181,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+    protected void channelRead0(final ChannelHandlerContext ctx, Object msg) throws Exception {
         logger.debug("Handler: {} / Mode: {} / Channel: {} / Message class {}", this, mode, ctx.channel(), msg.getClass());
 
         if (msg instanceof ByteBuffer) {
@@ -200,11 +203,25 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
                         }
                     }
 
-                    TcpBlockMessage responseTransportMessage = tm != null ? (TcpBlockMessage)tm.get() : null;
+                    if (tm != null) {
+                        Futures.addCallback(tm, new FutureCallback<TransportMessage>() {
 
-                    if (responseTransportMessage != null && responseTransportMessage.getPayload() != null) {
-                        logger.debug("RESPONSE CONTENT: {}", Util.bufferToString(responseTransportMessage.getPayload()));
-                        ctx.write(responseTransportMessage.getPayload());
+                            @Override
+                            public void onSuccess(TransportMessage result) {
+                                TcpBlockMessage responseTransportMessage = (TcpBlockMessage)result;
+                                if (responseTransportMessage.getPayload() != null) {
+                                    logger.debug("RESPONSE CONTENT: {}", Util.bufferToString(responseTransportMessage.getPayload()));
+                                    ctx.writeAndFlush(responseTransportMessage.getPayload());
+                                } else {
+                                    logger.info("NO RESPONSE CONTENT");
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Throwable t) {
+                                logger.error("Error on response", t);
+                            }
+                        }, executor);
                     } else {
                         logger.info("NO RESPONSE CONTENT");
                     }

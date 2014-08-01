@@ -27,6 +27,7 @@ public class Util {
 
     public static MarketData createMarketData() {
         MarketData data = new MarketData();
+        data.isEcho = false;
         data.counter = 0;
         data.applVersionID = 1.0;
         data.messageType = 100;
@@ -57,11 +58,11 @@ public class Util {
         entry.tradingSessionID = 2;
         entry.netChgPrevDay = 10.0;
         entry.tradeVolume = 30;
-        entry.tradeCondition = 100.0;//double('W');
+        entry.tradeCondition = 87.0;//double('W');
         entry.tickDirection = 0;
-        entry.quoteCondition = 67;//double('C');
+        entry.quoteCondition = 67.0;//double('C');
         entry.aggressorSide = 2;
-        entry.matchEventIndicator = 1;//double('1');
+        entry.matchEventIndicator = 49.0;//double('1');
         entry.dummy1 = 1;
         entry.dummy2 = 2;
         return entry;

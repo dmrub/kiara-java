@@ -16,6 +16,10 @@ SERVER_RESULT=${TMPDIR:-/tmp}/server_result-$SUFFIX.txt
 echo "Test result in $TEST_RESULT"
 echo "Server result in $SERVER_RESULT"
 
+if [ -d "/c/Program Files/Java/jdk1.7.0_60/bin" ]; then
+    PATH="$PATH:/c/Program Files/Java/jdk1.7.0_60/bin"
+fi
+
 if [ -d "/c/Program Files (x86)/ZeroC/Ice-3.5.1/bin/x64" ]; then
     PATH="$PATH:/c/Program Files (x86)/ZeroC/Ice-3.5.1/bin/x64"
 fi
@@ -93,12 +97,12 @@ TCPSocketProject/target/classes/:\
 RMIJavaProject/target/classes/:\
 ZerocIceProject/target/classes/:\
 RabbitMQJava/target/classes/
-	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPClient"
-	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectClient"
-	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaServer" "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaClient"		
-	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaServer" "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaClient"
-	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaServer" "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaClient"
-	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQServer" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQClient"
-	runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamServer infinite" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamClient"
+	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPClient"
+	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectClient"
+	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaServer" "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaClient"		
+	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaServer" "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaClient"
+	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaServer" "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaClient"
+	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQServer" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQClient"
+	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamServer infinite" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamClient"
+    runServerClientBenchmark "java -cp $CLASSPATH de.dfki.kiara.test.BenchmarkServer" "java -cp $CLASSPATH de.dfki.kiara.test.BenchmarkClient"
 fi
-

@@ -43,7 +43,7 @@ public class JosMessage implements Message {
     private long id;
 
     public JosMessage(JosProtocol protocol, Kind kind, ByteBuffer data) throws IOException {
-        System.err.println("new JosMessage: " + HexDump.dumpHexString(data));
+        //System.err.println("new JosMessage: " + HexDump.dumpHexString(data));
         final ByteBufferInputStream is = new ByteBufferInputStream(data);
         final ObjectInputStream ois = new ObjectInputStream(is);
         final byte messageCode = ois.readByte();

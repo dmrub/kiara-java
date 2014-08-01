@@ -61,6 +61,7 @@ runServerClientBenchmark() {
         sleep 1
         if ! kill -0 $ppid; then
             echo "Process $server is not running !!!"
+            cat "$SERVER_RESULT" >&2
             return 1
         fi
     done
@@ -68,6 +69,7 @@ runServerClientBenchmark() {
 
     if ! kill -0 $ppid; then
         echo "Process $server is not running !!!"
+        cat "$SERVER_RESULT" >&2
         return 1
     fi
 
@@ -82,27 +84,48 @@ if [ -n "$1" ]; then
 fi
 
 if true; then
-	CLASSPATH=$HOME/.m2/repository/org/apache/thrift/libthrift/0.9.1/libthrift-0.9.1.jar:\
+    CLASSPATH=$HOME/.m2/repository/org/apache/thrift/libthrift/0.9.1/libthrift-0.9.1.jar:\
 $HOME/.m2/repository/org/slf4j/slf4j-log4j12/1.5.6/slf4j-log4j12-1.5.6.jar:\
 $HOME/.m2/repository/commons-codec/commons-codec/1.6/commons-codec-1.6.jar:\
 $HOME/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar:\
 $HOME/.m2/repository/org/apache/commons/commons-lang3/3.1/commons-lang3-3.1.jar:\
 $HOME/.m2/repository/log4j/log4j/1.2.14/log4j-1.2.14.jar:\
 $HOME/.m2/repository/org/slf4j/slf4j-api/1.5.8/slf4j-api-1.5.8.jar:\
+$HOME/.m2/repository/org/slf4j/slf4j-log4j12/1.5.6/slf4j-log4j12-1.5.6.jar:\
 $HOME/.m2/repository/com/zeroc/ice/3.5.1/ice-3.5.1.jar:.:\
 $HOME/.m2/repository/com/rabbitmq/amqp-client/3.3.1/amqp-client-3.3.1.jar:\
 $HOME/.m2/repository/commons-lang/commons-lang/2.6/commons-lang-2.6.jar:\
+$HOME/.m2/repository/io/netty/netty-all/4.0.21.Final/netty-all-4.0.21.Final.jar:\
+$HOME/.m2/repository/com/google/guava/guava/17.0/guava-17.0.jar:\
+$HOME/.m2/repository/org/antlr/antlr4/4.2.2/antlr4-4.2.2.jar:\
+$HOME/.m2/repository/org/antlr/antlr4-runtime/4.2.2/antlr4-runtime-4.2.2.jar:\
+$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.3.3/jackson-core-2.3.3.jar:\
+$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.3.3/jackson-databind-2.3.3.jar:\
+$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.3.0/jackson-annotations-2.3.0.jar:\
 ApacheThriftProject/target/classes/:\
 TCPSocketProject/target/classes/:\
 RMIJavaProject/target/classes/:\
 ZerocIceProject/target/classes/:\
-RabbitMQJava/target/classes/
-	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPClient"
-	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectClient"
-	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaServer" "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaClient"		
-	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaServer" "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaClient"
-	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaServer" "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaClient"
-	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQServer" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQClient"
-	#runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamServer infinite" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamClient"
-    runServerClientBenchmark "java -cp $CLASSPATH de.dfki.kiara.test.BenchmarkServer" "java -cp $CLASSPATH de.dfki.kiara.test.BenchmarkClient"
+RabbitMQJava/target/classes/:\
+../KIARA/target/classes/
+
+    CLASSPATH_KIARA=$HOME/.m2/repository/org/slf4j/slf4j-api/1.7.7/slf4j-api-1.7.7.jar:\
+$HOME/.m2/repository/org/slf4j/slf4j-jdk14/1.7.7/slf4j-jdk14-1.7.7.jar:\
+$HOME/.m2/repository/io/netty/netty-all/4.0.21.Final/netty-all-4.0.21.Final.jar:\
+$HOME/.m2/repository/com/google/guava/guava/17.0/guava-17.0.jar:\
+$HOME/.m2/repository/org/antlr/antlr4/4.2.2/antlr4-4.2.2.jar:\
+$HOME/.m2/repository/org/antlr/antlr4-runtime/4.2.2/antlr4-runtime-4.2.2.jar:\
+$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.3.3/jackson-core-2.3.3.jar:\
+$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.3.3/jackson-databind-2.3.3.jar:\
+$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.3.0/jackson-annotations-2.3.0.jar:\
+../KIARA/target/classes/
+
+    #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPClient"
+    #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectClient"
+    #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaServer" "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaClient"
+    #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaServer" "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaClient"
+    runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaServer" "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaClient"
+    #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQServer" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQClient"
+    #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamServer infinite" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamClient"
+    #runServerClientBenchmark "java -cp $CLASSPATH_KIARA de.dfki.kiara.test.BenchmarkServer" "java -cp $CLASSPATH_KIARA de.dfki.kiara.test.BenchmarkClient"
 fi

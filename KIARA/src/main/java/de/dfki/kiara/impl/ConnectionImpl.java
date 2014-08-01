@@ -96,7 +96,7 @@ public class ConnectionImpl implements Connection {
         if (logger.isDebugEnabled()) {
             try {
                 logger.debug(serverConfig.toJson());
-                System.err.println(serverConfig.toJson());
+                //System.err.println(serverConfig.toJson());
             } catch (IOException ex) {
                 throw new ConnectException("Could not convert to JSON", ex);
             }

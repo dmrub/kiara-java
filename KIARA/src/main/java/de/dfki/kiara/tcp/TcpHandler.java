@@ -29,6 +29,7 @@ import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.Util;
+import de.dfki.kiara.impl.Global;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import io.netty.channel.Channel;
@@ -36,9 +37,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-
 import io.netty.handler.codec.http.HttpMethod;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -72,7 +71,6 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
 
     private final List<RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>> requestHandlers = new ArrayList<>();
     private final List<Handler<TransportMessage>> responseHandlers = new ArrayList<>();
-    private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
 
     @Override
     public TransportAddress getLocalTransportAddress() {
@@ -221,7 +219,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
                             public void onFailure(Throwable t) {
                                 logger.error("Error on response", t);
                             }
-                        }, executor);
+                        }, Global.executor);
                     } else {
                         logger.info("NO RESPONSE CONTENT");
                     }

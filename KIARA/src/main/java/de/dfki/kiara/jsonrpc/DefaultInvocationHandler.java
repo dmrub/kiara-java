@@ -21,13 +21,11 @@ import com.google.common.base.Function;
 import com.google.common.reflect.AbstractInvocationHandler;
 import com.google.common.util.concurrent.*;
 import de.dfki.kiara.*;
+import de.dfki.kiara.impl.Global;
 import de.dfki.kiara.impl.SpecialMethods;
 import de.dfki.kiara.util.MessageDecoder;
 import de.dfki.kiara.util.MessageDispatcher;
 import de.dfki.kiara.util.Pipeline;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -35,15 +33,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by Dmitri Rubinstein on 30.07.2014.
+ * @param <PROTOCOL>
  */
-public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler implements Handler<TransportMessage>,RunningService {
-    //private static final ListeningExecutorService executor = MoreExecutors.sameThreadExecutor();
-    private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
-    private static final ListeningExecutorService sameThreadExecutor = MoreExecutors.sameThreadExecutor();
+public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler implements Handler<TransportMessage> {
     private static final Logger logger = LoggerFactory.getLogger(DefaultInvocationHandler.class);
     protected final Connection connection;
     protected final InterfaceMapping<?> interfaceMapping;
@@ -57,7 +54,6 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         this.interfaceMapping = interfaceMapping;
         this.pipeline.addHandler(messageDecoder);
         this.connection.getTransportConnection().addResponseHandler(this);
-        Kiara.addRunningService(this);
     }
 
     public static ListenableFuture<TransportMessage> performAsyncCall(TransportMessage request, final ListeningExecutorService executor) {
@@ -132,7 +128,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
         ListenableFuture<Void> reqSent = tc.send(transportRequest);
 
-        final ListeningExecutorService myExecutor = executor == null ? sameThreadExecutor : executor;
+        final ListeningExecutorService myExecutor = executor == null ? Global.sameThreadExecutor : executor;
 
         AsyncFunction<Void, Message> f = new AsyncFunction<Void, Message>() {
 
@@ -226,12 +222,12 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                     public ListenableFuture<Object> apply(List<Object> params) throws Exception {
                         final Message request = protocol.createRequestMessage(new Message.RequestObject(idlMethodName, params));
                         final Class<?> returnType = Util.toClass(methodEntry.futureParamOfReturnType);
-                        final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, executor);
+                        final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, Global.executor);
                         AsyncFunction<Message, Object> g = new AsyncFunction<Message, Object>() {
 
                             @Override
                             public ListenableFuture<Object> apply(final Message response) throws Exception {
-                                return executor.submit(new Callable<Object>() {
+                                return Global.executor.submit(new Callable<Object>() {
 
                                     @Override
                                     public Object call() throws Exception {
@@ -262,14 +258,14 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
                 final Class<?> returnType = methodEntry.futureParamOfReturnType != null ? Util.toClass(methodEntry.futureParamOfReturnType) : method.getReturnType();
 
-                final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, executor);
+                final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, Global.executor);
 
                 if (methodEntry.futureParamOfReturnType != null) {
                     AsyncFunction<Message, Object> f = new AsyncFunction<Message, Object>() {
 
                         @Override
                         public ListenableFuture<Object> apply(final Message response) throws Exception {
-                            return executor.submit(new Callable<Object>() {
+                            return Global.executor.submit(new Callable<Object>() {
 
                                 @Override
                                 public Object call() throws Exception {
@@ -333,8 +329,4 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         return true;
     }
 
-    @Override
-    public void shutdownGracefully() {
-        executor.shutdown();
-    }
 }

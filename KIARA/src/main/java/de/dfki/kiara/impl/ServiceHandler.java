@@ -39,7 +39,6 @@ public class ServiceHandler implements Closeable {
     private final ServiceImpl service;
     private final ProtocolInfo protocolInfo;
     private final Protocol protocol;
-    private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
 
     public ServiceHandler(ServiceImpl service, Transport transport, String protocolName) throws InstantiationException, IllegalAccessException {
         this.service = service;
@@ -114,7 +113,7 @@ public class ServiceHandler implements Closeable {
 
                 @Override
                 public ListenableFuture<TransportMessage> apply(final Object input) throws Exception {
-                    return executor.submit(new Callable<TransportMessage>() {
+                    return Global.executor.submit(new Callable<TransportMessage>() {
 
                         @Override
                         public TransportMessage call() throws Exception {

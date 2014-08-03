@@ -17,8 +17,6 @@
 package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.RequestHandler;
@@ -61,7 +59,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +70,6 @@ import org.slf4j.LoggerFactory;
 public class HttpHandler extends SimpleChannelInboundHandler<Object> implements TransportConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpHandler.class);
-    private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
 
     private HttpHeaders headers = null;
     private final NoCopyByteArrayOutputStream bout;

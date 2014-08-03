@@ -38,7 +38,7 @@ import javax.net.ssl.SSLException;
  */
 public abstract class AbstractTransport implements Transport, RunningService {
 
-    static final boolean SSL = System.getProperty("ssl") != null;
+    private static final boolean SSL = System.getProperty("ssl") != null;
 
     private final EventLoopGroup group = new NioEventLoopGroup();
 
@@ -55,11 +55,11 @@ public abstract class AbstractTransport implements Transport, RunningService {
         group.shutdownGracefully();
     }
 
-    public final EventLoopGroup getEventLoopGroup() {
+    protected final EventLoopGroup getEventLoopGroup() {
         return group;
     }
 
-    public SslContext createServerSslContext() throws CertificateException, SSLException {
+    protected SslContext createServerSslContext() throws CertificateException, SSLException {
         if (SSL) {
             SelfSignedCertificate ssc = new SelfSignedCertificate();
             return SslContext.newServerContext(ssc.certificate(), ssc.privateKey());

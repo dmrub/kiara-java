@@ -25,13 +25,12 @@ import java.util.List;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public class ServerInfo {
-    public List<String> services = new ArrayList<>();
+    public final List<String> services = new ArrayList<>();
     public ProtocolInfo protocol = new ProtocolInfo();
-    public TransportInfo transport = new TransportInfo();
+    public final TransportInfo transport = new TransportInfo();
 
     public void clear() {
-        if (services != null)
-            services.clear();
+        services.clear();
         if (protocol != null)
             protocol.clear();
     }

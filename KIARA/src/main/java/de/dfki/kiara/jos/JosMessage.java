@@ -21,7 +21,6 @@ import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.util.ByteBufferInputStream;
-import de.dfki.kiara.util.HexDump;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;

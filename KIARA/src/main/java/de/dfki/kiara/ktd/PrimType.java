@@ -26,7 +26,7 @@ public class PrimType extends Type {
         super(world, getNameOfPrimTypeKind(kind), kind, 0);
     }
 
-    public static final String getNameOfPrimTypeKind(int kind) {
+    public static String getNameOfPrimTypeKind(int kind) {
         switch (kind) {
             case PrimTypeKind.PRIMTYPE_i8:
                 return "i8";
@@ -75,7 +75,7 @@ public class PrimType extends Type {
         }
     }
 
-    public static final int getByteSizeOfPrimTypeKind(int kind) {
+    public static int getByteSizeOfPrimTypeKind(int kind) {
         switch (kind) {
             // For abstract types function should report size of the internal representation
             case PrimTypeKind.PRIMTYPE_i8:
@@ -124,7 +124,7 @@ public class PrimType extends Type {
         }
     }
 
-    public static final boolean isIntegerPrimTypeKind(int kind) {
+    public static boolean isIntegerPrimTypeKind(int kind) {
         return (kind == PrimTypeKind.PRIMTYPE_i8
                 || kind == PrimTypeKind.PRIMTYPE_u8
                 || kind == PrimTypeKind.PRIMTYPE_i16
@@ -139,7 +139,7 @@ public class PrimType extends Type {
                 || kind == PrimTypeKind.PRIMTYPE_java_long);
     }
 
-    public static final boolean isSignedIntegerPrimTypeKind(int kind) {
+    public static boolean isSignedIntegerPrimTypeKind(int kind) {
         return (kind == PrimTypeKind.PRIMTYPE_i8
                 || kind == PrimTypeKind.PRIMTYPE_i16
                 || kind == PrimTypeKind.PRIMTYPE_i32
@@ -175,11 +175,11 @@ public class PrimType extends Type {
         return getKind() >= PrimTypeKind.FIRST_JAVA_PRIMTYPE;
     }
 
-    public static final PrimType getBooleanType(World world) {
+    public static PrimType getBooleanType(World world) {
         return world.type_boolean();
     }
 
-    public static final PrimType getStringType(World world) {
+    public static PrimType getStringType(World world) {
         return world.type_string();
     }
 

@@ -17,7 +17,6 @@
 package de.dfki.kiara.jsonrpc;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
@@ -29,7 +28,7 @@ import java.io.IOException;
 public class JsonRpcHeaderSerializer extends JsonSerializer<JsonRpcHeader> {
 
     @Override
-    public void serialize(JsonRpcHeader value, JsonGenerator jgen, SerializerProvider sp) throws IOException, JsonProcessingException {
+    public void serialize(JsonRpcHeader value, JsonGenerator jgen, SerializerProvider sp) throws IOException {
         if (value.isRequest()) {
             // header
             jgen.writeStartObject();

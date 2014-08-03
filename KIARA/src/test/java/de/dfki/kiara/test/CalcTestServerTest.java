@@ -23,7 +23,6 @@ import de.dfki.kiara.Service;
 
 import java.io.IOException;
 
-import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

@@ -107,7 +107,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
 
     }
 
-    private static Logger logger = LoggerFactory.getLogger(ServerImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(ServerImpl.class);
 
     public ServerImpl(String host, int port, String configPath) throws IOException, URISyntaxException {
         this.configHost = host;
@@ -274,7 +274,6 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
                     serverInfo.transport.url = uri.toString();
                     serverConfiguration.servers.add(serverInfo);
                 } catch (URISyntaxException ex) {
-                    continue;
                 }
             }
         }

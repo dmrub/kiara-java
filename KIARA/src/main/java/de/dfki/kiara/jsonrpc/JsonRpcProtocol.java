@@ -18,7 +18,6 @@ package de.dfki.kiara.jsonrpc;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -73,7 +72,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
             addDeserializer(Void.TYPE, new JsonDeserializer<Void>() {
 
                 @Override
-                public Void deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+                public Void deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
                     if (jp.getCurrentToken() == JsonToken.VALUE_NULL) {
                         return null;
                     }

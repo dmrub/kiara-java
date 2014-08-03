@@ -17,7 +17,6 @@
 package de.dfki.kiara.jsonrpc;
 
 import de.dfki.kiara.util.MessageDispatcher;
-import de.dfki.kiara.util.Pipeline;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;

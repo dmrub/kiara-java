@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
 public class JsonRpcInvocationHandler extends DefaultInvocationHandler<JsonRpcProtocol> {
 
     public JsonRpcInvocationHandler(Connection connection, InterfaceMapping<?> interfaceMapping, JsonRpcProtocol protocol) {
-        super(connection, interfaceMapping, protocol, new MessageDecoder<JsonRpcProtocol>(protocol));
+        super(connection, interfaceMapping, protocol, new MessageDecoder<>(protocol));
     }
 
     @Override

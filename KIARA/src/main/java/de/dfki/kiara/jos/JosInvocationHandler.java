@@ -39,7 +39,7 @@ import java.lang.reflect.Method;
 public class JosInvocationHandler extends DefaultInvocationHandler<JosProtocol> {
 
     public JosInvocationHandler(Connection connection, InterfaceMapping<?> interfaceMapping, JosProtocol protocol) {
-        super(connection, interfaceMapping, protocol, new MessageDecoder<JosProtocol>(protocol));
+        super(connection, interfaceMapping, protocol, new MessageDecoder<>(protocol));
     }
 
     @Override

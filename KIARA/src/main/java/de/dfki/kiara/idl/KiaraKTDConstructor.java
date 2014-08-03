@@ -185,7 +185,7 @@ public class KiaraKTDConstructor implements KiaraListener {
     }
 
     private static final class Function {
-        public FunctionType type;
+        public final FunctionType type;
 
         public Function() {
             this(null);

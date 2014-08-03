@@ -95,7 +95,7 @@ public class CalcTest {
             }
 
             {
-                CharSequence result = calc.int32ToString_Integer(new Integer(142));
+                CharSequence result = calc.int32ToString_Integer(142);
                 System.out.format("calc.int32ToString: result = %s\n", result);
             }
 

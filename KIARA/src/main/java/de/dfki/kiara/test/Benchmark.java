@@ -20,7 +20,6 @@ import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 
 /**

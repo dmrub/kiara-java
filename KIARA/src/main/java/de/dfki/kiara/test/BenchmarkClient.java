@@ -52,18 +52,8 @@ public class BenchmarkClient {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        String uri;
-        if (args.length > 0) {
-            uri = args[0];
-        } else {
-            uri = "http://localhost:8080/service";
-        }
-
-        System.out.format("Opening connection to %s...\n", uri);
-
-        try (Context context = Kiara.createContext();
-                Connection connection = context.openConnection(uri)) {
+    public static void runClient(Context context, String uri) throws Exception {
+        try (Connection connection = context.openConnection(uri)) {
 
             MethodBinding<Benchmark> binder
                     = new MethodBinding<>(Benchmark.class)
@@ -74,7 +64,7 @@ public class BenchmarkClient {
             RemoteInterface ri = (RemoteInterface) benchmark;
             Connection c = ri.getConnection();
 
-            int numMessages = 10000;
+            final int numMessages = 10000;
 
             sendMessages(20000, benchmark);
             long startTime = System.currentTimeMillis();
@@ -86,7 +76,21 @@ public class BenchmarkClient {
 
             System.out.printf("%n%nAverage latency in microseconds %.3f%n%n%n", latency);
             System.out.println("Finished");
+        }
+    }
 
+    public static void main(String[] args) throws Exception {
+        String uri;
+        if (args.length > 0) {
+            uri = args[0];
+        } else {
+            uri = "http://localhost:8080/service";
+        }
+
+        System.out.format("Opening connection to %s...\n", uri);
+
+        try (Context context = Kiara.createContext()) {
+            runClient(context, uri);
         } finally {
             Kiara.shutdownGracefully();
         }

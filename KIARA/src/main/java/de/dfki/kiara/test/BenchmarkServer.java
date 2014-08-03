@@ -50,6 +50,115 @@ public class BenchmarkServer {
         }
     }
 
+    public static Server runServer(Context context, int port, String protocol) throws Exception {
+
+        /* Create a new service */
+        Service service = context.newService();
+
+        /* Add IDL to the service */
+        service.loadServiceIDLFromString("KIARA",
+                "namespace * benchmark "
+                + " "
+                + "struct MarketDataEntry { "
+                + "u32 mdUpdateAction; "
+                + "u32 mdPriceLevel; "
+                + "double        mdEntryType; "
+                + "u32 openCloseSettleFlag; "
+                + "u32 securityIDSource; "
+                + "u32 securityID; "
+                + "u32 rptSeq; "
+                + "double        mdEntryPx; "
+                + "u32 mdEntryTime; "
+                + "u32          mdEntrySize; " // in original i32
+                + "u32 numberOfOrders; "
+                + "double        tradingSessionID; "
+                + "double        netChgPrevDay; "
+                + "u32 tradeVolume; "
+                + "double        tradeCondition; "
+                + "double        tickDirection; "
+                + "double        quoteCondition; "
+                + "u32 aggressorSide; "
+                + "double        matchEventIndicator; "
+                + ""
+                + "double dummy1; "
+                + "i32 dummy2; "
+                + "} "
+                + ""
+                + "struct MarketData { "
+                + "boolean    isEcho; "
+                + "u32        counter; "
+                + "u32        securityID; "
+                + "double    applVersionID; "
+                + "double    messageType; "
+                + "double    senderCompID; "
+                + "u32       msgSeqNum; "
+                + "u32       sendingTime; "
+                + "u32       tradeDate; "
+                + "array<MarketDataEntry>  mdEntries; "
+                + "} "
+                + ""
+                + "struct RelatedSym { "
+                + "double    symbol; "
+                + "u64       orderQuantity; "
+                + "u32    side; "
+                + "u64    transactTime; "
+                + "u32    quoteType; "
+                + "u32      securityID; "
+                + "u32      securityIDSource; "
+                + "double dummy1; "
+                + "i32 dummy2; "
+                + "} "
+                + "struct QuoteRequest { "
+                + "boolean            isEcho; "
+                + "u32      counter; "
+                + "u32      securityID; "
+                + "double             applVersionID; "
+                + "double             messageType; "
+                + "double             senderCompID; "
+                + "u32      msgSeqNum; "
+                + "u32      sendingTime; "
+                + "double             quoteReqID; "
+                + "array<RelatedSym>        related; "
+                + "} "
+                + ""
+                + "service benchmark { "
+                + "  MarketData sendMarketData(MarketData marketData); "
+                + "  QuoteRequest sendQuoteRequest(QuoteRequest quoteRequest); "
+                + "} "
+        );
+        System.out.printf("Register benchmark.sendMarketData ...%n");
+
+        /* Create new instance of the implementation class */
+        BenchmarkImpl benchmarkImpl = new BenchmarkImpl();
+
+        /* Register methods of the instance with the sepcified IDL service methods
+         *
+         * service.registerServiceFunction(String idlMethodName, Object serviceImpl,
+         *                                 String serviceMethodName)
+         *
+         * service       - valid instance of the Service class
+         * idlMethodName - name of the remote service method specified in the IDL.
+         * serviceImpl   - arbitrary Java object that implements IDL service method
+         * serviceMethodName - name of the Java object method that implements IDL service method
+         */
+        service.registerServiceFunction("benchmark.sendMarketData", benchmarkImpl, "sendMarketData");
+        service.registerServiceFunction("benchmark.sendQuoteRequest", benchmarkImpl, "sendQuoteRequest");
+
+        /*
+         * Create new server and register service
+         */
+        Server server = context.newServer("0.0.0.0", port, "/service");
+
+        //server.addService("/rpc/benchmark", protocol, service);
+        server.addService("tcp://0.0.0.0:53212", protocol, service);
+
+        System.out.printf("Starting server...%n");
+
+        /* Run server */
+        server.run();
+        return server;
+    }
+
     public static void main(String args[]) throws Exception {
         int port;
         String protocol;
@@ -71,111 +180,7 @@ public class BenchmarkServer {
          * the try block
          */
         try (Context context = Kiara.createContext()) {
-
-            /* Create a new service */
-            Service service = context.newService();
-
-            /* Add IDL to the service */
-            service.loadServiceIDLFromString("KIARA",
-                    "namespace * benchmark "
-                    + " "
-                    + "struct MarketDataEntry { "
-                    + "u32 mdUpdateAction; "
-                    + "u32 mdPriceLevel; "
-                    + "double        mdEntryType; "
-                    + "u32 openCloseSettleFlag; "
-                    + "u32 securityIDSource; "
-                    + "u32 securityID; "
-                    + "u32 rptSeq; "
-                    + "double        mdEntryPx; "
-                    + "u32 mdEntryTime; "
-                    + "u32          mdEntrySize; " // in original i32
-                    + "u32 numberOfOrders; "
-                    + "double        tradingSessionID; "
-                    + "double        netChgPrevDay; "
-                    + "u32 tradeVolume; "
-                    + "double        tradeCondition; "
-                    + "double        tickDirection; "
-                    + "double        quoteCondition; "
-                    + "u32 aggressorSide; "
-                    + "double        matchEventIndicator; "
-                    + ""
-                    + "double dummy1; "
-                    + "i32 dummy2; "
-                    + "} "
-                    + ""
-                    + "struct MarketData { "
-                    + "boolean    isEcho; "
-                    + "u32        counter; "
-                    + "u32        securityID; "
-                    + "double    applVersionID; "
-                    + "double    messageType; "
-                    + "double    senderCompID; "
-                    + "u32       msgSeqNum; "
-                    + "u32       sendingTime; "
-                    + "u32       tradeDate; "
-                    + "array<MarketDataEntry>  mdEntries; "
-                    + "} "
-                    + ""
-                    + "struct RelatedSym { "
-                    + "double    symbol; "
-                    + "u64       orderQuantity; "
-                    + "u32    side; "
-                    + "u64    transactTime; "
-                    + "u32    quoteType; "
-                    + "u32      securityID; "
-                    + "u32      securityIDSource; "
-                    + "double dummy1; "
-                    + "i32 dummy2; "
-                    + "} "
-                    + "struct QuoteRequest { "
-                    + "boolean            isEcho; "
-                    + "u32      counter; "
-                    + "u32      securityID; "
-                    + "double             applVersionID; "
-                    + "double             messageType; "
-                    + "double             senderCompID; "
-                    + "u32      msgSeqNum; "
-                    + "u32      sendingTime; "
-                    + "double             quoteReqID; "
-                    + "array<RelatedSym>        related; "
-                    + "} "
-                    + ""
-                    + "service benchmark { "
-                    + "  MarketData sendMarketData(MarketData marketData); "
-                    + "  QuoteRequest sendQuoteRequest(QuoteRequest quoteRequest); "
-                    + "} "
-            );
-            System.out.printf("Register benchmark.sendMarketData ...%n");
-
-            /* Create new instance of the implementation class */
-            BenchmarkImpl benchmarkImpl = new BenchmarkImpl();
-
-            /* Register methods of the instance with the sepcified IDL service methods
-             *
-             * service.registerServiceFunction(String idlMethodName, Object serviceImpl,
-             *                                 String serviceMethodName)
-             *
-             * service       - valid instance of the Service class
-             * idlMethodName - name of the remote service method specified in the IDL.
-             * serviceImpl   - arbitrary Java object that implements IDL service method
-             * serviceMethodName - name of the Java object method that implements IDL service method
-             */
-            service.registerServiceFunction("benchmark.sendMarketData", benchmarkImpl, "sendMarketData");
-            service.registerServiceFunction("benchmark.sendQuoteRequest", benchmarkImpl, "sendQuoteRequest");
-
-            /*
-             * Create new server and register service
-             */
-            Server server = context.newServer("0.0.0.0", port, "/service");
-
-            //server.addService("/rpc/benchmark", protocol, service);
-            server.addService("tcp://0.0.0.0:53212", protocol, service);
-
-            System.out.printf("Starting server...\n");
-
-            /* Run server */
-            server.run();
+            runServer(context, port, protocol);
         } catch (IDLParseException e) {
             System.out.printf("Error: could not parse IDL: %s", e.getMessage());
             System.exit(1);

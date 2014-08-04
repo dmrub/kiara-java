@@ -34,8 +34,10 @@ public class MessageDecoder<PROTOCOL extends Protocol>  implements Pipeline.Hand
 
     @Override
     public Object process(Object input) throws Exception {
+        if (input == null)
+            throw new NullPointerException("input");
         if (!(input instanceof TransportMessage))
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Class: "+input.getClass().toString()+", expected: TransportMessage");
         TransportMessage response = (TransportMessage) input;
         return protocol.createResponseMessageFromData(response.getPayload());
     }

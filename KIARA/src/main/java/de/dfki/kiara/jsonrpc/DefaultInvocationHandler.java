@@ -324,7 +324,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
             pipeline.process(t);
             return true;
         } catch (Exception ex) {
-            logger.error("Pipeline processing failed: {}", ex);
+            logger.error("Pipeline processing failed", ex);
         }
         return true;
     }

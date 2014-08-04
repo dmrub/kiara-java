@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara.test;
+package de.dfki.kiara.example;
 
 import com.google.common.primitives.UnsignedLong;
 import com.google.common.primitives.UnsignedLongs;

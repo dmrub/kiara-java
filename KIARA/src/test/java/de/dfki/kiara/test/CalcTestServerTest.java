@@ -20,6 +20,7 @@ import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.MethodAlreadyBoundException;
 import de.dfki.kiara.Service;
+import de.dfki.kiara.example.CalcTestServer;
 
 import java.io.IOException;
 
@@ -49,12 +50,12 @@ public class CalcTestServerTest {
             service = context.newService();
             service.loadServiceIDLFromString("KIARA",
                     "namespace * calc "
-                            + "service calc { "
-                            + "    i32 add(i32 a, i32 b) "
-                            + "    float addf(float a, float b) "
-                            + "    i32 stringToInt32(string s) "
-                            + "    string int32ToString(i32 i) "
-                            + "} "
+                    + "service calc { "
+                    + "    i32 add(i32 a, i32 b) "
+                    + "    float addf(float a, float b) "
+                    + "    i32 stringToInt32(string s) "
+                    + "    string int32ToString(i32 i) "
+                    + "} "
             );
 
             CalcTestServer.CalcImpl impl = new CalcTestServer.CalcImpl();

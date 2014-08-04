@@ -18,13 +18,11 @@
 package de.dfki.kiara.netty;
 
 import de.dfki.kiara.Handler;
-import de.dfki.kiara.Kiara;
-import de.dfki.kiara.RunningService;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.impl.Global;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.util.internal.logging.InternalLoggerFactory;
@@ -36,27 +34,20 @@ import javax.net.ssl.SSLException;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public abstract class AbstractTransport implements Transport, RunningService {
+public abstract class AbstractTransport implements Transport {
 
     private static final boolean SSL = System.getProperty("ssl") != null;
 
-    private final EventLoopGroup group = new NioEventLoopGroup();
 
     static {
         InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
     }
 
     public AbstractTransport() {
-        Kiara.addRunningService(this);
-    }
-
-    @Override
-    public void shutdownGracefully() {
-        group.shutdownGracefully();
     }
 
     protected final EventLoopGroup getEventLoopGroup() {
-        return group;
+        return Global.transportGroup;
     }
 
     protected SslContext createServerSslContext() throws CertificateException, SSLException {

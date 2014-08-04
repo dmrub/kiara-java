@@ -27,6 +27,8 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.net.ssl.SSLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -34,6 +36,7 @@ import javax.net.ssl.SSLException;
  */
 public class Kiara {
 
+    private static final Logger logger = LoggerFactory.getLogger(Kiara.class);
     private static final List<RunningService> runningServices = new ArrayList<>();
 
     static {
@@ -83,7 +86,9 @@ public class Kiara {
         synchronized (runningServices) {
             tmp = new ArrayList<>(runningServices);
         }
+        logger.info("shutdown {} services", tmp.size());
         for (RunningService s : tmp) {
+            logger.info("shutdown {}", s);
             s.shutdownGracefully();
         }
     }

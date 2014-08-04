@@ -20,6 +20,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.RunningService;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import java.util.concurrent.Executors;
 
 /**
@@ -30,6 +32,7 @@ public class Global {
 
     public static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
     public static final ListeningExecutorService sameThreadExecutor = MoreExecutors.sameThreadExecutor();
+    public static final EventLoopGroup transportGroup = new NioEventLoopGroup();
 
     static {
         Kiara.addRunningService(new RunningService() {
@@ -38,6 +41,7 @@ public class Global {
             public void shutdownGracefully() {
                 executor.shutdown();
                 sameThreadExecutor.shutdown();
+                transportGroup.shutdownGracefully();
             }
         });
     }

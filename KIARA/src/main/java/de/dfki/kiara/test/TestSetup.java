@@ -54,6 +54,7 @@ public abstract class TestSetup<CLIENT_INTERFACE> {
     protected abstract CLIENT_INTERFACE createClient(Connection connection) throws Exception;
 
     public boolean checkConnection(int timeout) {
+        System.out.println("Checking connection...");
         boolean connected = false;
         long currentTime, startTime;
         currentTime = startTime = System.currentTimeMillis();
@@ -64,13 +65,14 @@ public abstract class TestSetup<CLIENT_INTERFACE> {
         } catch (IOException ex) {
             //ex.printStackTrace();
         }
+        System.out.println(connected ? "Connection detected" : "No Connection !");
         return connected;
     }
 
     public CLIENT_INTERFACE start(int timeout) throws Exception {
         serverCtx = Kiara.createContext();
         server = createServer(serverCtx, port, transport, protocol, configPath);
-        System.out.printf("Starting server...%n");
+        System.out.println("Starting server...");
         server.run();
 
         if (!checkConnection(timeout))

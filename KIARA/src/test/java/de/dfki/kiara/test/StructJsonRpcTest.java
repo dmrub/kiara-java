@@ -31,7 +31,7 @@ import static org.junit.Assert.*;
  *
  * @author Shahzad
  */
-public class StructTestServerTest {
+public class StructJsonRpcTest {
 
 
     public static class StructTestImpl {
@@ -200,7 +200,7 @@ public class StructTestServerTest {
 
     @AfterClass
     public static void tearDownClass() {
-        Kiara.shutdownGracefully();
+        //Kiara.shutdownGracefully();
     }
 
     @Before

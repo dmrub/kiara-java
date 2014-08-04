@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLException;
 
 import org.slf4j.Logger;
@@ -115,13 +116,28 @@ public class TransportServerImpl implements TransportServer, RunningService {
             serverEntries.clear();
         }
         for (final ServerEntry serverEntry : tmp) {
-            if (serverEntry.channel != null) {
+            if (serverEntry.channel != null && serverEntry.channel.isOpen()) {
                 serverEntry.channel.close();
             }
         }
 
-        workerGroup.shutdownGracefully();
-        bossGroup.shutdownGracefully();
+        try {
+            if (!workerGroup.isShutdown())
+                workerGroup.shutdownGracefully().get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        try {
+            if (!bossGroup.isShutdown()) {
+                bossGroup.shutdownGracefully().get();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

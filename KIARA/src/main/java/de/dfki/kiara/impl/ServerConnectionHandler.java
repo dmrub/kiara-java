@@ -79,10 +79,12 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
                     requestProcessed = true;
                 }
             } catch (URISyntaxException ex) {
+                logger.error("Error", ex);
                 responseText = ex.toString();
                 contentType = "text/plain; charset=UTF-8";
                 requestProcessed = true;
             } catch (IOException ex) {
+                logger.error("Error", ex);
                 responseText = ex.toString();
                 contentType = "text/plain; charset=UTF-8";
                 requestProcessed = true;
@@ -100,6 +102,7 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
             if (sh != null) {
                 return sh.performCall(request, response);
             } else {
+                logger.error("No service handler for request: {}", request);
                 responseText = "No service handler for request";
                 contentType = "text/plain; charset=UTF-8";
             }

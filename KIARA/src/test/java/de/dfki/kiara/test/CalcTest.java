@@ -148,7 +148,7 @@ public class CalcTest {
 
     @AfterClass
     public static void tearDownClass() throws Exception {
-        Kiara.shutdownGracefully();
+        // Kiara.shutdownGracefully();
     }
 
     @Parameters

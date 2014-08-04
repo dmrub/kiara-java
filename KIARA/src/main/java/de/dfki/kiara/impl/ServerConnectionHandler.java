@@ -67,7 +67,7 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
         // process server configuration request
         if ("http".equalsIgnoreCase(transportName) || "https".equalsIgnoreCase(transportName)) {
             try {
-                URI requestUri = new URI(request.getRequestUri());
+                URI requestUri = new URI(request.getRequestUri()).normalize();
 
                 if (server.getConfigUri().getPath().equals(requestUri.getPath())) {
                     ServerConfiguration config = server.generateServerConfiguration(

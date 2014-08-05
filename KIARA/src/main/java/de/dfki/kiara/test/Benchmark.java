@@ -28,26 +28,12 @@ import java.net.Socket;
  */
 public class Benchmark {
 
-    private static volatile Server server = null;
-
     public static void main(String[] args) throws Exception {
-        final Context c1 = Kiara.createContext();
-
         final int port = 8090;
 
-        Thread t1 = new Thread(new Runnable() {
+        final Context c1 = Kiara.createContext();
 
-            @Override
-            public void run() {
-                try {
-                    server = BenchmarkServer.runServer(c1, port, "jsonrpc");
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
-        t1.start();
-
+        Server server = BenchmarkServer.runServer(c1, port, "jsonrpc");
 
         boolean connected = false;
         while (!connected) {
@@ -63,27 +49,13 @@ public class Benchmark {
         System.out.println("Run measurements...");
 
         final Context c2 = Kiara.createContext();
-        Thread t2 = new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    BenchmarkClient.runClient(c2, "http://localhost:" + port + "/service");
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
-        t2.start();
-        t2.join();
+        BenchmarkClient.runClient(c2, "http://localhost:" + port + "/service");
 
         System.out.println("Shutdown");
 
         server.close();
         c1.close();
         c2.close();
-        t1.join();
-
         Kiara.shutdownGracefully();
     }
 }

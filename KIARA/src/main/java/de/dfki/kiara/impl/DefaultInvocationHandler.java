@@ -15,14 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.dfki.kiara.jsonrpc;
+package de.dfki.kiara.impl;
 
 import com.google.common.base.Function;
 import com.google.common.reflect.AbstractInvocationHandler;
 import com.google.common.util.concurrent.*;
 import de.dfki.kiara.*;
-import de.dfki.kiara.impl.Global;
-import de.dfki.kiara.impl.SpecialMethods;
 import de.dfki.kiara.util.MessageDecoder;
 import de.dfki.kiara.util.MessageDispatcher;
 import de.dfki.kiara.util.Pipeline;

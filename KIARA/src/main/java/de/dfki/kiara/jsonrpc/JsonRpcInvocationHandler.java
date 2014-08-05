@@ -16,6 +16,7 @@
  */
 package de.dfki.kiara.jsonrpc;
 
+import de.dfki.kiara.impl.DefaultInvocationHandler;
 import com.google.common.base.Function;
 import com.google.common.reflect.AbstractInvocationHandler;
 import com.google.common.util.concurrent.AsyncFunction;

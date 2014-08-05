@@ -23,7 +23,7 @@ import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.WrappedRemoteException;
-import de.dfki.kiara.jsonrpc.DefaultInvocationHandler;
+import de.dfki.kiara.impl.DefaultInvocationHandler;
 import de.dfki.kiara.jsonrpc.JsonRpcMessage;
 import de.dfki.kiara.jsonrpc.JsonRpcMessageDispatcher;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;

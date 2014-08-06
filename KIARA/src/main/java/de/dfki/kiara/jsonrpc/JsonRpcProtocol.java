@@ -23,6 +23,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceCodeGen;
@@ -31,7 +33,6 @@ import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageDeserializationException;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RemoteInterface;
-
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
@@ -45,6 +46,8 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     private Connection connection;
     private final AtomicLong nextId;
     private final ObjectMapper objectMapper;
+    private final ObjectReader objectReader;
+    private final ObjectWriter objectWriter;
 
     public Object parseMessageName(JsonNode messageNode) throws IOException {
         JsonNode methodNode = messageNode.get("method");
@@ -94,6 +97,8 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         nextId = new AtomicLong(1);
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(createSerializationModule());
+        objectReader = objectMapper.reader();
+        objectWriter = objectMapper.writer();
     }
 
     public long getNextId() {
@@ -149,6 +154,14 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
 
     public ObjectMapper getObjectMapper() {
         return objectMapper;
+    }
+
+    public ObjectReader getObjectReader() {
+        return objectReader;
+    }
+
+    public ObjectWriter getObjectWriter() {
+        return objectWriter;
     }
 
     public JsonRpcMessage createResponseMessageFromData(JsonNode node) throws IOException {

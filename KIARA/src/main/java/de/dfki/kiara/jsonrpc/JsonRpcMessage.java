@@ -16,17 +16,16 @@
  */
 package de.dfki.kiara.jsonrpc;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageDeserializationException;
 import de.dfki.kiara.Protocol;
-
 import static de.dfki.kiara.jsonrpc.JsonRpcProtocol.parseMessageId;
-
 import de.dfki.kiara.util.ByteBufferInputStream;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -98,7 +97,7 @@ public class JsonRpcMessage implements Message {
                 this.error = errorNode;
                 this.params = errorNode.get("data");
 
-                JsonRpcError jsonRpcError = protocol.getObjectMapper().treeToValue(errorNode, JsonRpcError.class);
+                JsonRpcError jsonRpcError = protocol.getObjectReader().treeToValue(errorNode, JsonRpcError.class);
                 this.response = new Message.ResponseObject(
                         new GenericRemoteException(jsonRpcError.getMessage(), jsonRpcError.getCode(), jsonRpcError.getData()),
                         true);
@@ -108,8 +107,32 @@ public class JsonRpcMessage implements Message {
         this.protocol = protocol;
     }
 
+    private static JsonNode readFromBuffer(JsonRpcProtocol protocol, ByteBuffer data) throws IOException {
+        byte[] array;
+        int arrayOffset;
+        int arrayLength;
+        int oldPos = data.position();
+        if (data.hasArray()) {
+            array = data.array();
+            arrayOffset = data.arrayOffset();
+            arrayLength = data.remaining();
+        } else {
+            array = new byte[data.remaining()];
+            data.get(array);
+            arrayOffset = 0;
+            arrayLength = array.length;
+        }
+        data.position(oldPos);
+
+        JsonNode node;
+        try (JsonParser parser = protocol.getObjectReader().getFactory().createParser(array, arrayOffset, arrayLength)) {
+            node = parser.readValueAsTree();
+        }
+        return node;
+    }
+
     public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind, ByteBuffer data) throws IOException {
-        this(protocol, kind, protocol.getObjectMapper().readTree(new ByteBufferInputStream(data)));
+        this(protocol, kind, readFromBuffer(protocol, data));
     }
 
     /**
@@ -208,7 +231,7 @@ public class JsonRpcMessage implements Message {
                 }
                 JsonRpcHeader header = new JsonRpcHeader(getMethodName(), this.request.args, getId());
 
-                buf = ByteBuffer.wrap(protocol.getObjectMapper().writeValueAsBytes(header));
+                buf = ByteBuffer.wrap(protocol.getObjectWriter().writeValueAsBytes(header));
             }
             break;
             case RESPONSE: {
@@ -217,7 +240,7 @@ public class JsonRpcMessage implements Message {
                 }
                 JsonRpcHeader header = new JsonRpcHeader(this.response.result, getId());
 
-                buf = ByteBuffer.wrap(protocol.getObjectMapper().writeValueAsBytes(header));
+                buf = ByteBuffer.wrap(protocol.getObjectWriter().writeValueAsBytes(header));
             }
             break;
             case EXCEPTION: {
@@ -245,7 +268,7 @@ public class JsonRpcMessage implements Message {
 
                 final JsonRpcError jsonRpcError = new JsonRpcError(code, message, data);
                 final JsonRpcHeader header = new JsonRpcHeader(jsonRpcError, getId());
-                buf = ByteBuffer.wrap(protocol.getObjectMapper().writeValueAsBytes(header));
+                buf = ByteBuffer.wrap(protocol.getObjectWriter().writeValueAsBytes(header));
             }
             break;
         }
@@ -283,7 +306,7 @@ public class JsonRpcMessage implements Message {
 
                 for (int i = 0; i < params.size(); ++i) {
                     try {
-                        args[i] = protocol.getObjectMapper().treeToValue(params.get(i), paramTypes[i]);
+                        args[i] = protocol.getObjectReader().treeToValue(params.get(i), paramTypes[i]);
                     } catch (JsonProcessingException ex) {
                         throw new MessageDeserializationException(ex);
                     }
@@ -308,14 +331,14 @@ public class JsonRpcMessage implements Message {
         if (this.kind == Kind.RESPONSE) {
             try {
                 return new Message.ResponseObject(
-                        protocol.getObjectMapper().treeToValue(this.params, returnType), false);
+                        protocol.getObjectReader().treeToValue(this.params, returnType), false);
             } catch (JsonProcessingException ex) {
                 throw new MessageDeserializationException(ex);
             }
         } else {
             JsonRpcError jsonRpcError;
             try {
-                jsonRpcError = protocol.getObjectMapper().treeToValue(this.error, JsonRpcError.class);
+                jsonRpcError = protocol.getObjectReader().treeToValue(this.error, JsonRpcError.class);
             } catch (JsonProcessingException ex) {
                 throw new MessageDeserializationException(ex);
             }

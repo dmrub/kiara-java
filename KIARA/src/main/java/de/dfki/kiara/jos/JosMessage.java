@@ -143,7 +143,7 @@ public class JosMessage implements Message {
     @Override
     public ByteBuffer getMessageData() throws IOException {
         try (NoCopyByteArrayOutputStream os = new NoCopyByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(os);) {
+                ObjectOutputStream oos = new ObjectOutputStream(os)) {
             switch (getMessageKind()) {
                 case REQUEST: {
                     oos.writeByte(JosProtocol.JOS_REQUEST);

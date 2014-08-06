@@ -16,7 +16,6 @@
  */
 package de.dfki.kiara.http;
 
-import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
@@ -27,9 +26,6 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
 import io.netty.handler.codec.http.HttpResponse;
-import java.net.InetSocketAddress;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 
 /**
  *

@@ -18,7 +18,6 @@
 package de.dfki.kiara;
 
 import com.google.common.base.Function;
-import com.google.common.util.concurrent.Futures;
 
 import java.lang.reflect.Method;
 import java.util.BitSet;
@@ -107,18 +106,6 @@ public class MethodEntry {
                 }
             }
 
-            if (classAndConverters == null) {
-                classAndConverters = new Util.ClassAndConverters(
-                        Util.toClass(genericParamTypes[i]),
-                        new Function<Object, Object>() {
-
-                            @Override
-                            public Object apply(Object input) {
-                                return Futures.immediateFuture(input);
-                            }
-
-                        }, null);
-            }
             serializationParamTypes[i] = classAndConverters.serializationParamType;
             paramConverters[i] = classAndConverters.paramToFutureConverter;
             serializationToParamConverters[i] = classAndConverters.serializationToParamConverter;

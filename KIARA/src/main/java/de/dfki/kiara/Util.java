@@ -80,7 +80,7 @@ public final class Util {
         public final Function<Object, Object> serializationToParamConverter;
 
         public ClassAndConverters(Class<?> paramClass, Function<Object, Object> paramToFutureConverter,
-                                  Function<Object, Object> serializationToParamConverter) {
+                Function<Object, Object> serializationToParamConverter) {
             this.serializationParamType = paramClass;
             this.paramToFutureConverter = paramToFutureConverter;
             this.serializationToParamConverter = serializationToParamConverter;
@@ -119,7 +119,6 @@ public final class Util {
 
     }
 
-
     public static Class<?> dereferenceFutureType(java.lang.reflect.Type type) {
         if (!(type instanceof ParameterizedType)) {
             return null;
@@ -135,12 +134,21 @@ public final class Util {
     }
 
     public static ClassAndConverters getSerializationTypeAndCreateConverters(java.lang.reflect.Type type) {
-        if (!(type instanceof ParameterizedType)) {
-            return null;
+        if (type == null) {
+            throw new NullPointerException("type");
         }
         boolean isFuture = futureTok.isAssignableFrom(type);
-        if (!isFuture) {
-            return null;
+        if (!(type instanceof ParameterizedType) || !isFuture) {
+            return new ClassAndConverters(
+                    toClass(type),
+                    new Function<Object, Object>() {
+
+                        @Override
+                        public Object apply(Object input) {
+                            return Futures.immediateFuture(input);
+                        }
+
+                    }, null);
         }
         boolean isListenableFuture = listenableFutureTok.isAssignableFrom(type);
 

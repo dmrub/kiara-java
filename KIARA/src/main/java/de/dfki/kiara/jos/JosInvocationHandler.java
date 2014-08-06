@@ -16,21 +16,13 @@
  */
 package de.dfki.kiara.jos;
 
-import de.dfki.kiara.impl.*;
-import com.google.common.reflect.AbstractInvocationHandler;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
-import de.dfki.kiara.Util;
-import de.dfki.kiara.WrappedRemoteException;
 import de.dfki.kiara.impl.DefaultInvocationHandler;
-import de.dfki.kiara.jsonrpc.JsonRpcMessage;
-import de.dfki.kiara.jsonrpc.JsonRpcMessageDispatcher;
-import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import de.dfki.kiara.util.MessageDecoder;
 import de.dfki.kiara.util.MessageDispatcher;
 
-import java.lang.reflect.Method;
 
 /**
  *

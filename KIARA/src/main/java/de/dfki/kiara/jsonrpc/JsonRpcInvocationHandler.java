@@ -17,40 +17,11 @@
 package de.dfki.kiara.jsonrpc;
 
 import de.dfki.kiara.impl.DefaultInvocationHandler;
-import com.google.common.base.Function;
-import com.google.common.reflect.AbstractInvocationHandler;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.Connection;
-import de.dfki.kiara.Handler;
 import de.dfki.kiara.InterfaceMapping;
-import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Message;
-import de.dfki.kiara.RunningService;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportConnectionReceiver;
-import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.Util;
-import de.dfki.kiara.WrappedRemoteException;
-import de.dfki.kiara.impl.SpecialMethods;
 import de.dfki.kiara.util.MessageDecoder;
 import de.dfki.kiara.util.MessageDispatcher;
-import de.dfki.kiara.util.Pipeline;
-
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>

@@ -82,7 +82,7 @@ public class MethodEntry {
 
         if (futureParamOfReturnType != null) {
             if (!Util.isListenableFuture(genericReturnType)) {
-                returnTypeConverter = new Util.ConvertFutureToListenableFuture();
+                returnTypeConverter = Util.getFutureToListenableFutureConverter();
             }
         }
 

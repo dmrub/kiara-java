@@ -22,12 +22,13 @@ import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ListenableFuture;
-
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Future;
 
 /**
@@ -39,6 +40,8 @@ public final class Util {
     };
     private static final TypeToken<ListenableFuture<?>> listenableFutureTok = new TypeToken<ListenableFuture<?>>() {
     };
+
+    private static final Map<Class<?>, ClassAndConverters> convCache = new HashMap<>();
 
     private Util() {
 
@@ -98,7 +101,7 @@ public final class Util {
 
     }
 
-    public static class ConvertFutureToListenableFuture implements Function<Object, Object> {
+    private static class ConvertFutureToListenableFuture implements Function<Object, Object> {
 
         @Override
         public Object apply(Object input) {
@@ -108,6 +111,12 @@ public final class Util {
             return JdkFutureAdapters.listenInPoolThread((Future<?>) input);
         }
 
+    }
+
+    private static final Function<Object, Object> futureToListenableFutureConverter = new ConvertFutureToListenableFuture();
+
+    public static Function<Object, Object> getFutureToListenableFutureConverter() {
+        return futureToListenableFutureConverter;
     }
 
     private static class ConvertTypeToListenableFuture implements Function<Object, Object> {
@@ -150,9 +159,21 @@ public final class Util {
 
                     }, null);
         }
-        boolean isListenableFuture = listenableFutureTok.isAssignableFrom(type);
+
+        Class<?> cls = toClass(type);
+        if (cls != null) {
+            ClassAndConverters conv;
+            synchronized (convCache) {
+                conv = convCache.get(cls);
+            }
+            if (conv != null) {
+                return conv;
+            }
+        }
 
         java.lang.reflect.Type paramType = ((ParameterizedType) type).getActualTypeArguments()[0];
+
+        boolean isListenableFuture = listenableFutureTok.isAssignableFrom(type);
         Function<Object, Object> paramConverter = null;
         Function<Object, Object> serializationToParamConverter = null;
         if (!isListenableFuture) {
@@ -169,7 +190,7 @@ public final class Util {
                 paramType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
                 isListenableFuture = listenableFutureTok.isAssignableFrom(paramType);
                 if (!isListenableFuture) {
-                    Function<Object, Object> tmp = new ConvertFutureToListenableFuture();
+                    Function<Object, Object> tmp = getFutureToListenableFutureConverter();
                     if (paramConverter == null) {
                         paramConverter = tmp;
                     } else {
@@ -184,9 +205,16 @@ public final class Util {
                 }
             }
         }
-        return new ClassAndConverters(toClass(paramType),
+
+        ClassAndConverters conv = new ClassAndConverters(toClass(paramType),
                 paramConverter == null ? Functions.<Object>identity() : paramConverter,
                 serializationToParamConverter);
+        if (cls != null) {
+            synchronized (convCache) {
+                convCache.put(cls, conv);
+            }
+        }
+        return conv;
     }
 
     public static Class<?> toClass(java.lang.reflect.Type type) {

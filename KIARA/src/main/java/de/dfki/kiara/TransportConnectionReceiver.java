@@ -43,6 +43,10 @@ public class TransportConnectionReceiver implements Handler<TransportMessage>, T
         this.connection.addResponseHandler(this);
     }
 
+    public void detach() {
+        this.connection.removeResponseHandler(this);
+    }
+
     public TransportConnection getConnection() {
         return connection;
     }

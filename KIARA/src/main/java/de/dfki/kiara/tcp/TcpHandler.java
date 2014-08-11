@@ -175,7 +175,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
-        ctx.flush();
+        // ctx.flush();
     }
 
     @Override
@@ -208,7 +208,9 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
                             public void onSuccess(TransportMessage result) {
                                 TcpBlockMessage responseTransportMessage = (TcpBlockMessage)result;
                                 if (responseTransportMessage.getPayload() != null) {
-                                    logger.debug("RESPONSE CONTENT: {}", Util.bufferToString(responseTransportMessage.getPayload()));
+                                    if (logger.isDebugEnabled()) {
+                                        logger.debug("RESPONSE CONTENT: {}", Util.bufferToString(responseTransportMessage.getPayload()));
+                                    }
                                     ctx.writeAndFlush(responseTransportMessage.getPayload());
                                 } else {
                                     logger.info("NO RESPONSE CONTENT");

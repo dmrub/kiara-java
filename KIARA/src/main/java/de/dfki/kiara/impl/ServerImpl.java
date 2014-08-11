@@ -16,6 +16,7 @@
  */
 package de.dfki.kiara.impl;
 
+import com.google.common.base.Objects;
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.Kiara;
@@ -33,9 +34,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -53,7 +56,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     private final URI configUri;
     private final Set<ServiceImpl> services;
     private final List<TransportAddressAndServiceHandler> serviceHandlers;
-    private final SortedMap<HostAndPort, TransportEntry> transportEntries;
+    private final Map<HostAndPort, TransportEntry> transportEntries;
     private final TransportServer transportServer;
     private final List<ServerConnectionHandler> connectionHandlers;
 
@@ -77,6 +80,23 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
                     : (host).compareTo(o.host));
 
             return cmp == 0 ? Integer.compare(port, o.port) : cmp;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other instanceof HostAndPort) {
+                HostAndPort that = (HostAndPort)other;
+                return Objects.equal(this.host, that.host) && this.port == that.port;
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+             return (host == null ? 0 : host.hashCode()) ^ port;
         }
     }
 
@@ -116,7 +136,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         this.configUri = new URI("http://" + configHost + ":" + Integer.toString(configPort) + "/" + configPath).normalize();
         this.services = new HashSet<>();
         this.serviceHandlers = new ArrayList<>();
-        this.transportEntries = new TreeMap<>();
+        this.transportEntries = new HashMap<>();
         this.transportServer = Kiara.createTransportServer();
         this.connectionHandlers = new ArrayList<>();
         // listen for negotiation connection
@@ -289,7 +309,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
 
     @Override
     public boolean onSuccess(TransportConnection result) {
-        System.out.printf("Opened connection %s, local address %s, remote address %s%n",
+        logger.info("Opened connection {}, local address {}, remote address {}",
                 result, result.getLocalAddress(), result.getRemoteAddress());
         ServiceHandler serviceHandler = findAcceptingServiceHandler(result.getLocalTransportAddress());
         ServerConnectionHandler handler = new ServerConnectionHandler(this, serviceHandler);

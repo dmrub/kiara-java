@@ -98,18 +98,24 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         return Futures.transform(transportResponse, f);
     }
 
-    @Deprecated
-    protected Message performSyncCallOld(Message request, Method method) throws InterruptedException, ExecutionException, IOException {
-        final TransportConnectionReceiver tc = new TransportConnectionReceiver(connection.getTransportConnection());
-        final TransportMessage transportRequest = tc.createRequest();
+    protected Message performSyncCall(Message request, Method method) throws InterruptedException, ExecutionException, IOException {
+        final TransportConnection tc = connection.getTransportConnection();
+        tc.removeResponseHandler(this);
+        final TransportConnectionReceiver tcr = new TransportConnectionReceiver(tc);
+
+        final TransportMessage transportRequest = tcr.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
         transportRequest.setPayload(request.getMessageData());
 
         // send & wait
-        tc.send(transportRequest).get();
+        tcr.send(transportRequest).get();
         // receive
-        ListenableFuture<TransportMessage> responseFuture = tc.receive(null);
+        ListenableFuture<TransportMessage> responseFuture = tcr.receive(null);
         TransportMessage transportResponse = responseFuture.get();
+
+        tcr.detach();
+
+        tc.addResponseHandler(this);
 
         return protocol.createResponseMessageFromData(transportResponse.getPayload());
     }
@@ -249,6 +255,23 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                 };
                 return Futures.transform(futureParams, f);
             } else {
+
+                /* Following code is for testing of synchronous message sending
+
+                if (futureParams == null && methodEntry.futureParamOfReturnType == null) {
+                    final Message request = protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
+                    final Message response = performSyncCall(request, method);
+                    final Message.ResponseObject ro = response.getResponseObject(method.getReturnType());
+                    if (ro.isException) {
+                        if (ro.result instanceof Exception) {
+                            throw (Exception) ro.result;
+                        }
+                        throw new WrappedRemoteException(ro.result);
+                    }
+
+                    return ro.result;
+                }
+                */
 
                 List<Object> params = futureParams != null ? futureParams.get() : Arrays.asList(os);
 

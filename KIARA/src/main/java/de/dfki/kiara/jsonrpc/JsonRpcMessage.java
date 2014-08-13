@@ -315,7 +315,8 @@ public class JsonRpcMessage implements Message {
                 throw new UnsupportedOperationException("Object is not supported as 'params' member");
             }
         }
-        return new RequestObject(methodName, args);
+        this.request = new RequestObject(methodName, args);
+        return this.request;
     }
 
     @Override
@@ -330,8 +331,9 @@ public class JsonRpcMessage implements Message {
 
         if (this.kind == Kind.RESPONSE) {
             try {
-                return new Message.ResponseObject(
+                this.response = new Message.ResponseObject(
                         protocol.getObjectReader().treeToValue(this.params, returnType), false);
+                return this.response;
             } catch (JsonProcessingException ex) {
                 throw new MessageDeserializationException(ex);
             }
@@ -342,9 +344,10 @@ public class JsonRpcMessage implements Message {
             } catch (JsonProcessingException ex) {
                 throw new MessageDeserializationException(ex);
             }
-            return new Message.ResponseObject(
+            this.response = new Message.ResponseObject(
                     new GenericRemoteException(jsonRpcError.getMessage(), jsonRpcError.getCode(), jsonRpcError.getData()),
                     true);
+            return this.response;
         }
     }
 

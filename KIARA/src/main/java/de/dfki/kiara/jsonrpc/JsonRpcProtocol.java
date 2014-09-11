@@ -19,12 +19,7 @@ package de.dfki.kiara.jsonrpc;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceCodeGen;
@@ -97,6 +92,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
         nextId = new AtomicLong(1);
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(createSerializationModule());
+        objectMapper.configure(SerializationFeature.WRITE_ENUMS_USING_INDEX, true);
         objectReader = objectMapper.reader();
         objectWriter = objectMapper.writer();
     }

@@ -55,7 +55,7 @@ public final class MethodBinding<T> {
         }
     }
 
-    public final MethodBinding bind(String idlMethodName, String methodName) throws NoSuchMethodException, SecurityException {
+    public final MethodBinding<T> bind(String idlMethodName, String methodName) throws NoSuchMethodException, SecurityException {
         Method method = uniqueMethodMap.get(methodName);
         if (method == null)
             throw new NoSuchMethodException("No method '"+methodName+"' in class "+interfaceClass.getName());
@@ -65,7 +65,7 @@ public final class MethodBinding<T> {
         return this;
     }
 
-    public final MethodBinding bind(String idlMethodName, String methodName, Class<?>... parameterTypes) throws NoSuchMethodException, SecurityException {
+    public final MethodBinding<T> bind(String idlMethodName, String methodName, Class<?>... parameterTypes) throws NoSuchMethodException, SecurityException {
         Method method = interfaceClass.getMethod(methodName, parameterTypes);
                 if (boundMethods.containsKey(method))
             throw new IllegalArgumentException("Method '"+methodName+"' was already bound");

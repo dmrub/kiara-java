@@ -17,9 +17,13 @@
 
 package de.dfki.kiara.example;
 
-import de.dfki.kiara.*;
-
 import java.util.List;
+
+import de.dfki.kiara.Context;
+import de.dfki.kiara.IDLParseException;
+import de.dfki.kiara.Kiara;
+import de.dfki.kiara.Server;
+import de.dfki.kiara.Service;
 
 /**
  * Created by Dmitri Rubinstein on 9/11/14.
@@ -64,7 +68,7 @@ public class HumanSimServer {
         if (args.length > 0) {
             port = Integer.parseInt(args[0]);
         } else {
-            port = 8080;
+            port = 21002;
         }
         if (args.length > 1) {
             protocol = args[1];

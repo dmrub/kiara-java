@@ -17,11 +17,14 @@
 
 package de.dfki.kiara.example;
 
-import de.dfki.kiara.*;
-
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
+
+import de.dfki.kiara.Connection;
+import de.dfki.kiara.Context;
+import de.dfki.kiara.Kiara;
+import de.dfki.kiara.MethodBinding;
+import de.dfki.kiara.RemoteInterface;
 
 /**
  * Created by Dmitri Rubinstein on 9/11/14.
@@ -38,8 +41,8 @@ public class HumanSimClient {
     }
 
     public static class KeyValuePair {
-        public String key;
-        public String value;
+        private String key;
+        private String value;
 
         public KeyValuePair() {
 
@@ -47,6 +50,22 @@ public class HumanSimClient {
 
         public KeyValuePair(String key, String value) {
             this.key = key;
+            this.value = value;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
             this.value = value;
         }
     }
@@ -64,16 +83,20 @@ public class HumanSimClient {
     public static interface HumanSim {
 
         public int createLocation(String name, float x, float y, float z,
-                                  float locationReachedDistance,
-                                  float preferredAvatarOrientation,
-                                  LocationType type);
+                float locationReachedDistance,
+                float preferredAvatarOrientation,
+                LocationType type);
 
         public int createIntelligentAvatar(String avatarName,
-                                           String implementationType,
-                                           float x,
-                                           float y,
-                                           float z,
-                                           CustomParameter customParameter);
+                String implementationType,
+                float x,
+                float y,
+                float z,
+                CustomParameter customParameter);
+
+        public void setNavMeshParameters(float avatarHeight, float avatarMaxClimb,
+                float avatarRadius, float speed);
+
     }
 
     public static void main(String[] args) throws Exception {
@@ -81,18 +104,18 @@ public class HumanSimClient {
         if (args.length > 0) {
             uri = args[0];
         } else {
-            uri = "http://localhost:8080/service";
+            uri = "http://localhost:21002/service";
         }
 
         System.out.format("Opening connection to %s...\n", uri);
 
         try (Context context = Kiara.createContext();
-             Connection connection = context.openConnection(uri)) {
+                Connection connection = context.openConnection(uri)) {
 
             MethodBinding<HumanSim> binder
-                    = new MethodBinding<>(HumanSim.class)
-                    .bind("HumanSim.createLocation", "createLocation")
-                    .bind("HumanSim.createIntelligentAvatar", "createIntelligentAvatar");
+            = new MethodBinding<>(HumanSim.class)
+            .bind("HumanSim.createLocation", "createLocation")
+            .bind("HumanSim.createIntelligentAvatar", "createIntelligentAvatar");
 
             HumanSim humanSim = connection.generateClientFunctions(binder);
             RemoteInterface ri = (RemoteInterface) humanSim;
@@ -100,14 +123,19 @@ public class HumanSimClient {
 
             {
                 int locationId = humanSim.createLocation("foobar", 0, 1, 0, 2, 1, LocationType.AGENT);
-                System.out.format("humanSim.createLocation: result = %d%n\n", locationId);
+                System.out.format("humanSim.createLocation: result = %d%n", locationId);
             }
 
             {
                 List<KeyValuePair> parameters = new ArrayList<>();
                 parameters.add(new KeyValuePair("KEY", "VALUE"));
                 int avatarId = humanSim.createIntelligentAvatar("myavatar", "impl", 1, 0, 1, new CustomParameter(parameters));
-                System.out.format("humanSim.createIntelligentAvatar: result = %d%n\n", avatarId);
+                System.out.format("humanSim.createIntelligentAvatar: result = %d%n", avatarId);
+            }
+
+            {
+                humanSim.setNavMeshParameters(1, 2, 3, 4);
+                System.out.format("humanSim.setNavMeshParameters: done%n");
             }
 
         } finally {

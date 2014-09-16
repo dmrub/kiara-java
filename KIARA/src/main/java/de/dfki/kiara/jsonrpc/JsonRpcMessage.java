@@ -16,18 +16,19 @@
  */
 package de.dfki.kiara.jsonrpc;
 
-import com.fasterxml.jackson.core.JsonFactory;
+import static de.dfki.kiara.jsonrpc.JsonRpcProtocol.parseMessageId;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageDeserializationException;
 import de.dfki.kiara.Protocol;
-import static de.dfki.kiara.jsonrpc.JsonRpcProtocol.parseMessageId;
-import de.dfki.kiara.util.ByteBufferInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
@@ -55,6 +56,9 @@ public class JsonRpcMessage implements Message {
 
     public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind, JsonNode node) throws IOException {
         this.body = node;
+        if (this.body == null) {
+            throw new IOException("Not a jsonrpc protocol");
+        }
         JsonNode jsonrpcNode = body.get("jsonrpc");
         if (jsonrpcNode == null || !jsonrpcNode.isTextual()) {
             throw new IOException("Not a jsonrpc protocol");

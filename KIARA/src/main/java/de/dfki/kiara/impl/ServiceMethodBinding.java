@@ -16,11 +16,11 @@
  */
 package de.dfki.kiara.impl;
 
-import de.dfki.kiara.ServiceMethodBinder;
-
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+
+import de.dfki.kiara.ServiceMethodBinder;
 
 /**
  * @author shahzad
@@ -42,6 +42,10 @@ public class ServiceMethodBinding {
                 break;
             }
         }
+
+        if (method == null)
+            throw new IllegalArgumentException("No such method "+serviceMethodName+" in class "+serviceClass.getClass().getName());
+
         internalMapping.put(idlMethodName, new ServiceMethodBinder(serviceClass, method));
     }
 
@@ -49,6 +53,8 @@ public class ServiceMethodBinding {
                                   String serviceMethodName, Class<?>[] parameterTypes) throws
             NoSuchMethodException, SecurityException {
         Method method = serviceClass.getClass().getMethod(serviceMethodName, parameterTypes);
+        if (method == null)
+            throw new IllegalArgumentException("No such method "+serviceMethodName+" with parameter types "+parameterTypes+" in class "+serviceClass.getClass().getName());
         internalMapping.put(idlMethodName, new ServiceMethodBinder(serviceClass, method));
     }
 

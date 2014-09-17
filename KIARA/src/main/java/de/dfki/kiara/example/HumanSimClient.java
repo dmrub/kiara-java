@@ -123,6 +123,11 @@ public class HumanSimClient {
             Connection c = ri.getConnection();
 
             {
+                humanSim.setNavMeshParameters(1, 2, 3, 4);
+                System.out.format("humanSim.setNavMeshParameters: done%n");
+            }
+
+            {
                 int locationId = humanSim.createLocation("foobar", 0, 1, 0, 2, 1, LocationType.AGENT);
                 System.out.format("humanSim.createLocation: result = %d%n", locationId);
             }
@@ -132,11 +137,6 @@ public class HumanSimClient {
                 parameters.add(new KeyValuePair("KEY", "VALUE"));
                 int avatarId = humanSim.createIntelligentAvatar("myavatar", "impl", 1, 0, 1, new CustomParameter(parameters));
                 System.out.format("humanSim.createIntelligentAvatar: result = %d%n", avatarId);
-            }
-
-            {
-                humanSim.setNavMeshParameters(1, 2, 3, 4);
-                System.out.format("humanSim.setNavMeshParameters: done%n");
             }
 
         } finally {

@@ -115,7 +115,8 @@ public class HumanSimClient {
             MethodBinding<HumanSim> binder
             = new MethodBinding<>(HumanSim.class)
             .bind("HumanSim.createLocation", "createLocation")
-            .bind("HumanSim.createIntelligentAvatar", "createIntelligentAvatar");
+            .bind("HumanSim.createIntelligentAvatar", "createIntelligentAvatar")
+            .bind("HumanSim.setNavMeshParameters", "setNavMeshParameters");
 
             HumanSim humanSim = connection.generateClientFunctions(binder);
             RemoteInterface ri = (RemoteInterface) humanSim;

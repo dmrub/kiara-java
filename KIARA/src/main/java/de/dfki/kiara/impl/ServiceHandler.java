@@ -17,18 +17,28 @@
 
 package de.dfki.kiara.impl;
 
-import com.google.common.base.Function;
-import com.google.common.util.concurrent.*;
-import de.dfki.kiara.*;
-import de.dfki.kiara.Service;
-import de.dfki.kiara.config.ProtocolInfo;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+
+import com.google.common.base.Function;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
+import de.dfki.kiara.GenericRemoteException;
+import de.dfki.kiara.Message;
+import de.dfki.kiara.MethodEntry;
+import de.dfki.kiara.Protocol;
+import de.dfki.kiara.ProtocolRegistry;
+import de.dfki.kiara.Service;
+import de.dfki.kiara.ServiceMethodBinder;
+import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.config.ProtocolInfo;
 
 /**
  *
@@ -77,54 +87,60 @@ public class ServiceHandler implements Closeable {
 
         final Message requestMessage = protocol.createRequestMessageFromData(request.getPayload());
         final String methodName = requestMessage.getMethodName();
-
         final ServiceMethodBinder serviceMethodBinder = service.getMethodBinding().getServiceMethodBinder(methodName);
-        final MethodEntry methodEntry = serviceMethodBinder.getMethodEntry();
-
-        final List<Object> args = requestMessage.getRequestObject(methodEntry.serializationParamTypes).args;
-
-        if (methodEntry.hasFutureParams) {
-            final int numArgs = args.size();
-            for (int i = 0; i < numArgs; ++i) {
-                if (methodEntry.isFutureParam.get(i)) {
-                    final Function<Object, Object> f = ((Function<Object, Object>) methodEntry.serializationToParamConverters[i]);
-                    args.set(i, f.apply(args.get(i)));
-                }
-            }
-        }
 
         Object result;
         boolean isException = false;
-        try {
-            result = serviceMethodBinder.getBoundMethod().invoke(serviceMethodBinder.getImplementedClass(), args.toArray());
-        } catch (InvocationTargetException ex) {
+
+        if (serviceMethodBinder == null) {
             isException = true;
-            result = ex.getTargetException();
-        }
+            result = new GenericRemoteException("unbound method '"+methodName+"'", GenericRemoteException.METHOD_NOT_FOUND);
+        } else {
+            final MethodEntry methodEntry = serviceMethodBinder.getMethodEntry();
 
-        if (methodEntry.futureParamOfReturnType != null) {
-            ListenableFuture<Object> futureResult =
-                    (ListenableFuture<Object>)(methodEntry.returnTypeConverter != null ?
-                            ((Function<Object, Object>)(methodEntry.returnTypeConverter)).apply(result) :
-                            result);
+            final List<Object> args = requestMessage.getRequestObject(methodEntry.serializationParamTypes).args;
 
-            AsyncFunction<Object, TransportMessage> f = new AsyncFunction<Object, TransportMessage>() {
-
-                @Override
-                public ListenableFuture<TransportMessage> apply(final Object input) throws Exception {
-                    return Global.executor.submit(new Callable<TransportMessage>() {
-
-                        @Override
-                        public TransportMessage call() throws Exception {
-                            Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(input, false));
-                            response.setPayload(responseMessage.getMessageData());
-                            response.setContentType(protocol.getMimeType());
-                            return response;
-                        }
-                    });
+            if (methodEntry.hasFutureParams) {
+                final int numArgs = args.size();
+                for (int i = 0; i < numArgs; ++i) {
+                    if (methodEntry.isFutureParam.get(i)) {
+                        final Function<Object, Object> f = ((Function<Object, Object>) methodEntry.serializationToParamConverters[i]);
+                        args.set(i, f.apply(args.get(i)));
+                    }
                 }
-            };
-            return Futures.transform(futureResult, f);
+            }
+
+            try {
+                result = serviceMethodBinder.getBoundMethod().invoke(serviceMethodBinder.getImplementedClass(), args.toArray());
+            } catch (InvocationTargetException ex) {
+                isException = true;
+                result = ex.getTargetException();
+            }
+
+            if (methodEntry.futureParamOfReturnType != null) {
+                ListenableFuture<Object> futureResult =
+                        (ListenableFuture<Object>)(methodEntry.returnTypeConverter != null ?
+                                ((Function<Object, Object>)(methodEntry.returnTypeConverter)).apply(result) :
+                                result);
+
+                AsyncFunction<Object, TransportMessage> f = new AsyncFunction<Object, TransportMessage>() {
+
+                    @Override
+                    public ListenableFuture<TransportMessage> apply(final Object input) throws Exception {
+                        return Global.executor.submit(new Callable<TransportMessage>() {
+
+                            @Override
+                            public TransportMessage call() throws Exception {
+                                Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(input, false));
+                                response.setPayload(responseMessage.getMessageData());
+                                response.setContentType(protocol.getMimeType());
+                                return response;
+                            }
+                        });
+                    }
+                };
+                return Futures.transform(futureResult, f);
+            }
         }
 
         Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));

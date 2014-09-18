@@ -25,6 +25,11 @@ public class GenericRemoteException extends RemoteException {
     private final int errorCode;
     private final Object errorData;
 
+    // Common error codes (borrowed from JSON RPC spec)
+    public static final int METHOD_NOT_FOUND       = -32601;
+    public static final int INVALID_METHOD_PARAMS  = -32602;
+    public static final int INTERNAL_ERROR         = -32603;
+
     public GenericRemoteException() {
         super();
         errorCode = 0;

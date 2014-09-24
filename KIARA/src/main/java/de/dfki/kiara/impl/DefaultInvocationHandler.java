@@ -18,13 +18,6 @@
 
 package de.dfki.kiara.impl;
 
-import com.google.common.base.Function;
-import com.google.common.reflect.AbstractInvocationHandler;
-import com.google.common.util.concurrent.*;
-import de.dfki.kiara.*;
-import de.dfki.kiara.util.MessageDecoder;
-import de.dfki.kiara.util.MessageDispatcher;
-import de.dfki.kiara.util.Pipeline;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -32,8 +25,32 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Function;
+import com.google.common.reflect.AbstractInvocationHandler;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+
+import de.dfki.kiara.Connection;
+import de.dfki.kiara.Handler;
+import de.dfki.kiara.InterfaceMapping;
+import de.dfki.kiara.Message;
+import de.dfki.kiara.MethodEntry;
+import de.dfki.kiara.Protocol;
+import de.dfki.kiara.RemoteInvocationException;
+import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionReceiver;
+import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.Util;
+import de.dfki.kiara.WrappedRemoteException;
+import de.dfki.kiara.util.MessageDecoder;
+import de.dfki.kiara.util.MessageDispatcher;
+import de.dfki.kiara.util.Pipeline;
 
 /**
  * Created by Dmitri Rubinstein on 30.07.2014.
@@ -309,7 +326,13 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                     return Futures.transform(responseFuture, f);
 
                 } else {
-                    Message response = responseFuture.get();
+
+                    Message response;
+                    try {
+                        response = responseFuture.get();
+                    } catch (Exception ex) {
+                        throw new RemoteInvocationException(ex);
+                    }
                     Message.ResponseObject ro = response.getResponseObject(returnType);
 
                     if (ro.isException) {

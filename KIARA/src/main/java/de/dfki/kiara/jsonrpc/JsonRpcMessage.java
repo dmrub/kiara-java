@@ -24,7 +24,10 @@ import java.nio.ByteBuffer;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.google.common.reflect.TypeToken;
 
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
@@ -287,7 +290,7 @@ public class JsonRpcMessage implements Message {
     }
 
     @Override
-    public RequestObject getRequestObject(Class<?>[] paramTypes) throws MessageDeserializationException {
+    public RequestObject getRequestObject(TypeToken<?>[] paramTypes) throws MessageDeserializationException {
         if (this.request != null) {
             return this.request;
         }
@@ -311,8 +314,13 @@ public class JsonRpcMessage implements Message {
 
                 for (int i = 0; i < params.size(); ++i) {
                     try {
-                        args[i] = protocol.getObjectReader().treeToValue(params.get(i), paramTypes[i]);
+                        final ObjectReader reader = protocol.getObjectReader();
+                        final JsonParser parser = reader.treeAsTokens(params.get(i));
+                        //args[i] = reader.readValue(parser, paramTypes[i].getRawType());
+                        args[i] = reader.withType(paramTypes[i].getType()).readValue(parser);
                     } catch (JsonProcessingException ex) {
+                        throw new MessageDeserializationException(ex);
+                    } catch (IOException ex) {
                         throw new MessageDeserializationException(ex);
                     }
                 }
@@ -325,7 +333,7 @@ public class JsonRpcMessage implements Message {
     }
 
     @Override
-    public ResponseObject getResponseObject(Class<?> returnType) throws MessageDeserializationException {
+    public ResponseObject getResponseObject(TypeToken<?> returnType) throws MessageDeserializationException {
         if (this.response != null) {
             return this.response;
         }
@@ -336,10 +344,14 @@ public class JsonRpcMessage implements Message {
 
         if (this.kind == Kind.RESPONSE) {
             try {
-                this.response = new Message.ResponseObject(
-                        protocol.getObjectReader().treeToValue(this.params, returnType), false);
+                final ObjectReader reader = protocol.getObjectReader();
+                final JsonParser parser = reader.treeAsTokens(this.params);
+                final Object result = reader.withType(returnType.getType()).readValue(parser);
+                this.response = new Message.ResponseObject(result, false);
                 return this.response;
             } catch (JsonProcessingException ex) {
+                throw new MessageDeserializationException(ex);
+            } catch (IOException ex) {
                 throw new MessageDeserializationException(ex);
             }
         } else {

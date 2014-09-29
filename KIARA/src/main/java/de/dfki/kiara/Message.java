@@ -18,6 +18,7 @@
 
 package de.dfki.kiara;
 
+import com.google.common.reflect.TypeToken;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -72,9 +73,9 @@ public interface Message {
      */
     public ByteBuffer getMessageData() throws IOException;
 
-    public RequestObject getRequestObject(Class<?>[] paramTypes) throws MessageDeserializationException;
+    public RequestObject getRequestObject(TypeToken<?>[] paramTypes) throws MessageDeserializationException;
 
-    public ResponseObject getResponseObject(Class<?> returnType) throws MessageDeserializationException;
+    public ResponseObject getResponseObject(TypeToken<?> returnType) throws MessageDeserializationException;
 
     public void setGenericError(int errorCode, String errorMessage);
 }

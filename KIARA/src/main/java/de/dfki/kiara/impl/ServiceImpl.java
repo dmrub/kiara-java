@@ -17,6 +17,7 @@
  */
 package de.dfki.kiara.impl;
 
+import com.google.common.reflect.TypeToken;
 import de.dfki.kiara.*;
 import de.dfki.kiara.idl.IDLWriter;
 import de.dfki.kiara.idl.KiaraKTDConstructor;
@@ -169,8 +170,14 @@ public class ServiceImpl implements Service {
         ServiceMethodBinder serviceMethod = methodBinding.getServiceMethodBinder(methodName);
 
         try {
-        return serviceMethod.getBoundMethod().invoke(
-                serviceMethod.getImplementedClass(), rpcMessage.getRequestObject(serviceMethod.getBoundMethod().getParameterTypes()).args.toArray());
+            java.lang.reflect.Type[] genericParamTypes = serviceMethod.getBoundMethod().getGenericParameterTypes();
+            TypeToken<?>[] paramTypes = new TypeToken<?>[genericParamTypes.length];
+            for (int i = 0; i < genericParamTypes.length; ++i) {
+                paramTypes[i] = TypeToken.of(genericParamTypes[i]);
+            }
+            return serviceMethod.getBoundMethod().invoke(
+                serviceMethod.getImplementedClass(),
+                rpcMessage.getRequestObject(paramTypes).args.toArray());
         } catch (InvocationTargetException ex) {
             throw (Exception)ex.getTargetException();
         }

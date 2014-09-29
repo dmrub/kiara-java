@@ -17,6 +17,7 @@
  */
 package de.dfki.kiara.jos;
 
+import com.google.common.reflect.TypeToken;
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
@@ -175,12 +176,12 @@ public class JosMessage implements Message {
     }
 
     @Override
-    public RequestObject getRequestObject(Class<?>[] paramTypes) {
+    public RequestObject getRequestObject(TypeToken<?>[] paramTypes) {
         return this.request;
     }
 
     @Override
-    public ResponseObject getResponseObject(Class<?> returnType) {
+    public ResponseObject getResponseObject(TypeToken<?> returnType) {
         return this.response;
     }
 

@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.reflect.AbstractInvocationHandler;
+import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -46,7 +47,6 @@ import de.dfki.kiara.RemoteInvocationException;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportConnectionReceiver;
 import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.Util;
 import de.dfki.kiara.WrappedRemoteException;
 import de.dfki.kiara.util.MessageDecoder;
 import de.dfki.kiara.util.MessageDispatcher;
@@ -140,7 +140,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
     public abstract MessageDispatcher createMessageDispatcher(Message request);
 
-    protected ListenableFuture<Message> performAsyncCall(final Message request, final Class<?> returnType, ListeningExecutorService executor) throws IOException {
+    protected ListenableFuture<Message> performAsyncCall(final Message request, final TypeToken<?> returnType, ListeningExecutorService executor) throws IOException {
         final TransportConnection tc = connection.getTransportConnection();
         final TransportMessage transportRequest = tc.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
@@ -225,7 +225,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
             }
         } else if (methodEntry.kind == MethodEntry.MethodKind.DESERIALIZER) {
             Message msg = (Message) os[0];
-            Message.ResponseObject ro = msg.getResponseObject(method.getReturnType());
+            Message.ResponseObject ro = msg.getResponseObject(TypeToken.of(method.getGenericReturnType()));
 
             if (ro.isException) {
                 if (ro.result instanceof Exception) {
@@ -243,7 +243,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                     @Override
                     public ListenableFuture<Object> apply(List<Object> params) throws Exception {
                         final Message request = protocol.createRequestMessage(new Message.RequestObject(idlMethodName, params));
-                        final Class<?> returnType = Util.toClass(methodEntry.futureParamOfReturnType);
+                        final TypeToken<?> returnType = TypeToken.of(methodEntry.futureParamOfReturnType);
                         final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, Global.executor);
                         AsyncFunction<Message, Object> g = new AsyncFunction<Message, Object>() {
 
@@ -295,7 +295,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
                 final Message request = protocol.createRequestMessage(new Message.RequestObject(idlMethodName, params));
 
-                final Class<?> returnType = methodEntry.futureParamOfReturnType != null ? Util.toClass(methodEntry.futureParamOfReturnType) : method.getReturnType();
+                final TypeToken<?> returnType = methodEntry.futureParamOfReturnType != null ? TypeToken.of(methodEntry.futureParamOfReturnType) : TypeToken.of(method.getGenericReturnType());
 
                 final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, Global.executor);
 

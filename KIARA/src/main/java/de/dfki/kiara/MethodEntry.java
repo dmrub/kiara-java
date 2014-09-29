@@ -19,6 +19,7 @@
 package de.dfki.kiara;
 
 import com.google.common.base.Function;
+import com.google.common.reflect.TypeToken;
 
 import java.lang.reflect.Method;
 import java.util.BitSet;
@@ -40,7 +41,7 @@ public class MethodEntry {
     public final Function<?, ?> returnTypeConverter;
     public final boolean hasFutureParams;
     public final boolean hasListeningFutureParams;
-    public final Class<?>[] serializationParamTypes;
+    public final TypeToken<?>[] serializationParamTypes;
     public final Function<?, ?>[] paramConverters;
     public final Function<?, ?>[] serializationToParamConverters;
     public final BitSet isFutureParam;
@@ -89,7 +90,7 @@ public class MethodEntry {
 
         // check for Future
         final java.lang.reflect.Type[] genericParamTypes = method.getGenericParameterTypes();
-        final Class<?>[] serializationParamTypes = new Class<?>[genericParamTypes.length];
+        final TypeToken<?>[] serializationParamTypes = new TypeToken<?>[genericParamTypes.length];
         final Function<?, ?>[] paramConverters = new Function<?, ?>[genericParamTypes.length];
         final Function<?, ?>[] serializationToParamConverters = new Function<?, ?>[genericParamTypes.length];
         final BitSet isFutureParam = new BitSet(genericParamTypes.length);

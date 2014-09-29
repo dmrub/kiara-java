@@ -42,7 +42,7 @@ public final class Util {
     private static final TypeToken<ListenableFuture<?>> listenableFutureTok = new TypeToken<ListenableFuture<?>>() {
     };
 
-    private static final Map<Class<?>, ClassAndConverters> convCache = new HashMap<>();
+    private static final Map<TypeToken<?>, ClassAndConverters> convCache = new HashMap<>();
 
     private Util() {
 
@@ -71,7 +71,7 @@ public final class Util {
         /*
          * Non future type that can be used in serialization
          */
-        public final Class<?> serializationParamType;
+        public final TypeToken<?> serializationParamType;
         /*
          *
          * Converts recursively
@@ -83,7 +83,7 @@ public final class Util {
 
         public final Function<Object, Object> serializationToParamConverter;
 
-        public ClassAndConverters(Class<?> paramClass, Function<Object, Object> paramToFutureConverter,
+        public ClassAndConverters(TypeToken<?> paramClass, Function<Object, Object> paramToFutureConverter,
                 Function<Object, Object> serializationToParamConverter) {
             this.serializationParamType = paramClass;
             this.paramToFutureConverter = paramToFutureConverter;
@@ -129,20 +129,6 @@ public final class Util {
 
     }
 
-    public static Class<?> dereferenceFutureType(java.lang.reflect.Type type) {
-        if (!(type instanceof ParameterizedType)) {
-            return null;
-        }
-        if (!futureTok.isAssignableFrom(type) && !listenableFutureTok.isAssignableFrom(type)) {
-            return null;
-        }
-        java.lang.reflect.Type paramType = ((ParameterizedType) type).getActualTypeArguments()[0];
-        while (futureTok.isAssignableFrom(paramType) || listenableFutureTok.isAssignableFrom(paramType)) {
-            paramType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
-        }
-        return toClass(paramType);
-    }
-
     public static ClassAndConverters getSerializationTypeAndCreateConverters(java.lang.reflect.Type type) {
         if (type == null) {
             throw new NullPointerException("type");
@@ -150,7 +136,7 @@ public final class Util {
         boolean isFuture = futureTok.isAssignableFrom(type);
         if (!(type instanceof ParameterizedType) || !isFuture) {
             return new ClassAndConverters(
-                    toClass(type),
+                    TypeToken.of(type),
                     new Function<Object, Object>() {
 
                         @Override
@@ -161,11 +147,11 @@ public final class Util {
                     }, null);
         }
 
-        Class<?> cls = toClass(type);
-        if (cls != null) {
+        TypeToken<?> typeToken = TypeToken.of(type);
+        if (typeToken != null) {
             ClassAndConverters conv;
             synchronized (convCache) {
-                conv = convCache.get(cls);
+                conv = convCache.get(typeToken);
             }
             if (conv != null) {
                 return conv;
@@ -207,25 +193,15 @@ public final class Util {
             }
         }
 
-        ClassAndConverters conv = new ClassAndConverters(toClass(paramType),
+        ClassAndConverters conv = new ClassAndConverters(TypeToken.of(paramType),
                 paramConverter == null ? Functions.<Object>identity() : paramConverter,
                 serializationToParamConverter);
-        if (cls != null) {
+        if (typeToken != null) {
             synchronized (convCache) {
-                convCache.put(cls, conv);
+                convCache.put(typeToken, conv);
             }
         }
         return conv;
-    }
-
-    public static Class<?> toClass(java.lang.reflect.Type type) {
-        if (type instanceof ParameterizedType) {
-            return (Class<?>) ((ParameterizedType) type).getRawType();
-        }
-        if (type instanceof Class) {
-            return (Class<?>) type;
-        }
-        return null;
     }
 
     public static boolean isSerializer(Method method) {

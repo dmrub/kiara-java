@@ -227,8 +227,8 @@ public class ConnectionImpl implements Connection {
     }
 
     @Override
-    public <T> T generateClientFunctions(MethodBinding<T> methodBinder) {
-        InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinder);
+    public <T> T getServiceInterface(MethodBinding<T> methodBinding) {
+        InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinding);
         Class<T> interfaceClass = mapping.getInterfaceClass();
 
         InterfaceCodeGen codegen = protocol.getInterfaceCodeGen();

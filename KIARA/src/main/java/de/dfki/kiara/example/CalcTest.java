@@ -66,7 +66,7 @@ public class CalcTest {
                     .bind("calc.stringToInt32", "stringToInt32_CharSequence")
                     .bind("calc.int32ToString", "int32ToString_Integer");
 
-            Calc calc = connection.generateClientFunctions(binder);
+            Calc calc = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) calc;
             Connection c = ri.getConnection();
 

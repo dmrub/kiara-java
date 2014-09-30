@@ -126,7 +126,7 @@ public class StructTest {
                     .bind("StructTest.getLocation", "getLocation")
                     .bind("StructTest.throwException", "throwException");
 
-            StructTestIface structTest = connection.generateClientFunctions(binder);
+            StructTestIface structTest = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) structTest;
             Connection c = ri.getConnection();
 

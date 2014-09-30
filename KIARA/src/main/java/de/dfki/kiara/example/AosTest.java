@@ -114,7 +114,7 @@ public class AosTest {
                     .bind("aostest.setLocations", "setLocations")
                     .bind("aostest.getLocations", "getLocations");
 
-            GetSetLocations getSetLocations = connection.generateClientFunctions(binder);
+            GetSetLocations getSetLocations = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) getSetLocations;
             Connection c = ri.getConnection();
 

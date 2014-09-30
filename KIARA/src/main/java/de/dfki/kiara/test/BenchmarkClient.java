@@ -61,7 +61,7 @@ public class BenchmarkClient {
                     .bind("benchmark.sendMarketData", "sendMarketData")
                     .bind("benchmark.sendQuoteRequest", "sendQuoteRequest");
 
-            Benchmark benchmark = connection.generateClientFunctions(binder);
+            Benchmark benchmark = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) benchmark;
             Connection c = ri.getConnection();
 

@@ -86,7 +86,7 @@ public class BasetypeTest {
                     .bind("basetype.send_double", "send_double")
                     .bind("basetype.send_string", "send_string");
 
-            Basetype basetype = connection.generateClientFunctions(binder);
+            Basetype basetype = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) basetype;
             Connection c = ri.getConnection();
 

@@ -129,7 +129,7 @@ public class CalcTest {
                     .bind("calc.stringToInt32", "stringToInt32_CharSequence")
                     .bind("calc.int32ToString", "int32ToString_Integer");
 
-            return connection.generateClientFunctions(binder);
+            return connection.getServiceInterface(binder);
         }
     }
 

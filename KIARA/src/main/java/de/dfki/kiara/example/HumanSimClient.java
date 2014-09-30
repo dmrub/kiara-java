@@ -119,7 +119,7 @@ public class HumanSimClient {
             .bind("HumanSim.createIntelligentAvatar", "createIntelligentAvatar")
             .bind("HumanSim.setNavMeshParameters", "setNavMeshParameters");
 
-            HumanSim humanSim = connection.generateClientFunctions(binder);
+            HumanSim humanSim = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) humanSim;
             Connection c = ri.getConnection();
 

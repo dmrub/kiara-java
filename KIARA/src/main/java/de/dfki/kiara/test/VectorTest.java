@@ -67,7 +67,7 @@ public class VectorTest {
                     = new MethodBinding<>(Example.class)
                     .bind("example.addVectors", "addVectors");
 
-            Example example = connection.generateClientFunctions(binder);
+            Example example = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) example;
             Connection c = ri.getConnection();
 

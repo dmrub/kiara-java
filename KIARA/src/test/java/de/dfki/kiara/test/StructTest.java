@@ -285,7 +285,7 @@ public class StructTest {
                     .bind("StructTest.getLocation", "getLocation")
                     .bind("StructTest.throwException", "throwException");
 
-            return connection.generateClientFunctions(binder);
+            return connection.getServiceInterface(binder);
         }
     }
 

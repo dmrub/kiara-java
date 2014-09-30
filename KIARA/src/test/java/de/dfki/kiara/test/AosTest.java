@@ -247,7 +247,7 @@ public class AosTest {
                     .bind("aostest.setLocations", "setLocations")
                     .bind("aostest.getLocations", "getLocations");
 
-            return connection.generateClientFunctions(binder);
+            return connection.getServiceInterface(binder);
         }
     }
 

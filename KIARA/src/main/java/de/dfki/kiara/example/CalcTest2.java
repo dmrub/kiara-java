@@ -62,7 +62,7 @@ public class CalcTest2 {
                     .bind("calc.add", "add_serializer")
                     .bind("calc.add", "add_deserializer");
 
-            Calc calc = connection.generateClientFunctions(binder);
+            Calc calc = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) calc;
             Connection conn = ri.getConnection();
             Message msg = calc.add_serializer(10, 12);

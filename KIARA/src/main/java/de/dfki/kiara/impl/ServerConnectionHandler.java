@@ -19,10 +19,7 @@ package de.dfki.kiara.impl;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import de.dfki.kiara.RequestHandler;
-import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.*;
 import de.dfki.kiara.config.ServerConfiguration;
 
 import java.io.IOException;
@@ -38,20 +35,31 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServerConnectionHandler implements RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> {
+public class ServerConnectionHandler implements RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>, Connection {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerConnectionHandler.class);
 
     private final ServerImpl server;
+    private final TransportConnection transportConnection;
     private final ServiceHandler serviceHandler;
 
-    public ServerConnectionHandler(ServerImpl server, ServiceHandler serviceHandler) {
+    public ServerConnectionHandler(ServerImpl server, TransportConnection transportConnection, ServiceHandler serviceHandler) {
         this.server = server;
+        this.transportConnection = transportConnection;
         this.serviceHandler = serviceHandler;
     }
 
     public ServiceHandler getServiceHandler() {
         return serviceHandler;
+    }
+
+    public TransportConnection getTransportConnection() {
+        return transportConnection;
+    }
+
+    @Override
+    public <T> T getServiceInterface(MethodBinding<T> methodBinding) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
@@ -121,4 +129,8 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
         return Futures.immediateFuture(response);
     }
 
+    @Override
+    public void close() throws IOException {
+        transportConnection.close();
+    }
 }

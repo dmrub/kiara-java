@@ -18,10 +18,12 @@
 package de.dfki.kiara.impl;
 
 import com.google.common.base.Objects;
+import de.dfki.kiara.Connection;
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
+import de.dfki.kiara.ServerEventListener;
 import de.dfki.kiara.Service;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
@@ -41,8 +43,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +60,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     private final Map<HostAndPort, TransportEntry> transportEntries;
     private final TransportServer transportServer;
     private final List<ServerConnectionHandler> connectionHandlers;
+    private final List<ServerEventListener> eventListeners;
 
     private static class HostAndPort implements Comparable<HostAndPort> {
 
@@ -140,6 +141,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         this.transportEntries = new HashMap<>();
         this.transportServer = Kiara.createTransportServer();
         this.connectionHandlers = new ArrayList<>();
+        this.eventListeners = new ArrayList<>();
         // listen for negotiation connection
         addPortListener(configHost, configPort, "http");
     }
@@ -313,9 +315,11 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         logger.info("Opened connection {}, local address {}, remote address {}",
                 result, result.getLocalAddress(), result.getRemoteAddress());
         ServiceHandler serviceHandler = findAcceptingServiceHandler(result.getLocalTransportAddress());
-        ServerConnectionHandler handler = new ServerConnectionHandler(this, serviceHandler);
+        ServerConnectionHandler handler = new ServerConnectionHandler(this, result, serviceHandler);
+        System.err.println("service handler : "+serviceHandler); //???DEBUG
         result.addRequestHandler(handler);
         connectionHandlers.add(handler);
+        fireClientConnectionOpened(handler);
         return true;
     }
 
@@ -323,6 +327,40 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     public boolean onFailure(Throwable t) {
         logger.error("Could not open connection", t);
         return true;
+    }
+
+    @Override
+    public void addEventListener(ServerEventListener listener) {
+        if (listener == null)
+            throw new NullPointerException("listener");
+        synchronized (eventListeners) {
+            eventListeners.add(listener);
+        }
+    }
+
+    @Override
+    public void removeEventListener(ServerEventListener listener) {
+        if (listener == null)
+            throw new NullPointerException("listener");
+        synchronized (eventListeners) {
+            eventListeners.remove(listener);
+        }
+    }
+
+    void fireClientConnectionOpened(Connection connection) {
+        synchronized (eventListeners) {
+            for (ServerEventListener listener : eventListeners) {
+                listener.onClientConnectionOpened(connection);
+            }
+        }
+    }
+
+    void fireClientConnectionClosed(Connection connection) {
+        synchronized (eventListeners) {
+            for (ServerEventListener listener : eventListeners) {
+                listener.onClientConnectionClosed(connection);
+            }
+        }
     }
 
 }

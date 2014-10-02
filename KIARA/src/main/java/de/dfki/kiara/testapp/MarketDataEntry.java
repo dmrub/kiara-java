@@ -15,28 +15,31 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
+package de.dfki.kiara.testapp;
 
-package de.dfki.kiara.test;
+import java.io.Serializable;
 
-import de.dfki.kiara.util.URILoader;
-import java.io.IOException;
-import java.net.URISyntaxException;
+public class MarketDataEntry implements Serializable {
 
-/**
- *
- * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
- */
-public class LoadURI {
-    public static void main(String[] args) {
-        try {
-            byte[] data = URILoader.load("https://localhost:8080/service");
-            System.out.println(new String(data, "UTF-8"));
-        } catch (URISyntaxException ex) {
-            System.err.println("URISyntaxException: ");
-            ex.printStackTrace();
-        } catch (IOException ex) {
-            System.err.println("IOException: ");
-            ex.printStackTrace();
-        }
-    }
+    public int mdUpdateAction;
+    public int mdPriceLevel;
+    public double mdEntryType;
+    public int openCloseSettleFlag;
+    public int securityIDSource;
+    public int securityID;
+    public int rptSeq;
+    public double mdEntryPx;
+    public int mdEntryTime;
+    public int mdEntrySize;  // in original i32
+    public int numberOfOrders;
+    public double tradingSessionID;
+    public double netChgPrevDay;
+    public int tradeVolume;
+    public double tradeCondition;
+    public double tickDirection;
+    public double quoteCondition;
+    public int aggressorSide;
+    public double matchEventIndicator;
+    public double dummy1;
+    public int dummy2;
 }

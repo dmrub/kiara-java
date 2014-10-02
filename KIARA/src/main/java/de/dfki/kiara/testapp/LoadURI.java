@@ -15,23 +15,28 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara.test;
 
-import java.io.Serializable;
+package de.dfki.kiara.testapp;
+
+import de.dfki.kiara.util.URILoader;
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 /**
  *
- * @author Shahzad
+ * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class RelatedSym implements Serializable {
-
-    public double symbol;
-    public long orderQuantity;
-    public int side;
-    public long transactTime;
-    public int quoteType;
-    public int securityID;
-    public int securityIDSource;
-    public double dummy1;
-    public int dummy2;
+public class LoadURI {
+    public static void main(String[] args) {
+        try {
+            byte[] data = URILoader.load("https://localhost:8080/service");
+            System.out.println(new String(data, "UTF-8"));
+        } catch (URISyntaxException ex) {
+            System.err.println("URISyntaxException: ");
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            System.err.println("IOException: ");
+            ex.printStackTrace();
+        }
+    }
 }

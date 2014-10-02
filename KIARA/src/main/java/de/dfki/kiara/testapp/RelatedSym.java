@@ -15,25 +15,23 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara.test;
+package de.dfki.kiara.testapp;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  *
  * @author Shahzad
  */
-public class QuoteRequest implements Serializable {
+public class RelatedSym implements Serializable {
 
-    public boolean isEcho;
-    public int counter;
+    public double symbol;
+    public long orderQuantity;
+    public int side;
+    public long transactTime;
+    public int quoteType;
     public int securityID;
-    public double applVersionID;
-    public double messageType;
-    public double senderCompID;
-    public int msgSeqNum;
-    public int sendingTime;
-    public double quoteReqID;
-    public List<RelatedSym> related;
+    public int securityIDSource;
+    public double dummy1;
+    public int dummy2;
 }

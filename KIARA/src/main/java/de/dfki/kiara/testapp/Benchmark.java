@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara.test;
+package de.dfki.kiara.testapp;
 
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;

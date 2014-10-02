@@ -89,7 +89,9 @@ public class Module extends KTDObject {
 
         this.namespace.bindType("Encrypted", world.getEncryptedAnnotation());
 
-        //this.namespace.bindType("Oneway", world.getOnewayAnnotation());
+        this.namespace.bindType("Oneway", world.getOnewayAnnotation());
+
+        this.namespace.bindType("Callback", world.getCallbackAnnotation());
     }
 
     public final Namespace getNamespace() {

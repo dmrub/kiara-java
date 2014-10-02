@@ -57,6 +57,7 @@ public final class World {
 
     private final StructType encryptedAnnotation;
     private final StructType onewayAnnotation;
+    private final StructType callbackAnnotation;
 
     public World() {
         objects = new HashMap<>();
@@ -103,6 +104,11 @@ public final class World {
         {
             onewayAnnotation = StructType.create(this, "Oneway", 0);
             onewayAnnotation.setAttributeValue(new AnnotationTypeAttr(true));
+        }
+
+        {
+            callbackAnnotation = StructType.create(this, "Callback", 0);
+            callbackAnnotation.setAttributeValue(new AnnotationTypeAttr(true));
         }
 
     }
@@ -220,6 +226,10 @@ public final class World {
 
     public final StructType getOnewayAnnotation() {
         return onewayAnnotation;
+    }
+
+    public StructType getCallbackAnnotation() {
+        return callbackAnnotation;
     }
 
     public <T extends KTDObject> T getOrCreate(Class<T> cls, T val) {

@@ -15,17 +15,25 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
+package de.dfki.kiara.impl;
 
-package de.dfki.kiara;
+import de.dfki.kiara.TransportAddress;
 
 /**
- *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface TransportAddress {
-    public Transport getTransport();
-    public int getPort();
-    public String getHostName();
-    public boolean acceptsConnection(TransportAddress address);
-    public boolean acceptsTransportConnection(TransportAddress address);
+class TransportAddressAndServiceHandler {
+    public final TransportAddress transportAddress;
+    public ServiceHandler serviceHandler;
+
+    public TransportAddressAndServiceHandler(TransportAddressAndServiceHandler other) {
+        this.transportAddress = other.transportAddress;
+        this.serviceHandler = other.serviceHandler;
+    }
+
+    public TransportAddressAndServiceHandler(TransportAddress transportAddress, ServiceHandler serviceHandler) {
+        this.transportAddress = transportAddress;
+        this.serviceHandler = serviceHandler;
+    }
+
 }

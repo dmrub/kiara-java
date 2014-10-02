@@ -193,7 +193,7 @@ public class HttpAddress implements TransportAddress {
     }
 
     @Override
-    public boolean acceptConnection(TransportAddress transportAddress) {
+    public boolean acceptsTransportConnection(TransportAddress transportAddress) {
         if (transportAddress == null) {
             throw new NullPointerException("transportAddress");
         }
@@ -214,6 +214,17 @@ public class HttpAddress implements TransportAddress {
         if (other.getPort() != getPort()) {
             return false;
         }
+
+        return true;
+    }
+
+    @Override
+    public boolean acceptsConnection(TransportAddress transportAddress) {
+        if (!acceptsTransportConnection(transportAddress)) {
+            return false;
+        }
+
+        HttpAddress other = (HttpAddress) transportAddress;
 
         final String otherPath = other.getPath();
         final String thisPath = getPath();
@@ -248,4 +259,5 @@ public class HttpAddress implements TransportAddress {
     public String toString() {
         return getTransport().getName() + "://" + hostName + ":" + port + path;
     }
+
 }

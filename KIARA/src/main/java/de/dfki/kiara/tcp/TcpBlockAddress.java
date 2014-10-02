@@ -82,7 +82,7 @@ public class TcpBlockAddress implements TransportAddress {
     }
 
     @Override
-    public boolean acceptConnection(TransportAddress transportAddress) {
+    public boolean acceptsTransportConnection(TransportAddress transportAddress) {
         if (transportAddress == null) {
             throw new NullPointerException("transportAddress");
         }
@@ -105,6 +105,12 @@ public class TcpBlockAddress implements TransportAddress {
         }
 
         return true;
+    }
+
+
+    @Override
+    public boolean acceptsConnection(TransportAddress transportAddress) {
+        return acceptsTransportConnection(transportAddress);
     }
 
     @Override

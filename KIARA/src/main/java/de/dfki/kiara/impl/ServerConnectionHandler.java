@@ -28,6 +28,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,18 +42,19 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
 
     private final ServerImpl server;
     private final TransportConnection transportConnection;
-    private final ServiceHandler serviceHandler;
+    private final List<TransportAddressAndServiceHandler> serviceHandlers;
 
-    public ServerConnectionHandler(ServerImpl server, TransportConnection transportConnection, ServiceHandler serviceHandler) {
+    public ServerConnectionHandler(ServerImpl server, TransportConnection transportConnection, List<TransportAddressAndServiceHandler> serviceHandlers) {
         this.server = server;
         this.transportConnection = transportConnection;
-        this.serviceHandler = serviceHandler;
+        this.serviceHandlers = serviceHandlers;
     }
 
-    public ServiceHandler getServiceHandler() {
-        return serviceHandler;
+    public List<TransportAddressAndServiceHandler> getServiceHandlers() {
+        return serviceHandlers;
     }
 
+    @Override
     public TransportConnection getTransportConnection() {
         return transportConnection;
     }
@@ -96,11 +98,16 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
         }
 
         if (!requestProcessed) {
-            ServiceHandler sh;
-            if (serviceHandler == null || transport.isAddressContainsRequestPath()) {
-                sh = server.findAcceptingServiceHandler(request.getLocalTransportAddress());
-            } else {
-                sh = serviceHandler;
+            ServiceHandler sh = null;
+            if (serviceHandlers.size() > 1 || transport.isAddressContainsRequestPath()) {
+                final TransportAddress localTransportAddress = request.getLocalTransportAddress();
+                for (TransportAddressAndServiceHandler element : serviceHandlers) {
+                    if (element.transportAddress.acceptsConnection(localTransportAddress)) {
+                        sh = element.serviceHandler;
+                    }
+                }
+            } else if (serviceHandlers.size() == 1) {
+                sh = serviceHandlers.get(0).serviceHandler;
             }
 
             if (sh != null) {

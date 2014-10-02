@@ -102,16 +102,6 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         }
     }
 
-    private static class TransportAddressAndServiceHandler {
-
-        public final TransportAddress transportAddress;
-        public ServiceHandler serviceHandler;
-
-        public TransportAddressAndServiceHandler(TransportAddress transportAddress, ServiceHandler serviceHandler) {
-            this.transportAddress = transportAddress;
-            this.serviceHandler = serviceHandler;
-        }
-    }
 
     private static class TransportEntry {
 
@@ -270,12 +260,24 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     public ServiceHandler findAcceptingServiceHandler(TransportAddress transportAddress) {
         synchronized (serviceHandlers) {
             for (TransportAddressAndServiceHandler element : serviceHandlers) {
-                if (element.transportAddress.acceptConnection(transportAddress)) {
+                if (element.transportAddress.acceptsConnection(transportAddress)) {
                     return element.serviceHandler;
                 }
             }
         }
         return null;
+    }
+
+    private List<TransportAddressAndServiceHandler> findAllServiceHandlers(TransportAddress transportAddress) {
+        List<TransportAddressAndServiceHandler> handlers = new ArrayList<>();
+        synchronized (serviceHandlers) {
+            for (TransportAddressAndServiceHandler element : serviceHandlers) {
+                if (element.transportAddress.acceptsTransportConnection(transportAddress)) {
+                    handlers.add(new TransportAddressAndServiceHandler(element));
+                }
+            }
+        }
+        return handlers;
     }
 
     public ServerConfiguration generateServerConfiguration(String localHostName, String remoteHostName) {
@@ -314,8 +316,8 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     public boolean onSuccess(TransportConnection result) {
         logger.info("Opened connection {}, local address {}, remote address {}",
                 result, result.getLocalAddress(), result.getRemoteAddress());
-        ServiceHandler serviceHandler = findAcceptingServiceHandler(result.getLocalTransportAddress());
-        ServerConnectionHandler handler = new ServerConnectionHandler(this, result, serviceHandler);
+        List<TransportAddressAndServiceHandler> serviceHandlers = findAllServiceHandlers(result.getLocalTransportAddress());
+        ServerConnectionHandler handler = new ServerConnectionHandler(this, result, serviceHandlers);
         result.addRequestHandler(handler);
         connectionHandlers.add(handler);
         fireClientConnectionOpened(handler);

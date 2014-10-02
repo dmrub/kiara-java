@@ -195,8 +195,8 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
         InterfaceMapping<?> mapping = getInterfaceMapping();
 
-        final String idlMethodName = mapping.getIDLMethodName(method);
-        if (idlMethodName == null) {
+        final String idlFunctionName = mapping.getIDLMethodName(method);
+        if (idlFunctionName == null) {
             throw new UnsupportedOperationException("Unbound method: " + method);
         }
 
@@ -219,9 +219,9 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
         if (methodEntry.kind == MethodEntry.MethodKind.SERIALIZER) {
             if (futureParams != null) {
-                return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, futureParams.get()));
+                return protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, futureParams.get()));
             } else {
-                return protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
+                return protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, os));
             }
         } else if (methodEntry.kind == MethodEntry.MethodKind.DESERIALIZER) {
             Message msg = (Message) os[0];
@@ -242,7 +242,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
                     @Override
                     public ListenableFuture<Object> apply(List<Object> params) throws Exception {
-                        final Message request = protocol.createRequestMessage(new Message.RequestObject(idlMethodName, params));
+                        final Message request = protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, params));
                         final TypeToken<?> returnType = TypeToken.of(methodEntry.futureParamOfReturnType);
                         final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, Global.executor);
                         AsyncFunction<Message, Object> g = new AsyncFunction<Message, Object>() {
@@ -277,7 +277,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                 /* Following code is for testing of synchronous message sending
 
                 if (futureParams == null && methodEntry.futureParamOfReturnType == null) {
-                    final Message request = protocol.createRequestMessage(new Message.RequestObject(idlMethodName, os));
+                    final Message request = protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, os));
                     final Message response = performSyncCall(request, method);
                     final Message.ResponseObject ro = response.getResponseObject(method.getReturnType());
                     if (ro.isException) {
@@ -293,7 +293,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
                 List<Object> params = futureParams != null ? futureParams.get() : Arrays.asList(os);
 
-                final Message request = protocol.createRequestMessage(new Message.RequestObject(idlMethodName, params));
+                final Message request = protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, params));
 
                 final TypeToken<?> returnType = methodEntry.futureParamOfReturnType != null ? TypeToken.of(methodEntry.futureParamOfReturnType) : TypeToken.of(method.getGenericReturnType());
 

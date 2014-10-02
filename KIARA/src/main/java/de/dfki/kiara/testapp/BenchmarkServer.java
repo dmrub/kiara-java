@@ -134,11 +134,11 @@ public class BenchmarkServer {
 
         /* Register methods of the instance with the sepcified IDL service methods
          *
-         * service.registerServiceFunction(String idlMethodName, Object serviceImpl,
+         * service.registerServiceFunction(String idlFunctionName, Object serviceImpl,
          *                                 String serviceMethodName)
          *
          * service       - valid instance of the Service class
-         * idlMethodName - name of the remote service method specified in the IDL.
+         * idlFunctionName - name of the remote service method specified in the IDL.
          * serviceImpl   - arbitrary Java object that implements IDL service method
          * serviceMethodName - name of the Java object method that implements IDL service method
          */

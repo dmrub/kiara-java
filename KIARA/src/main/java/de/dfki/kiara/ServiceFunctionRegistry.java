@@ -17,19 +17,20 @@
  */
 package de.dfki.kiara;
 
-import java.nio.ByteBuffer;
-
 /**
  *
- * @author shahzad
+ * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Service extends ServiceFunctionRegistry {
+public interface ServiceFunctionRegistry {
 
-    public void loadIDL(String fileName);
+    public void registerServiceFunction(String idlFunctionName, Object serviceImpl,
+            String serviceMethodName) throws
+            NoSuchIDLFunctionException, MethodAlreadyBoundException, NoSuchMethodException, SecurityException;
 
-    public void loadServiceIDLFromString(String idlLanguage, String idlContents) throws IDLParseException;
+    public void registerServiceFunction(String idlFunctionName, Object serviceImpl,
+            String serviceMethodName, Class<?>... parameterTypes) throws
+            NoSuchIDLFunctionException, MethodAlreadyBoundException, NoSuchMethodException, SecurityException;
 
-    public String getIDLContents();
+    public void unregisterServiceFunction(String idlFunctionName) throws NoSuchIDLFunctionException;
 
-    public Object dbgSimulateCall(ByteBuffer payload) throws Exception;
 }

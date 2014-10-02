@@ -18,13 +18,10 @@
 
 package de.dfki.kiara;
 
-import java.io.Closeable;
-
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Connection extends Closeable {
-    public TransportConnection getTransportConnection();
-    public <T> T getServiceInterface(MethodBinding<T> methodBinding);
+public interface Connection extends ConnectionBase, ServiceFunctionRegistry, ServiceInterfaceProvider {
+
 }

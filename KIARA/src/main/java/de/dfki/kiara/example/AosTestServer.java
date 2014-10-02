@@ -17,11 +17,11 @@
  */
 package de.dfki.kiara.example;
 
-import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.IDLParseException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
+import de.dfki.kiara.ServerConnection;
 import de.dfki.kiara.ServerEventListener;
 import de.dfki.kiara.Service;
 import java.util.List;
@@ -91,11 +91,11 @@ public class AosTestServer {
 
             /* Register methods of the instance with the sepcified IDL service methods
              *
-             * service.registerServiceFunction(String idlMethodName, Object serviceImpl,
+             * service.registerServiceFunction(String idlFunctionName, Object serviceImpl,
              *                                 String serviceMethodName)
              *
              * service       - valid instance of the Service class
-             * idlMethodName - name of the remote service method specified in the IDL.
+             * idlFunctionName - name of the remote service method specified in the IDL.
              * serviceImpl   - arbitrary Java object that implements IDL service method
              * serviceMethodName - name of the Java object method that implements IDL service method
              */
@@ -117,7 +117,7 @@ public class AosTestServer {
             server.addEventListener(new ServerEventListener() {
 
                 @Override
-                public void onClientConnectionOpened(Connection connection) {
+                public void onClientConnectionOpened(ServerConnection connection) {
                     System.err.printf("New connection %s opened: transport %s, local address %s, remote address %s, local transport address %s%n",
                             connection,
                             connection.getTransportConnection().getLocalTransportAddress().getTransport().getName(),
@@ -127,8 +127,7 @@ public class AosTestServer {
                 }
 
                 @Override
-                public void onClientConnectionClosed(Connection connection) {
-                    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+                public void onClientConnectionClosed(ServerConnection connection) {
                 }
 
             });

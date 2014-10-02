@@ -17,6 +17,7 @@
  */
 package de.dfki.kiara.impl;
 
+import de.dfki.kiara.NoSuchIDLFunctionException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class ServiceMethodBinding {
         internalMapping = new HashMap<>();
     }
 
-    public void bindServiceMethod(String idlMethodName, Object serviceClass,
+    public void bindServiceMethod(String idlFunctionName, Object serviceClass,
                                   String serviceMethodName) throws NoSuchMethodException, SecurityException {
         Method method = null;
         for (Method m : serviceClass.getClass().getMethods()) {
@@ -47,27 +48,27 @@ public class ServiceMethodBinding {
         if (method == null)
             throw new IllegalArgumentException("No such method "+serviceMethodName+" in class "+serviceClass.getClass().getName());
 
-        internalMapping.put(idlMethodName, new ServiceMethodBinder(serviceClass, method));
+        internalMapping.put(idlFunctionName, new ServiceMethodBinder(serviceClass, method));
     }
 
-    public void bindServiceMethod(String idlMethodName, Object serviceClass,
+    public void bindServiceMethod(String idlFunctionName, Object serviceClass,
                                   String serviceMethodName, Class<?>[] parameterTypes) throws
             NoSuchMethodException, SecurityException {
         Method method = serviceClass.getClass().getMethod(serviceMethodName, parameterTypes);
         if (method == null)
             throw new IllegalArgumentException("No such method "+serviceMethodName+" with parameter types "+parameterTypes+" in class "+serviceClass.getClass().getName());
-        internalMapping.put(idlMethodName, new ServiceMethodBinder(serviceClass, method));
+        internalMapping.put(idlFunctionName, new ServiceMethodBinder(serviceClass, method));
     }
 
-    public ServiceMethodBinder getServiceMethodBinder(String idlMethodName) {
-        return internalMapping.get(idlMethodName);
+    public ServiceMethodBinder getServiceMethodBinder(String idlFunctionName) {
+        return internalMapping.get(idlFunctionName);
     }
 
-    public void unbindServiceMethod(String idlMethodName) throws NoSuchMethodException {
-        if (internalMapping.containsKey(idlMethodName)) {
-            internalMapping.remove(idlMethodName);
+    public void unbindServiceMethod(String idlFunctionName) throws NoSuchIDLFunctionException {
+        if (internalMapping.containsKey(idlFunctionName)) {
+            internalMapping.remove(idlFunctionName);
         } else {
-            throw new NoSuchMethodException();
+            throw new NoSuchIDLFunctionException(idlFunctionName+" is not bound");
         }
     }
 }

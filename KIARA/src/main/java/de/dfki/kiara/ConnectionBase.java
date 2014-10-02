@@ -17,19 +17,12 @@
  */
 package de.dfki.kiara;
 
-import java.nio.ByteBuffer;
+import java.io.Closeable;
 
 /**
  *
- * @author shahzad
+ * @author rubinste
  */
-public interface Service extends ServiceFunctionRegistry {
-
-    public void loadIDL(String fileName);
-
-    public void loadServiceIDLFromString(String idlLanguage, String idlContents) throws IDLParseException;
-
-    public String getIDLContents();
-
-    public Object dbgSimulateCall(ByteBuffer payload) throws Exception;
+public interface ConnectionBase extends Closeable {
+    public TransportConnection getTransportConnection();
 }

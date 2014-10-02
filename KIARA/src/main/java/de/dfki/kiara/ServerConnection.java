@@ -15,21 +15,13 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara;
 
-import java.nio.ByteBuffer;
+package de.dfki.kiara;
 
 /**
  *
- * @author shahzad
+ * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Service extends ServiceFunctionRegistry {
+public interface ServerConnection extends ConnectionBase {
 
-    public void loadIDL(String fileName);
-
-    public void loadServiceIDLFromString(String idlLanguage, String idlContents) throws IDLParseException;
-
-    public String getIDLContents();
-
-    public Object dbgSimulateCall(ByteBuffer payload) throws Exception;
 }

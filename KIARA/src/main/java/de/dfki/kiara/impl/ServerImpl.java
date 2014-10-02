@@ -18,11 +18,11 @@
 package de.dfki.kiara.impl;
 
 import com.google.common.base.Objects;
-import de.dfki.kiara.Connection;
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
+import de.dfki.kiara.ServerConnection;
 import de.dfki.kiara.ServerEventListener;
 import de.dfki.kiara.Service;
 import de.dfki.kiara.Transport;
@@ -316,7 +316,6 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
                 result, result.getLocalAddress(), result.getRemoteAddress());
         ServiceHandler serviceHandler = findAcceptingServiceHandler(result.getLocalTransportAddress());
         ServerConnectionHandler handler = new ServerConnectionHandler(this, result, serviceHandler);
-        System.err.println("service handler : "+serviceHandler); //???DEBUG
         result.addRequestHandler(handler);
         connectionHandlers.add(handler);
         fireClientConnectionOpened(handler);
@@ -347,7 +346,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         }
     }
 
-    void fireClientConnectionOpened(Connection connection) {
+    void fireClientConnectionOpened(ServerConnection connection) {
         synchronized (eventListeners) {
             for (ServerEventListener listener : eventListeners) {
                 listener.onClientConnectionOpened(connection);
@@ -355,7 +354,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         }
     }
 
-    void fireClientConnectionClosed(Connection connection) {
+    void fireClientConnectionClosed(ServerConnection connection) {
         synchronized (eventListeners) {
             for (ServerEventListener listener : eventListeners) {
                 listener.onClientConnectionClosed(connection);

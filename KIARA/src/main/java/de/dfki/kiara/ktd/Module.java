@@ -106,6 +106,25 @@ public class Module extends KTDObject {
         return namespace.lookupType(name);
     }
 
+    public final KTDObject lookupObject(String name) {
+        String parts[] = name.split("\\.");
+        if (parts.length == 0)
+            return null;
+        Type ty = lookupType(parts[0]);
+        if (ty == null || parts.length == 1)
+            return ty;
+        if (!(ty instanceof CompositeType))
+            throw new IllegalArgumentException("Invalid name '"+name+"'");
+        CompositeType cty = (CompositeType)ty;
+        int pos = cty.getElementIndexByName(parts[1]);
+        if (pos == CompositeType.npos)
+            return null;
+        ty = cty.getElementAt(pos);
+        if (ty == null || parts.length == 2)
+            return ty;
+        throw new IllegalArgumentException("Invalid name '"+name+"'");
+    }
+
     public final String getTypeName(Type type) {
         return namespace.getTypeName(type);
     }

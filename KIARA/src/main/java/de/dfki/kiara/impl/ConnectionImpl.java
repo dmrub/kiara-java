@@ -22,7 +22,9 @@ import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.InvalidAddressException;
+import de.dfki.kiara.MethodAlreadyBoundException;
 import de.dfki.kiara.MethodBinding;
+import de.dfki.kiara.NoSuchIDLFunctionException;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ProtocolRegistry;
 import de.dfki.kiara.Transport;
@@ -34,6 +36,10 @@ import de.dfki.kiara.idl.IDLWriter;
 import de.dfki.kiara.idl.KiaraKTDConstructor;
 import de.dfki.kiara.idl.KiaraLexer;
 import de.dfki.kiara.idl.KiaraParser;
+import de.dfki.kiara.ktd.Annotation;
+import de.dfki.kiara.ktd.AnnotationListAttr;
+import de.dfki.kiara.ktd.FunctionType;
+import de.dfki.kiara.ktd.KTDObject;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.World;
 import de.dfki.kiara.util.URILoader;
@@ -42,6 +48,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -63,9 +70,11 @@ public class ConnectionImpl implements Connection {
     private final TransportConnection transportConnection;
     private final World world;
     private final Module module;
+    private final ServiceMethodBinding methodBinding;
 
     @SuppressWarnings("null")
     ConnectionImpl(String configUriStr) throws IOException {
+        methodBinding = new ServiceMethodBinding();
         world = new World();
         module = new Module(world, "kiara");
 
@@ -238,6 +247,49 @@ public class ConnectionImpl implements Connection {
     @Override
     public TransportConnection getTransportConnection() {
         return transportConnection;
+    }
+
+    @Override
+    public void registerServiceFunction(String idlFunctionName, Object serviceImpl, String serviceMethodName) throws NoSuchIDLFunctionException, MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
+        KTDObject object = module.lookupObject(idlFunctionName);
+
+        if (!(object instanceof FunctionType))
+            throw new NoSuchIDLFunctionException("No such IDL function: '"+idlFunctionName+"'");
+
+        FunctionType funcTy = (FunctionType)object;
+
+        Annotation annotation = Annotation.getFirstAnnotationOfType(funcTy, module.getWorld().getCallbackAnnotation());
+        if (annotation == null)
+            throw new IllegalArgumentException(idlFunctionName+" is not a callback function");
+
+        if (methodBinding.getServiceMethodBinder(idlFunctionName) != null) {
+            throw new MethodAlreadyBoundException("Service method already bound");
+        }
+        methodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName);
+    }
+
+    @Override
+    public void registerServiceFunction(String idlFunctionName, Object serviceImpl, String serviceMethodName, Class<?>... parameterTypes) throws NoSuchIDLFunctionException, MethodAlreadyBoundException, NoSuchMethodException, SecurityException  {
+        KTDObject object = module.lookupObject(idlFunctionName);
+
+        if (!(object instanceof FunctionType))
+            throw new NoSuchIDLFunctionException("No such IDL function: '"+idlFunctionName+"'");
+
+        FunctionType funcTy = (FunctionType)object;
+
+        Annotation annotation = Annotation.getFirstAnnotationOfType(funcTy, module.getWorld().getCallbackAnnotation());
+        if (annotation == null)
+            throw new IllegalArgumentException(idlFunctionName+" is not a callback function");
+
+        if (methodBinding.getServiceMethodBinder(idlFunctionName) != null) {
+            throw new MethodAlreadyBoundException("Service method already bound");
+        }
+        methodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName, parameterTypes);
+    }
+
+    @Override
+    public void unregisterServiceFunction(String idlFunctionName) throws NoSuchIDLFunctionException {
+        methodBinding.unbindServiceMethod(idlFunctionName);
     }
 
 }

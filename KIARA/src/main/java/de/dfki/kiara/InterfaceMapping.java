@@ -60,9 +60,9 @@ public final class InterfaceMapping<T> {
         return methodEntries.get(method);
     }
 
-    public final Method getMethod(String idlMethodName) {
+    public final Method getMethod(String idlFunctionName) {
         for (Map.Entry<Method, String> e : boundMethods.entrySet()) {
-            if (e.getValue().equals(idlMethodName)) {
+            if (e.getValue().equals(idlFunctionName)) {
                 return e.getKey();
             }
         }

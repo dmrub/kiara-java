@@ -85,24 +85,24 @@ public class ServiceImpl implements Service {
     }
 
     /**
-     * @param idlMethodName
+     * @param idlFunctionName
      * @param serviceMethodName
      * @param serviceImpl
      * @throws MethodAlreadyBoundException
      * @throws java.lang.NoSuchMethodException
      */
     @Override
-    public void registerServiceFunction(String idlMethodName, Object serviceImpl,
+    public void registerServiceFunction(String idlFunctionName, Object serviceImpl,
             String serviceMethodName) throws MethodAlreadyBoundException,
             NoSuchMethodException, SecurityException {
-        if (methodBinding.getServiceMethodBinder(idlMethodName) != null) {
+        if (methodBinding.getServiceMethodBinder(idlFunctionName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        methodBinding.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName);
+        methodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName);
     }
 
     /**
-     * @param idlMethodName
+     * @param idlFunctionName
      * @param serviceMethodName
      * @param serviceImpl
      * @param parameterTypes
@@ -110,18 +110,18 @@ public class ServiceImpl implements Service {
      * @throws java.lang.NoSuchMethodException
      */
     @Override
-    public void registerServiceFunction(String idlMethodName, Object serviceImpl,
+    public void registerServiceFunction(String idlFunctionName, Object serviceImpl,
             String serviceMethodName, Class<?>... parameterTypes)
             throws MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
-        if (methodBinding.getServiceMethodBinder(idlMethodName) != null) {
+        if (methodBinding.getServiceMethodBinder(idlFunctionName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        methodBinding.bindServiceMethod(idlMethodName, serviceImpl, serviceMethodName, parameterTypes);
+        methodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName, parameterTypes);
     }
 
     @Override
-    public void unregisterServiceFunction(String idlMethodName) throws NoSuchMethodException {
-        methodBinding.unbindServiceMethod(idlMethodName);
+    public void unregisterServiceFunction(String idlFunctionName) throws NoSuchIDLFunctionException {
+        methodBinding.unbindServiceMethod(idlFunctionName);
     }
 
     private void loadIDL(InputStream stream, String fileName) throws IOException {

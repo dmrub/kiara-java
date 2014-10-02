@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServerConnectionHandler implements RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>, Connection {
+public class ServerConnectionHandler implements RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>, ServerConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerConnectionHandler.class);
 
@@ -55,11 +55,6 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
 
     public TransportConnection getTransportConnection() {
         return transportConnection;
-    }
-
-    @Override
-    public <T> T getServiceInterface(MethodBinding<T> methodBinding) {
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
@@ -133,4 +128,5 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
     public void close() throws IOException {
         transportConnection.close();
     }
+
 }

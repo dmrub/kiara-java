@@ -62,12 +62,19 @@ public class Annotation extends KTDObject {
     }
 
     public static Annotation getFirstAnnotationOfType(
-            Collection<Annotation> annotationList, StructType type) {
+            Collection<Annotation> annotationList, StructType annotationType) {
         for (Annotation a : annotationList) {
-            if (a.getAnnotationType() == type)
+            if (a.getAnnotationType() == annotationType)
                 return a;
         }
         return null;
+    }
+
+    public static Annotation getFirstAnnotationOfType(CompositeType type, StructType annotationType) {
+        if (!type.hasAttributeValue(AnnotationListAttr.class))
+            return null;
+        List<Annotation> alist = type.getAttributeValue(AnnotationListAttr.class).getValue();
+        return getFirstAnnotationOfType(alist, annotationType);
     }
 
 }

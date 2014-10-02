@@ -17,10 +17,12 @@
  */
 package de.dfki.kiara.example;
 
+import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.IDLParseException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
+import de.dfki.kiara.ServerEventListener;
 import de.dfki.kiara.Service;
 import java.util.List;
 
@@ -107,9 +109,29 @@ public class AosTestServer {
 
             Server server = context.newServer("0.0.0.0", port, "/service");
 
-            server.addService("/rpc/aostest", protocol, service);
+            // server.addService("/rpc/aostest", protocol, service);
+            server.addService("tcp://0.0.0.0:5555/", protocol, service);
 
             System.out.printf("Starting server...\n");
+
+            server.addEventListener(new ServerEventListener() {
+
+                @Override
+                public void onClientConnectionOpened(Connection connection) {
+                    System.err.printf("New connection %s opened: transport %s, local address %s, remote address %s, local transport address %s%n",
+                            connection,
+                            connection.getTransportConnection().getLocalTransportAddress().getTransport().getName(),
+                            connection.getTransportConnection().getLocalAddress(),
+                            connection.getTransportConnection().getRemoteAddress(),
+                            connection.getTransportConnection().getLocalTransportAddress());
+                }
+
+                @Override
+                public void onClientConnectionClosed(Connection connection) {
+                    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+                }
+
+            });
 
             /* Run server */
 

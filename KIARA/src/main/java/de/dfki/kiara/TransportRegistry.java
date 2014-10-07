@@ -19,6 +19,7 @@ package de.dfki.kiara;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,6 +48,16 @@ public final class TransportRegistry {
             return null;
         }
         return getTransportByName(scheme);
+    }
+
+    public static TransportAddress createTransportAddressFromURI(String uri) throws URISyntaxException, InvalidAddressException, UnknownHostException {
+        Transport transport = getTransportByURI(uri);
+        return transport.createAddress(uri);
+    }
+
+    public static TransportAddress createTransportAddressFromURI(URI uri) throws URISyntaxException, InvalidAddressException, UnknownHostException {
+        Transport transport = getTransportByURI(uri);
+        return transport.createAddress(uri.toString());
     }
 
     public static synchronized void registerTransport(String transportName, Transport transport) {

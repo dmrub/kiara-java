@@ -192,7 +192,7 @@ public class StructJsonRpcTest {
             service.registerServiceFunction("StructTest.setLocation", structImpl, "setLocation");
             service.registerServiceFunction("StructTest.getLocation", structImpl, "getLocation");
             service.registerServiceFunction("StructTest.throwException", structImpl, "throwException");
-        } catch (MethodAlreadyBoundException | NoSuchMethodException | SecurityException | IOException e) {
+        } catch (Exception e) {
             System.out.printf("Error: could not parse IDL: %s", e.getMessage());
             System.exit(1);
         }

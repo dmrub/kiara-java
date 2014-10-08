@@ -44,6 +44,8 @@ public final class Util {
 
     private static final Map<TypeToken<?>, ClassAndConverters> convCache = new HashMap<>();
 
+    private static final String PACKAGE_NAME = de.dfki.kiara.Kiara.class.getPackage().getName();
+
     private Util() {
 
     }
@@ -211,6 +213,13 @@ public final class Util {
     public static boolean isDeserializer(Method method) {
         final Class<?>[] paramTypes = method.getParameterTypes();
         return paramTypes.length == 1 && paramTypes[0].equals(de.dfki.kiara.Message.class);
+    }
+
+    public static boolean isSpecialType(TypeToken<?> typeToken) {
+        final Package p = typeToken.getRawType().getPackage();
+        if (p == null)
+            return false;
+        return p.getName().equals(PACKAGE_NAME);
     }
 
     public static ByteBuffer stringToBuffer(String string, String charsetName) throws UnsupportedEncodingException {

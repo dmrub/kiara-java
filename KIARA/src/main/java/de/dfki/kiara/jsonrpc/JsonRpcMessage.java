@@ -306,24 +306,31 @@ public class JsonRpcMessage implements Message {
             }
 
             if (params.isArray()) {
-                if (paramTypes.length != params.size()) {
-                    throw new MessageDeserializationException("Member 'params' size is: " + params.size() + ", required " + paramTypes.length);
-                }
-
                 args = new Object[paramTypes.length];
 
-                for (int i = 0; i < params.size(); ++i) {
+                int i = 0; // parameter index
+                final int numParams = params.size();
+                final int numParamTypes = paramTypes.length;
+                final ObjectReader reader = protocol.getObjectReader();
+                for (int j = 0; j < numParamTypes; ++j) {
+                    if (paramTypes[j] == null) // this parameter will be set later
+                        continue;
+                    if (i >= numParams)
+                        throw new MessageDeserializationException("Parameter index "+i+" is out of bounds, 'params' size is: " + numParams);
                     try {
-                        final ObjectReader reader = protocol.getObjectReader();
                         final JsonParser parser = reader.treeAsTokens(params.get(i));
-                        //args[i] = reader.readValue(parser, paramTypes[i].getRawType());
-                        args[i] = reader.withType(paramTypes[i].getType()).readValue(parser);
+                        args[j] = reader.withType(paramTypes[j].getType()).readValue(parser);
                     } catch (JsonProcessingException ex) {
                         throw new MessageDeserializationException(ex);
                     } catch (IOException ex) {
                         throw new MessageDeserializationException(ex);
                     }
+                    ++i;
                 }
+
+                if (i != numParams)
+                    throw new MessageDeserializationException("Deserialzed "+i+" parameters, but required "+numParams);
+
             } else {
                 throw new UnsupportedOperationException("Object is not supported as 'params' member");
             }

@@ -111,7 +111,7 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
             }
 
             if (sh != null) {
-                return sh.performCall(request, response);
+                return sh.performCall(this, request, response);
             } else {
                 logger.error("No service handler for request: {}", request);
                 responseText = "No service handler for request";

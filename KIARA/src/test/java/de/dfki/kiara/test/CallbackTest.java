@@ -21,6 +21,7 @@ import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.Server;
+import de.dfki.kiara.ServerConnection;
 import de.dfki.kiara.Service;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,8 +39,8 @@ import org.junit.runners.Parameterized;
 public class CallbackTest {
 
     public static class CallbackImpl {
-        public void add(int a, int b) {
-            System.out.println("add("+a+","+b+")");
+        public void add(ServerConnection connection, int a, int b) {
+            System.out.println("add("+a+","+b+") via connection="+connection);
         }
     }
 
@@ -76,7 +77,7 @@ public class CallbackTest {
 
             System.out.printf("Register server functions ....%n");
             CallbackImpl impl = new CallbackImpl();
-            service.registerServiceFunction("calc.add", impl, "add", Integer.TYPE, Integer.TYPE);
+            service.registerServiceFunction("calc.add", impl, "add");
             System.out.printf("Starting server...%n");
 
             Server server = context.newServer("0.0.0.0", port, "/service");

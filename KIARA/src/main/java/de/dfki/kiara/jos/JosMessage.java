@@ -20,6 +20,7 @@ package de.dfki.kiara.jos;
 import com.google.common.reflect.TypeToken;
 import de.dfki.kiara.GenericRemoteException;
 import de.dfki.kiara.Message;
+import de.dfki.kiara.MessageDeserializationException;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.util.ByteBufferInputStream;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -151,21 +153,21 @@ public class JosMessage implements Message {
                     oos.writeByte(JosProtocol.JOS_REQUEST);
                     oos.writeLong(id);
                     oos.writeUTF(getMethodName());
-                    Message.RequestObject ro = getRequestObject(null);
+                    Message.RequestObject ro = this.request;//getRequestObject(null);
                     oos.writeObject(ro.args);
                 }
                 break;
                 case RESPONSE: {
                     oos.writeByte(JosProtocol.JOS_RESPONSE);
                     oos.writeLong(id);
-                    Message.ResponseObject ro = getResponseObject(null);
+                    Message.ResponseObject ro = this.response; // getResponseObject(null);
                     oos.writeObject(ro.result);
                 }
                 break;
                 case EXCEPTION: {
                     oos.writeByte(JosProtocol.JOS_EXCEPTION);
                     oos.writeLong(id);
-                    Message.ResponseObject ro = getResponseObject(null);
+                    Message.ResponseObject ro = this.response; // getResponseObject(null);
                     oos.writeObject(ro.result);
                 }
                 break;
@@ -176,8 +178,23 @@ public class JosMessage implements Message {
     }
 
     @Override
-    public RequestObject getRequestObject(TypeToken<?>[] paramTypes) {
-        return this.request;
+    public RequestObject getRequestObject(TypeToken<?>[] paramTypes) throws MessageDeserializationException {
+        Object[] args = new Object[paramTypes.length];
+        int i = 0; // parameter index
+
+        final int numParams = this.request.args.size();
+        for (int j = 0; j < paramTypes.length; ++j) {
+            if (paramTypes[j] == null) // this parameter will be set later
+                continue;
+            if (i >= numParams)
+                throw new MessageDeserializationException("Parameter index "+i+" is out of bounds, 'params' size is: " + numParams);
+            args[j] = this.request.args.get(i);
+            ++i;
+        }
+        if (i != numParams)
+            throw new MessageDeserializationException("Deserialzed "+i+" parameters, but required "+numParams);
+
+        return new RequestObject(methodName, args);
     }
 
     @Override

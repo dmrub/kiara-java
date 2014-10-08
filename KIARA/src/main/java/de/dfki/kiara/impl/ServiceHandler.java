@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.base.Function;
+import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -69,7 +70,7 @@ public class ServiceHandler implements Closeable {
     public void close() {
     }
 
-    ListenableFuture<TransportMessage> performCall(TransportMessage request, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
+    ListenableFuture<TransportMessage> performCall(ServerConnectionHandler serverConnectionHandler, TransportMessage request, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
         /*
         byte[] array;
         int arrayOffset;
@@ -101,12 +102,16 @@ public class ServiceHandler implements Closeable {
 
             final List<Object> args = requestMessage.getRequestObject(methodEntry.serializationParamTypes).args;
 
-            if (methodEntry.hasFutureParams) {
-                final int numArgs = args.size();
-                for (int i = 0; i < numArgs; ++i) {
-                    if (methodEntry.isFutureParam.get(i)) {
-                        final Function<Object, Object> f = ((Function<Object, Object>) methodEntry.serializationToParamConverters[i]);
-                        args.set(i, f.apply(args.get(i)));
+            //methodEntry.hasFutureParams
+            final int numArgs = args.size();
+            for (int i = 0; i < numArgs; ++i) {
+                if (methodEntry.isFutureParam.get(i)) {
+                    final Function<Object, Object> f = ((Function<Object, Object>) methodEntry.serializationToParamConverters[i]);
+                    args.set(i, f.apply(args.get(i)));
+                } else if (methodEntry.specialParamTypes[i] != null) {
+                    final TypeToken<?> ptype = methodEntry.specialParamTypes[i];
+                    if (ptype.isAssignableFrom(de.dfki.kiara.ServerConnection.class)) {
+                        args.set(i, serverConnectionHandler);
                     }
                 }
             }

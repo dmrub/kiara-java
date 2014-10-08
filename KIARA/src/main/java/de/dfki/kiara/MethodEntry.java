@@ -42,6 +42,7 @@ public class MethodEntry {
     public final boolean hasFutureParams;
     public final boolean hasListeningFutureParams;
     public final TypeToken<?>[] serializationParamTypes;
+    public final TypeToken<?>[] specialParamTypes;
     public final Function<?, ?>[] paramConverters;
     public final Function<?, ?>[] serializationToParamConverters;
     public final BitSet isFutureParam;
@@ -91,6 +92,7 @@ public class MethodEntry {
         // check for Future
         final java.lang.reflect.Type[] genericParamTypes = method.getGenericParameterTypes();
         final TypeToken<?>[] serializationParamTypes = new TypeToken<?>[genericParamTypes.length];
+        final TypeToken<?>[] specialParamTypes = new TypeToken<?>[genericParamTypes.length];
         final Function<?, ?>[] paramConverters = new Function<?, ?>[genericParamTypes.length];
         final Function<?, ?>[] serializationToParamConverters = new Function<?, ?>[genericParamTypes.length];
         final BitSet isFutureParam = new BitSet(genericParamTypes.length);
@@ -109,6 +111,20 @@ public class MethodEntry {
             }
 
             serializationParamTypes[i] = classAndConverters.serializationParamType;
+
+            if (Util.isSpecialType(serializationParamTypes[i])) {
+
+                // special type can't be future
+                if (isFutureParam.get(i)) {
+                    throw new IllegalArgumentException(genericParamTypes[i]+" parameter of the method "+method+" is invalid");
+                }
+
+                specialParamTypes[i] = serializationParamTypes[i];
+                serializationParamTypes[i] = null;
+
+                System.err.println("SPECIAL "+i+"-th "+specialParamTypes[i]); //???DEBUG
+            }
+
             paramConverters[i] = classAndConverters.paramToFutureConverter;
             serializationToParamConverters[i] = classAndConverters.serializationToParamConverter;
         }
@@ -119,6 +135,7 @@ public class MethodEntry {
         this.hasFutureParams = hasFutureParams;
         this.hasListeningFutureParams = hasListeningFutureParams;
         this.serializationParamTypes = serializationParamTypes;
+        this.specialParamTypes = specialParamTypes;
         this.paramConverters = paramConverters;
         this.serializationToParamConverters = serializationToParamConverters;
         this.isFutureParam = isFutureParam;

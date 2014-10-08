@@ -273,7 +273,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         synchronized (serviceHandlers) {
             for (TransportAddressAndServiceHandler element : serviceHandlers) {
                 if (element.transportAddress.acceptsTransportConnection(transportAddress)) {
-                    handlers.add(new TransportAddressAndServiceHandler(element));
+                    handlers.add(element);
                 }
             }
         }

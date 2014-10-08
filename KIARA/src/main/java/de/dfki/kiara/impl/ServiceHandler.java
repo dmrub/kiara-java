@@ -66,11 +66,15 @@ public class ServiceHandler implements Closeable {
         return protocolInfo;
     }
 
+    public Protocol getProtocol() {
+        return protocol;
+    }
+
     @Override
     public void close() {
     }
 
-    ListenableFuture<TransportMessage> performCall(ServerConnectionHandler serverConnectionHandler, TransportMessage request, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
+    ListenableFuture<TransportMessage> performCall(ServiceConnectionImpl serviceConnection, TransportMessage request, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
         /*
         byte[] array;
         int arrayOffset;
@@ -110,8 +114,10 @@ public class ServiceHandler implements Closeable {
                     args.set(i, f.apply(args.get(i)));
                 } else if (methodEntry.specialParamTypes[i] != null) {
                     final TypeToken<?> ptype = methodEntry.specialParamTypes[i];
-                    if (ptype.isAssignableFrom(de.dfki.kiara.ServerConnection.class)) {
-                        args.set(i, serverConnectionHandler);
+                    if (ptype.isAssignableFrom(de.dfki.kiara.ServiceConnection.class)) {
+                        args.set(i, serviceConnection);
+                    } else if (ptype.isAssignableFrom(de.dfki.kiara.ServerConnection.class)) {
+                        args.set(i, serviceConnection.getServerConnection());
                     }
                 }
             }

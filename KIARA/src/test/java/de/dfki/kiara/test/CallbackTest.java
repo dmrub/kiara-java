@@ -19,10 +19,18 @@ package de.dfki.kiara.test;
 
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
+import de.dfki.kiara.Message;
 import de.dfki.kiara.MethodBinding;
+import de.dfki.kiara.Protocol;
 import de.dfki.kiara.Server;
 import de.dfki.kiara.ServerConnection;
 import de.dfki.kiara.Service;
+import de.dfki.kiara.ServiceConnection;
+import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportMessage;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.After;
@@ -39,8 +47,19 @@ import org.junit.runners.Parameterized;
 public class CallbackTest {
 
     public static class CallbackImpl {
-        public void add(ServerConnection connection, int a, int b) {
+        public void add(ServiceConnection connection, int a, int b) throws UnsupportedEncodingException, IOException {
             System.out.println("add("+a+","+b+") via connection="+connection);
+
+            final ServerConnection srvc = connection.getServerConnection();
+            final Protocol protocol = connection.getProtocol();
+            final TransportConnection tc = srvc.getTransportConnection();
+
+            Message msg = protocol.createRequestMessage(new Message.RequestObject("calc.addResult", new Object[] { a+b }));
+
+            TransportMessage tmsg = tc.createRequest();
+            tmsg.setPayload(msg.getMessageData());
+            tmsg.setContentType(protocol.getMimeType());
+            tc.send(tmsg);
         }
     }
 

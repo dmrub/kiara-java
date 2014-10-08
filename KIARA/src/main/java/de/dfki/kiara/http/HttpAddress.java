@@ -98,7 +98,7 @@ public class HttpAddress implements TransportAddress {
      * @param pattern A glob pattern.
      * @return A regex pattern to recognize the given glob pattern.
      */
-    private static final String convertGlobToRegex(String pattern) {
+    private static String convertGlobToRegex(String pattern) {
         StringBuilder sb = new StringBuilder(pattern.length());
         int inGroup = 0;
         int inClass = 0;

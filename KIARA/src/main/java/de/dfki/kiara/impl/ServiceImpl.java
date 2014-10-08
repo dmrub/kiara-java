@@ -164,7 +164,7 @@ public class ServiceImpl implements Service {
     public Object dbgSimulateCall(ByteBuffer payload) throws Exception {
         JsonRpcProtocol protocol = new JsonRpcProtocol();
 
-        Message rpcMessage = protocol.createRequestMessageFromData(payload);
+        Message rpcMessage = protocol.createMessageFromData(payload);
         String methodName = rpcMessage.getMethodName();
 
         ServiceMethodBinder serviceMethod = methodBinding.getServiceMethodBinder(methodName);

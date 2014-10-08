@@ -91,7 +91,7 @@ public class ServiceHandler implements Closeable {
         }
         */
 
-        final Message requestMessage = protocol.createRequestMessageFromData(request.getPayload());
+        final Message requestMessage = protocol.createMessageFromData(request.getPayload());
         final String methodName = requestMessage.getMethodName();
         final ServiceMethodBinder serviceMethodBinder = service.getMethodBinding().getServiceMethodBinder(methodName);
 

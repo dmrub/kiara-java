@@ -40,6 +40,6 @@ public class MessageDecoder<PROTOCOL extends Protocol>  implements Pipeline.Hand
         if (!(input instanceof TransportMessage))
             throw new IllegalArgumentException("Class: "+input.getClass().toString()+", expected: TransportMessage");
         TransportMessage response = (TransportMessage) input;
-        return protocol.createResponseMessageFromData(response.getPayload());
+        return protocol.createMessageFromData(response.getPayload());
     }
 }

@@ -18,8 +18,6 @@ package de.dfki.kiara.test;
 
 import de.dfki.kiara.*;
 
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

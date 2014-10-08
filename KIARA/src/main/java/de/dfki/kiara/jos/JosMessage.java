@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -44,16 +43,14 @@ public class JosMessage implements Message {
     private RequestObject request;
     private long id;
 
-    public JosMessage(JosProtocol protocol, Kind kind, ByteBuffer data) throws IOException {
+    public JosMessage(JosProtocol protocol, ByteBuffer data) throws IOException {
         //System.err.println("new JosMessage: " + HexDump.dumpHexString(data));
         try (final ByteBufferInputStream is = new ByteBufferInputStream(data);
-             final ObjectInputStream ois = new ObjectInputStream(is)) {
+                final ObjectInputStream ois = new ObjectInputStream(is)) {
             final byte messageCode = ois.readByte();
 
-            if (kind == Kind.REQUEST) {
-                if (messageCode != JosProtocol.JOS_REQUEST) {
-                    throw new IOException("Invalid request code: " + messageCode);
-                }
+            if (messageCode == JosProtocol.JOS_REQUEST) {
+                this.kind = Kind.REQUEST;
                 this.id = ois.readLong();
                 this.methodName = ois.readUTF();
                 try {
@@ -70,10 +67,8 @@ public class JosMessage implements Message {
                 } catch (ClassCastException e) {
                     throw new IOException("Could not read request message", e);
                 }
-            } else {
-                if (messageCode != JosProtocol.JOS_RESPONSE && messageCode != JosProtocol.JOS_EXCEPTION) {
-                    throw new IOException("Invalid response code: " + messageCode);
-                }
+            } else if (messageCode == JosProtocol.JOS_RESPONSE || messageCode == JosProtocol.JOS_EXCEPTION) {
+                this.kind = messageCode == JosProtocol.JOS_RESPONSE ? Kind.RESPONSE : Kind.EXCEPTION;
                 this.id = ois.readLong();
                 this.methodName = null;
                 Object result;
@@ -84,7 +79,10 @@ public class JosMessage implements Message {
                 }
                 this.response = new Message.ResponseObject(result,
                         messageCode == JosProtocol.JOS_EXCEPTION);
+            } else {
+                throw new IOException("Invalid request code: " + messageCode);
             }
+
             this.protocol = protocol;
         }
     }
@@ -185,14 +183,18 @@ public class JosMessage implements Message {
         final int numParams = this.request.args.size();
         for (int j = 0; j < paramTypes.length; ++j) {
             if (paramTypes[j] == null) // this parameter will be set later
+            {
                 continue;
-            if (i >= numParams)
-                throw new MessageDeserializationException("Parameter index "+i+" is out of bounds, 'params' size is: " + numParams);
+            }
+            if (i >= numParams) {
+                throw new MessageDeserializationException("Parameter index " + i + " is out of bounds, 'params' size is: " + numParams);
+            }
             args[j] = this.request.args.get(i);
             ++i;
         }
-        if (i != numParams)
-            throw new MessageDeserializationException("Deserialzed "+i+" parameters, but required "+numParams);
+        if (i != numParams) {
+            throw new MessageDeserializationException("Deserialzed " + i + " parameters, but required " + numParams);
+        }
 
         return new RequestObject(methodName, args);
     }
@@ -206,6 +208,11 @@ public class JosMessage implements Message {
     public void setGenericError(int errorCode, String errorMessage) {
         this.kind = Kind.EXCEPTION;
         this.response = new ResponseObject(new GenericRemoteException(errorMessage, errorCode), true);
+    }
+
+    @Override
+    public String toString() {
+        return "JosMessage("+kind+", "+methodName+", "+request+", "+response+", "+id+")";
     }
 
 }

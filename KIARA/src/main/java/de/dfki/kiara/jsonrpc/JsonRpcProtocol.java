@@ -124,13 +124,8 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createRequestMessageFromData(ByteBuffer data) throws IOException {
-        return new JsonRpcMessage(this, Message.Kind.REQUEST, data);
-    }
-
-    @Override
-    public Message createResponseMessageFromData(ByteBuffer data) throws IOException {
-        return new JsonRpcMessage(this, Message.Kind.RESPONSE, data);
+    public Message createMessageFromData(ByteBuffer data) throws IOException {
+        return new JsonRpcMessage(this, data);
     }
 
     public static Object parseMessageId(JsonNode messageNode) throws MessageDeserializationException {
@@ -162,7 +157,7 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     }
 
     public JsonRpcMessage createResponseMessageFromData(JsonNode node) throws IOException {
-        return new JsonRpcMessage(this, Message.Kind.RESPONSE, node);
+        return new JsonRpcMessage(this, node);
     }
 
     public static boolean equalIds(Object id1, Object id2) {

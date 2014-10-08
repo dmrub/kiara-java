@@ -106,7 +106,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
             @Override
             public Message apply(TransportMessage input) {
                 try {
-                    return protocol.createResponseMessageFromData(input.getPayload());
+                    return protocol.createMessageFromData(input.getPayload());
                 } catch (IOException ex) {
                     return null;
                 }
@@ -135,7 +135,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
         tc.addResponseHandler(this);
 
-        return protocol.createResponseMessageFromData(transportResponse.getPayload());
+        return protocol.createMessageFromData(transportResponse.getPayload());
     }
 
     public abstract MessageDispatcher createMessageDispatcher(Message request);

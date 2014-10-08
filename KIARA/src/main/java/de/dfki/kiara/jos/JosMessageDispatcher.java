@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.jos;
 
+import de.dfki.kiara.Message;
 import de.dfki.kiara.util.MessageDispatcher;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -48,7 +48,9 @@ public class JosMessageDispatcher implements MessageDispatcher {
 
         JosMessage message = (JosMessage) input;
 
-        if (messageId == message.getId()) {
+        if ((message.getMessageKind() == Message.Kind.RESPONSE
+                || message.getMessageKind() == Message.Kind.EXCEPTION)
+                && messageId == message.getId()) {
             messageQueue.add(message);
             return null; // stop processing
         }

@@ -30,7 +30,6 @@ import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.After;
@@ -47,7 +46,7 @@ import org.junit.runners.Parameterized;
 public class CallbackTest {
 
     public static class CallbackImpl {
-        public void add(ServiceConnection connection, int a, int b) throws UnsupportedEncodingException, IOException {
+        public void add(ServiceConnection connection, int a, int b) throws IOException {
             System.out.println("add("+a+","+b+") via connection="+connection);
 
             final ServerConnection srvc = connection.getServerConnection();

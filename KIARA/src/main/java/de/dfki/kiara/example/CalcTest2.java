@@ -87,7 +87,7 @@ public class CalcTest2 {
             System.out.println("Performed remote call: " + a + "+" + b + " = " + temp.get());
 
             String res = "{\"jsonrpc\":\"2.0\", \"result\": 22}";
-            Message responseMsg = msg.getProtocol().createResponseMessageFromData(ByteBuffer.wrap(res.getBytes("UTF-8")));
+            Message responseMsg = msg.getProtocol().createMessageFromData(ByteBuffer.wrap(res.getBytes("UTF-8")));
             result = calc.add_deserializer(responseMsg);
             System.out.println("Result of deserialization of: " + res + " -> " + result);
 

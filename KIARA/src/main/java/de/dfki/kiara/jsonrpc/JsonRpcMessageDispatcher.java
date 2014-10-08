@@ -17,6 +17,7 @@
  */
 package de.dfki.kiara.jsonrpc;
 
+import de.dfki.kiara.Message;
 import de.dfki.kiara.util.MessageDispatcher;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -47,7 +48,9 @@ public class JsonRpcMessageDispatcher implements MessageDispatcher {
 
         JsonRpcMessage message = (JsonRpcMessage) input;
 
-        if (JsonRpcProtocol.equalIds(messageId, message.getId())) {
+        if ((message.getMessageKind() == Message.Kind.RESPONSE
+                || message.getMessageKind() == Message.Kind.EXCEPTION)
+                && JsonRpcProtocol.equalIds(messageId, message.getId())) {
             messageQueue.add(message);
             return null; // stop processing
         }

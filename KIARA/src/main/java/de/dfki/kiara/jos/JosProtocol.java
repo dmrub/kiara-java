@@ -23,11 +23,7 @@ import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RemoteInterface;
-import de.dfki.kiara.util.ByteBufferInputStream;
-import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
@@ -81,13 +77,8 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public Message createRequestMessageFromData(ByteBuffer data) throws IOException {
-        return new JosMessage(this, Message.Kind.REQUEST, data);
-    }
-
-    @Override
-    public Message createResponseMessageFromData(ByteBuffer data) throws IOException {
-        return new JosMessage(this, Message.Kind.RESPONSE, data);
+    public Message createMessageFromData(ByteBuffer data) throws IOException {
+        return new JosMessage(this, data);
     }
 
     @Override

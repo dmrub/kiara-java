@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.reflect.TypeToken;
@@ -58,7 +57,7 @@ public class JsonRpcMessage implements Message {
      */
     private JsonNode error;
 
-    public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind, JsonNode node) throws IOException {
+    public JsonRpcMessage(JsonRpcProtocol protocol, JsonNode node) throws IOException {
         this.body = node;
         if (this.body == null) {
             throw new IOException("Not a jsonrpc protocol");
@@ -72,17 +71,14 @@ public class JsonRpcMessage implements Message {
             throw new IOException("Not a jsonrpc 2.0");
         }
 
-        if (kind == Kind.REQUEST) {
-            JsonNode methodNode = body.get("method");
-            if (methodNode == null) {
-                throw new IOException("No 'method' member in the request object");
-            }
+        JsonNode methodNode = body.get("method");
 
+        if (methodNode != null) {
             if (!methodNode.isTextual()) {
                 throw new IOException("Member 'method' in request object is not a string");
             }
 
-            this.kind = kind;
+            this.kind = Message.Kind.REQUEST;
             this.methodName = methodNode.textValue();
             this.params = body.get("params");
             this.id = parseMessageId(body);
@@ -91,7 +87,7 @@ public class JsonRpcMessage implements Message {
             JsonNode errorNode = body.get("error");
 
             if (resultNode == null && errorNode == null) {
-                throw new IOException("Neither 'error' nor 'result' member in the response object");
+                throw new IOException("Neither 'method' nor 'error' nor 'result' member in the object");
             }
 
             this.methodName = null;
@@ -139,8 +135,8 @@ public class JsonRpcMessage implements Message {
         return node;
     }
 
-    public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind, ByteBuffer data) throws IOException {
-        this(protocol, kind, readFromBuffer(protocol, data));
+    public JsonRpcMessage(JsonRpcProtocol protocol, ByteBuffer data) throws IOException {
+        this(protocol, readFromBuffer(protocol, data));
     }
 
     /**
@@ -373,6 +369,11 @@ public class JsonRpcMessage implements Message {
                     true);
             return this.response;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "JsonRpcMessage("+kind+", "+getMethodName()+", "+getParams()+")";
     }
 
 }

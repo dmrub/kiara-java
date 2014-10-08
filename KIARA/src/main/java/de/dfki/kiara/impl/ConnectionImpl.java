@@ -37,7 +37,6 @@ import de.dfki.kiara.idl.KiaraKTDConstructor;
 import de.dfki.kiara.idl.KiaraLexer;
 import de.dfki.kiara.idl.KiaraParser;
 import de.dfki.kiara.ktd.Annotation;
-import de.dfki.kiara.ktd.AnnotationListAttr;
 import de.dfki.kiara.ktd.FunctionType;
 import de.dfki.kiara.ktd.KTDObject;
 import de.dfki.kiara.ktd.Module;
@@ -48,7 +47,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.antlr.v4.runtime.ANTLRInputStream;

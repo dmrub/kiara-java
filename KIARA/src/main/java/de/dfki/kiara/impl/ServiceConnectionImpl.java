@@ -30,7 +30,7 @@ import java.util.concurrent.ExecutionException;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServiceConnectionImpl implements ServiceConnection {
+public class ServiceConnectionImpl implements ServiceConnection, InvocationEnvironment {
 
     private final ServerConnectionHandler serverConnectionHandler;
     private final TransportAddress transportAddress;
@@ -62,14 +62,20 @@ public class ServiceConnectionImpl implements ServiceConnection {
     public ServerConnection getServerConnection() {
         return serverConnectionHandler;
     }
-    
+
     @Override
     public Protocol getProtocol() {
         return serviceHandler.getProtocol();
     }
 
+    @Override
+    public ServiceConnection getServiceConnection() {
+        return this;
+    }
+
     public ListenableFuture<TransportMessage> performCall(TransportMessage request, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
         return getServiceHandler().performCall(this, request, response);
     }
+
 
 }

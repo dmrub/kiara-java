@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara.impl;
 
 import java.io.IOException;
@@ -33,6 +32,7 @@ import com.google.common.base.Function;
 import com.google.common.reflect.AbstractInvocationHandler;
 import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -44,6 +44,7 @@ import de.dfki.kiara.Message;
 import de.dfki.kiara.MethodEntry;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RemoteInvocationException;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportConnectionReceiver;
 import de.dfki.kiara.TransportMessage;
@@ -54,21 +55,22 @@ import de.dfki.kiara.util.Pipeline;
 
 /**
  * Created by Dmitri Rubinstein on 30.07.2014.
+ *
  * @param <PROTOCOL>
  */
 public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler implements Handler<TransportMessage> {
+
     private static final Logger logger = LoggerFactory.getLogger(DefaultInvocationHandler.class);
-    protected final Connection connection;
+    protected final ConnectionImpl connection;
     protected final InterfaceMapping<?> interfaceMapping;
     protected final PROTOCOL protocol;
     protected final Pipeline pipeline;
 
-    public DefaultInvocationHandler(Connection connection, InterfaceMapping<?> interfaceMapping, PROTOCOL protocol, MessageDecoder<PROTOCOL> messageDecoder) {
+    public DefaultInvocationHandler(ConnectionImpl connection, InterfaceMapping<?> interfaceMapping, PROTOCOL protocol) {
         this.connection = connection;
         this.pipeline = new Pipeline();
         this.protocol = protocol;
         this.interfaceMapping = interfaceMapping;
-        this.pipeline.addHandler(messageDecoder);
         this.connection.getTransportConnection().addResponseHandler(this);
     }
 
@@ -162,7 +164,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                     public Message call() throws Exception {
                         boolean interrupted = false;
                         try {
-                            for (; ; ) {
+                            for (;;) {
                                 try {
                                     Object value = dispatcher.getQueue().take();
                                     if (value instanceof Exception) {
@@ -276,21 +278,20 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
                 /* Following code is for testing of synchronous message sending
 
-                if (futureParams == null && methodEntry.futureParamOfReturnType == null) {
-                    final Message request = protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, os));
-                    final Message response = performSyncCall(request, method);
-                    final Message.ResponseObject ro = response.getResponseObject(method.getReturnType());
-                    if (ro.isException) {
-                        if (ro.result instanceof Exception) {
-                            throw (Exception) ro.result;
-                        }
-                        throw new WrappedRemoteException(ro.result);
-                    }
+                 if (futureParams == null && methodEntry.futureParamOfReturnType == null) {
+                 final Message request = protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, os));
+                 final Message response = performSyncCall(request, method);
+                 final Message.ResponseObject ro = response.getResponseObject(method.getReturnType());
+                 if (ro.isException) {
+                 if (ro.result instanceof Exception) {
+                 throw (Exception) ro.result;
+                 }
+                 throw new WrappedRemoteException(ro.result);
+                 }
 
-                    return ro.result;
-                }
-                */
-
+                 return ro.result;
+                 }
+                 */
                 List<Object> params = futureParams != null ? futureParams.get() : Arrays.asList(os);
 
                 final Message request = protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, params));
@@ -351,8 +352,40 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
     @Override
     public boolean onSuccess(TransportMessage result) {
+        if (result == null) {
+            logger.error("Received null transport message");
+            return true;
+        }
+
         try {
-            Object processResult = pipeline.process(result);
+            Message message = protocol.createMessageFromData(result.getPayload());
+
+            if (message.getMessageKind() == Message.Kind.REQUEST) {
+                // FIXME compare with ServerConnectionHandler.onRequest
+                final TransportConnection tc = result.getConnection();
+                final TransportMessage response = tc.createResponse(result);
+                final Transport transport = tc.getTransport();
+
+                ListenableFuture<TransportMessage> tm = connection.getServiceMethodBinding().performCall(null, protocol, message, response);
+                if (tm != null) {
+                    Futures.addCallback(tm, new FutureCallback<TransportMessage>() {
+
+                        @Override
+                        public void onSuccess(TransportMessage result) {
+                            tc.send(result);
+                        }
+
+                        @Override
+                        public void onFailure(Throwable t) {
+                            logger.error("Error on callback response", t);
+                        }
+                    }, Global.executor);
+                }
+                return true;
+            }
+
+            // process via pipeline
+            Object processResult = pipeline.process(message);
             if (processResult != null) {
                 logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
             }
@@ -360,7 +393,6 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
             logger.error("Pipeline processing failed", ex);
         }
         return true;
-
     }
 
     @Override

@@ -15,25 +15,27 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara.jsonrpc;
+package de.dfki.kiara.impl;
 
-import de.dfki.kiara.impl.DefaultInvocationHandler;
-import de.dfki.kiara.InterfaceMapping;
-import de.dfki.kiara.Message;
-import de.dfki.kiara.impl.ConnectionImpl;
-import de.dfki.kiara.util.MessageDispatcher;
+import de.dfki.kiara.Protocol;
+import de.dfki.kiara.ServerConnection;
+import de.dfki.kiara.ServiceConnection;
+import de.dfki.kiara.TransportAddress;
 
 /**
+ *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class JsonRpcInvocationHandler extends DefaultInvocationHandler<JsonRpcProtocol> {
+public interface InvocationEnvironment {
+    public ServerConnectionHandler getServerConnectionHandler();
 
-    public JsonRpcInvocationHandler(ConnectionImpl connection, InterfaceMapping<?> interfaceMapping, JsonRpcProtocol protocol) {
-        super(connection, interfaceMapping, protocol);
-    }
+    public ServiceConnection getServiceConnection();
 
-    @Override
-    public MessageDispatcher createMessageDispatcher(Message request) {
-        return new JsonRpcMessageDispatcher(protocol, ((JsonRpcMessage) request).getId());
-    }
+    public TransportAddress getTransportAddress();
+
+    public ServiceHandler getServiceHandler();
+
+    public ServerConnection getServerConnection();
+
+    public Protocol getProtocol();
 }

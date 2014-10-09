@@ -29,6 +29,7 @@ import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageDeserializationException;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.impl.ConnectionImpl;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
@@ -39,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
 
-    private Connection connection;
+    private ConnectionImpl connection;
     private final AtomicLong nextId;
     private final ObjectMapper objectMapper;
     private final ObjectReader objectReader;
@@ -105,12 +106,15 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     @Override
     public void initConnection(Connection connection) {
         if (connection == null) {
-            throw new IllegalArgumentException("connection can't be null");
+            throw new NullPointerException("connection can't be null");
         }
         if (this.connection != null) {
             throw new IllegalStateException("connection was already initialized");
         }
-        this.connection = connection;
+        if (!(connection instanceof ConnectionImpl)) {
+            throw new IllegalArgumentException("connection has invalid type: "+connection.getClass());
+        }
+        this.connection = (ConnectionImpl)connection;
     }
 
     @Override

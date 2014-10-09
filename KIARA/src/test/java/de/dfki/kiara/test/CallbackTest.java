@@ -29,11 +29,11 @@ import de.dfki.kiara.ServiceConnection;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,7 +53,7 @@ public class CallbackTest {
             final Protocol protocol = connection.getProtocol();
             final TransportConnection tc = srvc.getTransportConnection();
 
-            Message msg = protocol.createRequestMessage(new Message.RequestObject("calc.addResult", new Object[] { a+b }));
+            Message msg = protocol.createRequestMessage(new Message.RequestObject("calc.addResult", new Object[] { a, b, a+b }));
 
             TransportMessage tmsg = tc.createRequest();
             tmsg.setPayload(msg.getMessageData());
@@ -63,8 +63,10 @@ public class CallbackTest {
     }
 
     public static class CallbackClientImpl {
-        public void addResult(int result) {
-            System.out.println("result = "+result);
+        public int addResult(int a, int b, int result) {
+            System.out.println("addResult: "+a+" + "+b+" = "+result);
+            Assert.assertEquals(a+b, result);
+            return result;
         }
     }
 
@@ -89,7 +91,7 @@ public class CallbackTest {
                     "namespace * calc "
                             + "service calc { "
                             + "    void add(i32 a, i32 b) "
-                            + "    [Callback] void addResult(i32 result) "
+                            + "    [Callback] i32 addResult(i32 a, i32 b, i32 result) "
                             + "} "
             );
 

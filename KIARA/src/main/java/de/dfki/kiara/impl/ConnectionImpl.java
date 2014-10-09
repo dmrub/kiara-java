@@ -242,6 +242,10 @@ public class ConnectionImpl implements Connection {
         return codegen.generateInterfaceImpl(interfaceClass, mapping);
     }
 
+    ServiceMethodBinding getServiceMethodBinding() {
+        return methodBinding;
+    }
+
     @Override
     public TransportConnection getTransportConnection() {
         return transportConnection;

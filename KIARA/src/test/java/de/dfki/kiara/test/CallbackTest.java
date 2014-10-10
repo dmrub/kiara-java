@@ -46,9 +46,9 @@ import org.junit.runners.Parameterized;
 public class CallbackTest {
 
     public static class CallbackImpl {
-        public void add(ServiceConnection connection, int a, int b) throws IOException {
+        public void add(ServiceConnection connection, int a, int b) throws Exception {
             System.out.println("add("+a+","+b+") via connection="+connection);
-
+/*
             final ServerConnection srvc = connection.getServerConnection();
             final Protocol protocol = connection.getProtocol();
             final TransportConnection tc = srvc.getTransportConnection();
@@ -59,6 +59,16 @@ public class CallbackTest {
             tmsg.setPayload(msg.getMessageData());
             tmsg.setContentType(protocol.getMimeType());
             tc.send(tmsg);
+*/
+            // T2
+
+
+            MethodBinding<CallbackClient> binder
+                    = new MethodBinding<>(CallbackClient.class)
+                    .bind("calc.addResult", "addResult");
+
+            CallbackClient cc = connection.getServiceInterface(binder);
+            int c = cc.addResult(a, b, a+b);
         }
     }
 
@@ -72,8 +82,12 @@ public class CallbackTest {
 
     public static interface Callback {
 
-        public void add(int a, int b);
+        public void add(int a, int b) throws Exception;
 
+    }
+
+    public static interface CallbackClient {
+        public int addResult(int a, int b, int result);
     }
 
     public static class CallbackSetup extends TestSetup<Callback> {

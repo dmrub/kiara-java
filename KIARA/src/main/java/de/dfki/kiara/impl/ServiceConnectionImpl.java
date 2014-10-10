@@ -18,6 +18,9 @@
 package de.dfki.kiara.impl;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import de.dfki.kiara.InterfaceCodeGen;
+import de.dfki.kiara.InterfaceMapping;
+import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ServerConnection;
 import de.dfki.kiara.ServiceConnection;
@@ -77,5 +80,14 @@ public class ServiceConnectionImpl implements ServiceConnection, InvocationEnvir
         return getServiceHandler().performCall(this, request, response);
     }
 
+    @Override
+    public <T> T getServiceInterface(MethodBinding<T> methodBinding) {
+        // FIXME compare with ConnectionImpl.getServiceInterface()
+        InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinding);
+        Class<T> interfaceClass = mapping.getInterfaceClass();
+
+        InterfaceCodeGen codegen = getProtocol().getInterfaceCodeGen();
+        return codegen.generateInterfaceImpl(interfaceClass, mapping);
+    }
 
 }

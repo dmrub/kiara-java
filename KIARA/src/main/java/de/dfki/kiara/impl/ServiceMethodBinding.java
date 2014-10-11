@@ -89,6 +89,9 @@ public class ServiceMethodBinding implements ServiceMethodExecutor {
     }
 
     ListenableFuture<TransportMessage> performCall(InvocationEnvironment env, final Protocol protocol, final Message requestMessage, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
+        if (requestMessage.getMessageKind() != Message.Kind.REQUEST) {
+            throw new IllegalArgumentException("message is not a request");
+        }
         final String methodName = requestMessage.getMethodName();
         final ServiceMethodBinder serviceMethodBinder = getServiceMethodBinder(methodName);
 
@@ -98,6 +101,11 @@ public class ServiceMethodBinding implements ServiceMethodExecutor {
         if (serviceMethodBinder == null) {
             isException = true;
             result = new GenericRemoteException("unbound method '"+methodName+"'", GenericRemoteException.METHOD_NOT_FOUND);
+
+            Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));
+            response.setPayload(responseMessage.getMessageData());
+            response.setContentType(protocol.getMimeType());
+            return Futures.immediateFuture(response);
         } else {
             final MethodEntry methodEntry = serviceMethodBinder.getMethodEntry();
 
@@ -119,43 +127,43 @@ public class ServiceMethodBinding implements ServiceMethodExecutor {
                 }
             }
 
-            try {
-                result = serviceMethodBinder.getBoundMethod().invoke(serviceMethodBinder.getImplementedClass(), args.toArray());
-            } catch (InvocationTargetException ex) {
-                isException = true;
-                result = ex.getTargetException();
-            }
+            AsyncFunction<List<Object>, TransportMessage> ff = new AsyncFunction<List<Object>, TransportMessage>() {
 
-            if (methodEntry.futureParamOfReturnType != null) {
-                ListenableFuture<Object> futureResult =
-                        (ListenableFuture<Object>)(methodEntry.returnTypeConverter != null ?
-                                ((Function<Object, Object>)(methodEntry.returnTypeConverter)).apply(result) :
-                                result);
+                @Override
+                public ListenableFuture<TransportMessage> apply(final List<Object> input) throws Exception {
+                    return Global.executor.submit(new Callable<TransportMessage>() {
+                        @Override
+                        public TransportMessage call() throws Exception {
+                            Object result;
+                            boolean isException = false;
 
-                AsyncFunction<Object, TransportMessage> f = new AsyncFunction<Object, TransportMessage>() {
+                            try {
+                                result = serviceMethodBinder.getBoundMethod().invoke(serviceMethodBinder.getImplementedClass(), args.toArray());
 
-                    @Override
-                    public ListenableFuture<TransportMessage> apply(final Object input) throws Exception {
-                        return Global.executor.submit(new Callable<TransportMessage>() {
+                                if (methodEntry.futureParamOfReturnType != null) {
+                                    ListenableFuture<?> futureResult =
+                                        (ListenableFuture<?>)(methodEntry.returnTypeConverter != null ?
+                                            ((Function<Object, Object>)(methodEntry.returnTypeConverter)).apply(result) :
+                                            result);
+                                    result = futureResult.get();
+                                }
 
-                            @Override
-                            public TransportMessage call() throws Exception {
-                                Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(input, false));
-                                response.setPayload(responseMessage.getMessageData());
-                                response.setContentType(protocol.getMimeType());
-                                return response;
+                            } catch (InvocationTargetException ex) {
+                                isException = true;
+                                result = ex.getTargetException();
                             }
-                        });
-                    }
-                };
-                return Futures.transform(futureResult, f);
-            }
-        }
 
-        Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));
-        response.setPayload(responseMessage.getMessageData());
-        response.setContentType(protocol.getMimeType());
-        return Futures.immediateFuture(response);
+                            Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));
+                            response.setPayload(responseMessage.getMessageData());
+                            response.setContentType(protocol.getMimeType());
+
+                            return response;
+                        }
+                    });
+                }
+            };
+            return Futures.transform(Futures.immediateFuture(args), ff);
+        }
     }
 
     ListenableFuture<TransportMessage> performCall(InvocationEnvironment env, final Protocol protocol, TransportMessage request, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {

@@ -118,6 +118,12 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
             if (sc != null) {
                 final Protocol protocol = sc.getProtocol();
                 final Message message = protocol.createMessageFromData(trequest.getPayload());
+
+                if (message.getMessageKind() == Message.Kind.RESPONSE) {
+                    // FIXME process RESPONSE
+                    System.err.println("RECEIVED RESPONSE "+message);
+                }
+
                 ListenableFuture<Message> fmsg = sc.performCall(message);
 
                 AsyncFunction<Message, TransportMessage> f =

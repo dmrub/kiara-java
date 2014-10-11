@@ -353,28 +353,28 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                 // FIXME compare with ServerConnectionHandler.onRequest
 
                 ListenableFuture<Message> fmsg = serviceMethodBinding.performCall(null, message);
-                if (fmsg != null) {
-                    Futures.addCallback(fmsg, new FutureCallback<Message>() {
 
-                        @Override
-                        public void onSuccess(Message resultMessage) {
-                            try {
-                                final TransportConnection tc = tmessage.getConnection();
-                                final TransportMessage tresponse = tc.createResponse(tmessage);
-                                tresponse.setPayload(resultMessage.getMessageData());
-                                tresponse.setContentType(protocol.getMimeType());
-                                tc.send(tresponse);
-                            } catch (Exception ex) {
-                                logger.error("Error on callback response", ex);
-                            }
-                        }
+                Futures.addCallback(fmsg, new FutureCallback<Message>() {
 
-                        @Override
-                        public void onFailure(Throwable t) {
-                            logger.error("Error on callback response", t);
+                    @Override
+                    public void onSuccess(Message resultMessage) {
+                        try {
+                            final TransportConnection tc = tmessage.getConnection();
+                            final TransportMessage tresponse = tc.createResponse(tmessage);
+                            tresponse.setPayload(resultMessage.getMessageData());
+                            tresponse.setContentType(protocol.getMimeType());
+                            tc.send(tresponse);
+                        } catch (Exception ex) {
+                            logger.error("Error on callback response", ex);
                         }
-                    }, Global.executor);
-                }
+                    }
+
+                    @Override
+                    public void onFailure(Throwable t) {
+                        logger.error("Error on callback response", t);
+                    }
+                }, Global.executor);
+
                 return true;
             }
 

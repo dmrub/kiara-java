@@ -27,23 +27,18 @@ import java.nio.ByteBuffer;
  */
 public interface Protocol {
 
-    public void initConnection(Connection connection);
-
-    public Connection getConnection();
-
     /**
      *
      * @return MIME Type of the protocol
      */
     public String getMimeType();
 
-    public InterfaceCodeGen getInterfaceCodeGen();
+    public InterfaceCodeGen createInterfaceCodeGen(ConnectionBase connection);
 
     public Message createMessageFromData(ByteBuffer data) throws IOException;
 
     /** Create message for calling service method name.
      *
-     * @param connection
      * @param methodName
      * @return
      * @throws java.io.IOException

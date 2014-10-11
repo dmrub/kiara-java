@@ -17,11 +17,7 @@
  */
 package de.dfki.kiara.example;
 
-import de.dfki.kiara.Connection;
-import de.dfki.kiara.Context;
-import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MethodBinding;
-import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.*;
 
 /**
  *
@@ -68,7 +64,7 @@ public class CalcTest {
 
             Calc calc = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) calc;
-            Connection c = ri.getConnection();
+            ConnectionBase c = ri.getConnection();
 
             {
                 int result = calc.add(21, 32);

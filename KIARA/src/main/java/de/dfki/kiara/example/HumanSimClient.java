@@ -21,11 +21,7 @@ package de.dfki.kiara.example;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.dfki.kiara.Connection;
-import de.dfki.kiara.Context;
-import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MethodBinding;
-import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.*;
 
 /**
  * Created by Dmitri Rubinstein on 9/11/14.
@@ -121,7 +117,7 @@ public class HumanSimClient {
 
             HumanSim humanSim = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) humanSim;
-            Connection c = ri.getConnection();
+            ConnectionBase c = ri.getConnection();
 
             {
                 humanSim.setNavMeshParameters(1, 2, 3, 4);

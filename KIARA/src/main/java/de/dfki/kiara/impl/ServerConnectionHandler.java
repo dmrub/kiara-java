@@ -59,7 +59,6 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
         return serviceHandlers;
     }
 
-    @Override
     public TransportConnection getTransportConnection() {
         return transportConnection;
     }
@@ -136,7 +135,6 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
         return Futures.immediateFuture(response);
     }
 
-    @Override
     public void close() throws IOException {
         transportConnection.close();
     }

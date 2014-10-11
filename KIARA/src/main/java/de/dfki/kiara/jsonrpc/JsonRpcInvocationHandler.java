@@ -17,10 +17,12 @@
  */
 package de.dfki.kiara.jsonrpc;
 
+import de.dfki.kiara.ConnectionBase;
+import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.impl.DefaultInvocationHandler;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;
-import de.dfki.kiara.impl.ConnectionImpl;
+import de.dfki.kiara.impl.ServiceMethodBinding;
 import de.dfki.kiara.util.MessageDispatcher;
 
 /**
@@ -28,8 +30,8 @@ import de.dfki.kiara.util.MessageDispatcher;
  */
 public class JsonRpcInvocationHandler extends DefaultInvocationHandler<JsonRpcProtocol> {
 
-    public JsonRpcInvocationHandler(ConnectionImpl connection, InterfaceMapping<?> interfaceMapping, JsonRpcProtocol protocol) {
-        super(connection, interfaceMapping, protocol);
+    public JsonRpcInvocationHandler(ConnectionBase connection, TransportConnection transportConnection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, JsonRpcProtocol protocol) {
+        super(connection, transportConnection, interfaceMapping, serviceMethodBinding, protocol);
     }
 
     @Override

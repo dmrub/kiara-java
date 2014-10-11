@@ -17,13 +17,9 @@
  */
 package de.dfki.kiara.jos;
 
-import de.dfki.kiara.Connection;
-import de.dfki.kiara.InterfaceCodeGen;
-import de.dfki.kiara.InterfaceMapping;
-import de.dfki.kiara.Message;
-import de.dfki.kiara.Protocol;
-import de.dfki.kiara.RemoteInterface;
-import de.dfki.kiara.impl.ConnectionImpl;
+import de.dfki.kiara.*;
+import de.dfki.kiara.impl.ServiceMethodBinding;
+
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
@@ -33,17 +29,15 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class JosProtocol implements Protocol, InterfaceCodeGen {
+public class JosProtocol implements Protocol {
 
     public final static int JOS_REQUEST = 0;
     public final static int JOS_RESPONSE = 1;
     public final static int JOS_EXCEPTION = 2;
 
-    private ConnectionImpl connection;
     private final AtomicLong nextId;
 
     public JosProtocol() {
-        this.connection = null;
         this.nextId = new AtomicLong(1);
     }
 
@@ -52,32 +46,23 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public void initConnection(Connection connection) {
-        if (connection == null) {
-            throw new NullPointerException("connection can't be null");
-        }
-        if (this.connection != null) {
-            throw new IllegalStateException("connection was already initialized");
-        }
-        if (!(connection instanceof ConnectionImpl)) {
-            throw new IllegalArgumentException("connection has invalid type: "+connection.getClass());
-        }
-        this.connection = (ConnectionImpl)connection;
-    }
-
-    @Override
-    public Connection getConnection() {
-        return connection;
-    }
-
-    @Override
     public String getMimeType() {
         return "application/octet-stream";
     }
 
     @Override
-    public InterfaceCodeGen getInterfaceCodeGen() {
-        return this;
+    public InterfaceCodeGen createInterfaceCodeGen(final ConnectionBase connection) {
+        final JosProtocol thisProtocol = this;
+        return new InterfaceCodeGen() {
+            @Override
+            public <T> T generateInterfaceImpl(Class<T> interfaceClass, InterfaceMapping<T> mapping) {
+                final ServiceMethodBinding smb = (ServiceMethodBinding)connection.getServiceMethodExecutor();
+                Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
+                        new Class<?>[]{interfaceClass, RemoteInterface.class},
+                        new JosInvocationHandler(connection, connection.getTransportConnection(), mapping, smb, thisProtocol));
+                return interfaceClass.cast(impl);
+            }
+        };
     }
 
     @Override
@@ -93,14 +78,6 @@ public class JosProtocol implements Protocol, InterfaceCodeGen {
     @Override
     public Message createResponseMessage(Message requestMessage) {
         return new JosMessage(this, Message.Kind.RESPONSE);
-    }
-
-    @Override
-    public <T> T generateInterfaceImpl(Class<T> interfaceClass, InterfaceMapping<T> mapping) {
-        Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
-                new Class<?>[]{interfaceClass, RemoteInterface.class},
-                new JosInvocationHandler(connection, mapping, this));
-        return interfaceClass.cast(impl);
     }
 
     @Override

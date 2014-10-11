@@ -22,14 +22,9 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import de.dfki.kiara.Connection;
-import de.dfki.kiara.InterfaceCodeGen;
-import de.dfki.kiara.InterfaceMapping;
-import de.dfki.kiara.Message;
-import de.dfki.kiara.MessageDeserializationException;
-import de.dfki.kiara.Protocol;
-import de.dfki.kiara.RemoteInterface;
-import de.dfki.kiara.impl.ConnectionImpl;
+import de.dfki.kiara.*;
+import de.dfki.kiara.impl.ServiceMethodBinding;
+
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
@@ -38,9 +33,8 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
+public class JsonRpcProtocol implements Protocol {
 
-    private ConnectionImpl connection;
     private final AtomicLong nextId;
     private final ObjectMapper objectMapper;
     private final ObjectReader objectReader;
@@ -90,7 +84,6 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     }
 
     public JsonRpcProtocol() {
-        connection = null;
         nextId = new AtomicLong(1);
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(createSerializationModule());
@@ -101,25 +94,6 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
 
     public long getNextId() {
         return nextId.getAndIncrement();
-    }
-
-    @Override
-    public void initConnection(Connection connection) {
-        if (connection == null) {
-            throw new NullPointerException("connection can't be null");
-        }
-        if (this.connection != null) {
-            throw new IllegalStateException("connection was already initialized");
-        }
-        if (!(connection instanceof ConnectionImpl)) {
-            throw new IllegalArgumentException("connection has invalid type: "+connection.getClass());
-        }
-        this.connection = (ConnectionImpl)connection;
-    }
-
-    @Override
-    public Connection getConnection() {
-        return connection;
     }
 
     @Override
@@ -205,16 +179,18 @@ public class JsonRpcProtocol implements Protocol, InterfaceCodeGen {
     }
 
     @Override
-    public InterfaceCodeGen getInterfaceCodeGen() {
-        return this;
-    }
-
-    @Override
-    public <T> T generateInterfaceImpl(Class<T> interfaceClass, InterfaceMapping<T> mapping) {
-        Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
-                new Class<?>[]{interfaceClass, RemoteInterface.class},
-                new JsonRpcInvocationHandler(connection, mapping, this));
-        return interfaceClass.cast(impl);
+    public InterfaceCodeGen createInterfaceCodeGen(final ConnectionBase connection) {
+        final JsonRpcProtocol thisProtocol = this;
+        return new InterfaceCodeGen() {
+            @Override
+            public <T> T generateInterfaceImpl(Class<T> interfaceClass, InterfaceMapping<T> mapping) {
+                final ServiceMethodBinding smb = (ServiceMethodBinding)connection.getServiceMethodExecutor();
+                Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
+                        new Class<?>[]{interfaceClass, RemoteInterface.class},
+                        new JsonRpcInvocationHandler(connection, connection.getTransportConnection(), mapping, smb, thisProtocol));
+                return interfaceClass.cast(impl);
+            }
+        };
     }
 
 }

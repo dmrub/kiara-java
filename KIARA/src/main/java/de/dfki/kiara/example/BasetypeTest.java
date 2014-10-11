@@ -24,6 +24,7 @@ import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.ConnectionBase;
 
 /**
  *
@@ -88,7 +89,7 @@ public class BasetypeTest {
 
             Basetype basetype = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) basetype;
-            Connection c = ri.getConnection();
+            ConnectionBase c = ri.getConnection();
 
             {
                 boolean result = basetype.send_boolean(true);

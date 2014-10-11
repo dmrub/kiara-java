@@ -27,6 +27,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ProtocolRegistry;
 import de.dfki.kiara.Service;
+import de.dfki.kiara.ServiceMethodExecutor;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.config.ProtocolInfo;
@@ -49,6 +50,10 @@ public class ServiceHandler implements Closeable {
 
     public Service getService() {
         return service;
+    }
+
+    public ServiceMethodExecutor getServiceMethodExecutor() {
+        return service.getMethodBinding();
     }
 
     public ProtocolInfo getProtocolInfo() {

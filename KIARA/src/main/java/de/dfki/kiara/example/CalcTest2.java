@@ -25,6 +25,7 @@ import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.ConnectionBase;
 
 import java.nio.ByteBuffer;
 
@@ -64,7 +65,7 @@ public class CalcTest2 {
 
             Calc calc = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) calc;
-            Connection conn = ri.getConnection();
+            ConnectionBase conn = ri.getConnection();
             Message msg = calc.add_serializer(10, 12);
             System.out.println("Message data: " + new String(msg.getMessageData().array()));
 

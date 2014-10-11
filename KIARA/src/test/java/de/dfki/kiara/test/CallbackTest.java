@@ -17,6 +17,7 @@
  */
 package de.dfki.kiara.test;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Message;
@@ -28,7 +29,6 @@ import de.dfki.kiara.Service;
 import de.dfki.kiara.ServiceConnection;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.After;
@@ -45,8 +45,12 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class CallbackTest {
 
+    static {
+        System.setProperty("java.util.logging.config.file", "/home/rubinste/.kiara/logging.properties");
+    }
+
     public static class CallbackImpl {
-        public void add(ServiceConnection connection, int a, int b) throws Exception {
+        public String add(ServiceConnection connection, int a, int b) throws Exception {
             System.out.println("add("+a+","+b+") via connection="+connection);
 /*
             final ServerConnection srvc = connection.getServerConnection();
@@ -62,32 +66,30 @@ public class CallbackTest {
 */
             // T2
 
-
             MethodBinding<CallbackClient> binder
                     = new MethodBinding<>(CallbackClient.class)
                     .bind("calc.addResult", "addResult");
 
             CallbackClient cc = connection.getServiceInterface(binder);
-            int c = cc.addResult(a, b, a+b);
+            String c = cc.addResult(a, b, a+b);
+            return c;
         }
     }
 
     public static class CallbackClientImpl {
-        public int addResult(int a, int b, int result) {
+        public String addResult(int a, int b, int result) {
             System.out.println("addResult: "+a+" + "+b+" = "+result);
             Assert.assertEquals(a+b, result);
-            return result;
+            return "result is "+result;
         }
     }
 
     public static interface Callback {
-
-        public void add(int a, int b) throws Exception;
-
+        public String add(int a, int b) throws Exception;
     }
 
     public static interface CallbackClient {
-        public int addResult(int a, int b, int result);
+        public String addResult(int a, int b, int result);
     }
 
     public static class CallbackSetup extends TestSetup<Callback> {
@@ -105,7 +107,7 @@ public class CallbackTest {
                     "namespace * calc "
                             + "service calc { "
                             + "    void add(i32 a, i32 b) "
-                            + "    [Callback] i32 addResult(i32 a, i32 b, i32 result) "
+                            + "    [Callback] string addResult(i32 a, i32 b, i32 result) "
                             + "} "
             );
 
@@ -179,6 +181,8 @@ public class CallbackTest {
     @Test
     public void testCallback() throws Exception {
         calc.add(5, 10);
+
+        //Thread.sleep(1000);
     }
 
 }

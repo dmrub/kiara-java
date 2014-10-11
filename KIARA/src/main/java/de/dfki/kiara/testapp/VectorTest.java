@@ -17,11 +17,7 @@
  */
 package de.dfki.kiara.testapp;
 
-import de.dfki.kiara.Connection;
-import de.dfki.kiara.Context;
-import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MethodBinding;
-import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.*;
 
 /**
  *
@@ -69,7 +65,7 @@ public class VectorTest {
 
             Example example = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) example;
-            Connection c = ri.getConnection();
+            ConnectionBase c = ri.getConnection();
 
             {
                 Vector result = example.addVectors(new Vector(1,2,3), new Vector(3,2,1));

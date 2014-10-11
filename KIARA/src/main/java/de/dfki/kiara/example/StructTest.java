@@ -17,12 +17,7 @@
  */
 package de.dfki.kiara.example;
 
-import de.dfki.kiara.Connection;
-import de.dfki.kiara.Context;
-import de.dfki.kiara.GenericRemoteException;
-import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MethodBinding;
-import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.*;
 
 /**
  *
@@ -128,7 +123,7 @@ public class StructTest {
 
             StructTestIface structTest = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) structTest;
-            Connection c = ri.getConnection();
+            ConnectionBase c = ri.getConnection();
 
             {
                 Data data = structTest.pack(21, "test21");

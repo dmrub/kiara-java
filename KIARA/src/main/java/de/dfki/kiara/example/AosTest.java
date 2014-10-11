@@ -17,11 +17,8 @@
  */
 package de.dfki.kiara.example;
 
-import de.dfki.kiara.Connection;
-import de.dfki.kiara.Context;
-import de.dfki.kiara.Kiara;
-import de.dfki.kiara.MethodBinding;
-import de.dfki.kiara.RemoteInterface;
+import de.dfki.kiara.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -116,7 +113,7 @@ public class AosTest {
 
             GetSetLocations getSetLocations = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) getSetLocations;
-            Connection c = ri.getConnection();
+            ConnectionBase c = ri.getConnection();
 
             /* Send 10 locations to the server, where they will be stored */
             {

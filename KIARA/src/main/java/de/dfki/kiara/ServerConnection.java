@@ -22,6 +22,6 @@ package de.dfki.kiara;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface ServerConnection extends ConnectionBase {
-
+public interface ServerConnection {
+    public TransportConnection getTransportConnection();
 }

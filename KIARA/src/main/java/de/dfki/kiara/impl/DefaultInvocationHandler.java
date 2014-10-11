@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
+import de.dfki.kiara.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,19 +38,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
-import de.dfki.kiara.Connection;
-import de.dfki.kiara.Handler;
-import de.dfki.kiara.InterfaceMapping;
-import de.dfki.kiara.Message;
-import de.dfki.kiara.MethodEntry;
-import de.dfki.kiara.Protocol;
-import de.dfki.kiara.RemoteInvocationException;
-import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportConnectionReceiver;
-import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.WrappedRemoteException;
-import de.dfki.kiara.util.MessageDecoder;
 import de.dfki.kiara.util.MessageDispatcher;
 import de.dfki.kiara.util.Pipeline;
 
@@ -61,17 +49,21 @@ import de.dfki.kiara.util.Pipeline;
 public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler implements Handler<TransportMessage> {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultInvocationHandler.class);
-    protected final ConnectionImpl connection;
+    protected final ConnectionBase connection;
+    protected final TransportConnection transportConnection;
     protected final InterfaceMapping<?> interfaceMapping;
+    protected final ServiceMethodBinding serviceMethodBinding;
     protected final PROTOCOL protocol;
     protected final Pipeline pipeline;
 
-    public DefaultInvocationHandler(ConnectionImpl connection, InterfaceMapping<?> interfaceMapping, PROTOCOL protocol) {
+    public DefaultInvocationHandler(ConnectionBase connection, TransportConnection transportConnection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, PROTOCOL protocol) {
         this.connection = connection;
+        this.transportConnection = transportConnection;
         this.pipeline = new Pipeline();
         this.protocol = protocol;
         this.interfaceMapping = interfaceMapping;
-        this.connection.getTransportConnection().addResponseHandler(this);
+        this.serviceMethodBinding = serviceMethodBinding;
+        this.transportConnection.addResponseHandler(this);
     }
 
     public static ListenableFuture<TransportMessage> performAsyncCall(TransportMessage request, final ListeningExecutorService executor) {
@@ -91,14 +83,13 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         return interfaceMapping;
     }
 
-    public Connection getConnection() {
-        return connection;
+    public TransportConnection getTransportConnection() {
+        return transportConnection;
     }
 
     @Deprecated
     protected ListenableFuture<Message> performAsyncCallOld(Message request, final Method method, final ListeningExecutorService executor) throws IOException {
-        final TransportConnection tc = connection.getTransportConnection();
-        final TransportMessage transportRequest = tc.createRequest();
+        final TransportMessage transportRequest = transportConnection.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
         transportRequest.setPayload(request.getMessageData());
 
@@ -119,9 +110,8 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
     }
 
     protected Message performSyncCall(Message request, Method method) throws InterruptedException, ExecutionException, IOException {
-        final TransportConnection tc = connection.getTransportConnection();
-        tc.removeResponseHandler(this);
-        final TransportConnectionReceiver tcr = new TransportConnectionReceiver(tc);
+        transportConnection.removeResponseHandler(this);
+        final TransportConnectionReceiver tcr = new TransportConnectionReceiver(transportConnection);
 
         final TransportMessage transportRequest = tcr.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
@@ -135,7 +125,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
         tcr.detach();
 
-        tc.addResponseHandler(this);
+        transportConnection.addResponseHandler(this);
 
         return protocol.createMessageFromData(transportResponse.getPayload());
     }
@@ -143,14 +133,13 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
     public abstract MessageDispatcher createMessageDispatcher(Message request);
 
     protected ListenableFuture<Message> performAsyncCall(final Message request, final TypeToken<?> returnType, ListeningExecutorService executor) throws IOException {
-        final TransportConnection tc = connection.getTransportConnection();
-        final TransportMessage transportRequest = tc.createRequest();
+        final TransportMessage transportRequest = transportConnection.createRequest();
         transportRequest.setContentType(protocol.getMimeType());
         transportRequest.setPayload(request.getMessageData());
         final MessageDispatcher dispatcher = createMessageDispatcher(request);
         pipeline.addHandler(dispatcher);
 
-        ListenableFuture<Void> reqSent = tc.send(transportRequest);
+        final ListenableFuture<Void> reqSent = transportConnection.send(transportRequest);
 
         final ListeningExecutorService myExecutor = executor == null ? Global.sameThreadExecutor : executor;
 
@@ -192,7 +181,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
     @Override
     protected Object handleInvocation(Object o, Method method, Object[] os) throws Throwable {
         if (method.equals(SpecialMethods.riGetConnection)) {
-            return getConnection();
+            return connection;
         }
 
         InterfaceMapping<?> mapping = getInterfaceMapping();
@@ -366,7 +355,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                 final TransportMessage response = tc.createResponse(result);
                 final Transport transport = tc.getTransport();
 
-                ListenableFuture<TransportMessage> tm = connection.getServiceMethodBinding().performCall(null, protocol, message, response);
+                ListenableFuture<TransportMessage> tm = serviceMethodBinding.performCall(null, protocol, message, response);
                 if (tm != null) {
                     Futures.addCallback(tm, new FutureCallback<TransportMessage>() {
 

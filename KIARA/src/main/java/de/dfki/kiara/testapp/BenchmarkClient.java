@@ -18,6 +18,7 @@
 package de.dfki.kiara.testapp;
 
 import de.dfki.kiara.Connection;
+import de.dfki.kiara.ConnectionBase;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.MethodBinding;
@@ -63,7 +64,7 @@ public class BenchmarkClient {
 
             Benchmark benchmark = connection.getServiceInterface(binder);
             RemoteInterface ri = (RemoteInterface) benchmark;
-            Connection c = ri.getConnection();
+            ConnectionBase c = ri.getConnection();
 
             final int numMessages = 10000;
 

@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import de.dfki.kiara.ServiceMethodBinder;
+import de.dfki.kiara.ServiceMethodExecutor;
 import de.dfki.kiara.TransportMessage;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -42,7 +43,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * @author shahzad
  */
-public class ServiceMethodBinding {
+public class ServiceMethodBinding implements ServiceMethodExecutor {
 
     private final Map<String, ServiceMethodBinder> internalMapping;
 

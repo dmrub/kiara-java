@@ -18,14 +18,8 @@
 package de.dfki.kiara.impl;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import de.dfki.kiara.InterfaceCodeGen;
-import de.dfki.kiara.InterfaceMapping;
-import de.dfki.kiara.MethodBinding;
-import de.dfki.kiara.Protocol;
-import de.dfki.kiara.ServerConnection;
-import de.dfki.kiara.ServiceConnection;
-import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.*;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
@@ -38,11 +32,13 @@ public class ServiceConnectionImpl implements ServiceConnection, InvocationEnvir
     private final ServerConnectionHandler serverConnectionHandler;
     private final TransportAddress transportAddress;
     private final ServiceHandler serviceHandler;
+    private final InterfaceCodeGen codegen;
 
     public ServiceConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddress transportAddress, ServiceHandler serviceHandler) {
         this.serverConnectionHandler = serverConnectionHandler;
         this.transportAddress = transportAddress;
         this.serviceHandler = serviceHandler;
+        this.codegen = serviceHandler.getProtocol().createInterfaceCodeGen(this);
     }
 
     public ServiceConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddressAndServiceHandler transportAddressAndServiceHandler) {
@@ -86,8 +82,21 @@ public class ServiceConnectionImpl implements ServiceConnection, InvocationEnvir
         InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinding);
         Class<T> interfaceClass = mapping.getInterfaceClass();
 
-        InterfaceCodeGen codegen = getProtocol().getInterfaceCodeGen();
         return codegen.generateInterfaceImpl(interfaceClass, mapping);
     }
 
+    @Override
+    public TransportConnection getTransportConnection() {
+        return serverConnectionHandler.getTransportConnection();
+    }
+
+    @Override
+    public ServiceMethodExecutor getServiceMethodExecutor() {
+        return getServiceHandler().getServiceMethodExecutor();
+    }
+
+    @Override
+    public void close() throws IOException {
+
+    }
 }

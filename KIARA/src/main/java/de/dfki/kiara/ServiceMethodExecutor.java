@@ -21,7 +21,6 @@ package de.dfki.kiara;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface ServiceConnection extends ConnectionBase, ServiceInterfaceProvider {
-    public ServerConnection getServerConnection();
-    public Protocol getProtocol();
+public interface ServiceMethodExecutor {
+
 }

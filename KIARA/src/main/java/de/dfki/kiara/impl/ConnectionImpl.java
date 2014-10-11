@@ -27,6 +27,7 @@ import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.NoSuchIDLFunctionException;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ProtocolRegistry;
+import de.dfki.kiara.ServiceMethodExecutor;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportRegistry;
@@ -69,6 +70,7 @@ public class ConnectionImpl implements Connection {
     private final World world;
     private final Module module;
     private final ServiceMethodBinding methodBinding;
+    private final InterfaceCodeGen codegen;
 
     @SuppressWarnings("null")
     ConnectionImpl(String configUriStr) throws IOException {
@@ -191,7 +193,7 @@ public class ConnectionImpl implements Connection {
             throw new ConnectException(ex);
         }
 
-        protocol.initConnection(this);
+        codegen = protocol.createInterfaceCodeGen(this);
     }
 
     private void loadIDL(InputStream stream, String fileName) throws IOException {
@@ -238,11 +240,15 @@ public class ConnectionImpl implements Connection {
         InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinding);
         Class<T> interfaceClass = mapping.getInterfaceClass();
 
-        InterfaceCodeGen codegen = protocol.getInterfaceCodeGen();
         return codegen.generateInterfaceImpl(interfaceClass, mapping);
     }
 
-    ServiceMethodBinding getServiceMethodBinding() {
+    public ServiceMethodBinding getServiceMethodBinding() {
+        return methodBinding;
+    }
+
+    @Override
+    public ServiceMethodExecutor getServiceMethodExecutor() {
         return methodBinding;
     }
 

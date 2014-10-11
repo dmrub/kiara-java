@@ -23,5 +23,5 @@ package de.dfki.kiara;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public interface RemoteInterface {
-    public Connection getConnection();
+    public ConnectionBase getConnection();
 }

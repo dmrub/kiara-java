@@ -24,12 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import de.dfki.kiara.Protocol;
-import de.dfki.kiara.ProtocolRegistry;
-import de.dfki.kiara.Service;
-import de.dfki.kiara.ServiceMethodExecutor;
-import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.*;
 import de.dfki.kiara.config.ProtocolInfo;
 
 /**
@@ -68,7 +63,7 @@ public class ServiceHandler implements Closeable {
     public void close() {
     }
 
-    ListenableFuture<TransportMessage> performCall(ServiceConnectionImpl serviceConnection, TransportMessage request, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
-        return service.getMethodBinding().performCall(serviceConnection, protocol, request, response);
+    public ListenableFuture<Message> performCall(final InvocationEnvironment env, final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
+        return service.getMethodBinding().performCall(env, requestMessage);
     }
 }

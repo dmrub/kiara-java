@@ -72,8 +72,8 @@ public class ServiceConnectionImpl implements ServiceConnection, InvocationEnvir
         return this;
     }
 
-    public ListenableFuture<TransportMessage> performCall(TransportMessage request, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
-        return getServiceHandler().performCall(this, request, response);
+    public ListenableFuture<Message> performCall(final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
+        return getServiceHandler().performCall(this, requestMessage);
     }
 
     @Override

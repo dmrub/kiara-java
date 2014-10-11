@@ -17,6 +17,7 @@
  */
 package de.dfki.kiara.impl;
 
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.*;
@@ -64,10 +65,10 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
     }
 
     @Override
-    public ListenableFuture<TransportMessage> onRequest(TransportMessage request) throws Exception {
-        final TransportConnection connection = request.getConnection();
-        final TransportMessage response = connection.createResponse(request);
-        final Transport transport = connection.getTransport();
+    public ListenableFuture<TransportMessage> onRequest(TransportMessage trequest) throws Exception {
+        final TransportConnection tconnection = trequest.getConnection();
+        final TransportMessage tresponse = tconnection.createResponse(trequest);
+        final Transport transport = tconnection.getTransport();
         final String transportName = transport.getName();
 
         String responseText = null;
@@ -77,12 +78,12 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
         // process server configuration request
         if ("http".equalsIgnoreCase(transportName) || "https".equalsIgnoreCase(transportName)) {
             try {
-                URI requestUri = new URI(request.getRequestUri()).normalize();
+                URI requestUri = new URI(trequest.getRequestUri()).normalize();
 
                 if (server.getConfigUri().getPath().equals(requestUri.getPath())) {
                     ServerConfiguration config = server.generateServerConfiguration(
-                            ((InetSocketAddress) connection.getLocalAddress()).getHostName(),
-                            ((InetSocketAddress) connection.getRemoteAddress()).getHostName());
+                            ((InetSocketAddress) tconnection.getLocalAddress()).getHostName(),
+                            ((InetSocketAddress) tconnection.getRemoteAddress()).getHostName());
 
                     responseText = config.toJson();
                     contentType = "application/json";
@@ -104,7 +105,7 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
         if (!requestProcessed) {
             ServiceConnectionImpl sc = null;
             if (serviceHandlers.size() > 1 || transport.isAddressContainsRequestPath()) {
-                final TransportAddress localTransportAddress = request.getLocalTransportAddress();
+                final TransportAddress localTransportAddress = trequest.getLocalTransportAddress();
                 for (ServiceConnectionImpl element : serviceHandlers) {
                     if (element.getTransportAddress().acceptsConnection(localTransportAddress)) {
                         sc = element;
@@ -115,9 +116,22 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
             }
 
             if (sc != null) {
-                return sc.performCall(request, response);
+                final Protocol protocol = sc.getProtocol();
+                final Message message = protocol.createMessageFromData(trequest.getPayload());
+                ListenableFuture<Message> fmsg = sc.performCall(message);
+
+                AsyncFunction<Message, TransportMessage> f =
+                        new AsyncFunction<Message, TransportMessage>() {
+                            public ListenableFuture<TransportMessage> apply(Message message) throws Exception {
+                                tresponse.setPayload(message.getMessageData());
+                                tresponse.setContentType(protocol.getMimeType());
+                                return Futures.immediateFuture(tresponse);
+                            }
+                        };
+
+                return Futures.transform(fmsg, f);
             } else {
-                logger.error("No service handler for request: {}", request);
+                logger.error("No service handler for request: {}", trequest);
                 responseText = "No service handler for request";
                 contentType = "text/plain; charset=UTF-8";
             }
@@ -125,14 +139,14 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
 
         try {
             if (responseText != null && contentType != null) {
-                response.setPayload(ByteBuffer.wrap(responseText.getBytes("UTF-8")));
-                response.setContentType(contentType);
+                tresponse.setPayload(ByteBuffer.wrap(responseText.getBytes("UTF-8")));
+                tresponse.setContentType(contentType);
             }
         } catch (UnsupportedEncodingException ex) {
             logger.error("No UTF-8 encoding", ex);
         }
 
-        return Futures.immediateFuture(response);
+        return Futures.immediateFuture(tresponse);
     }
 
     public void close() throws IOException {

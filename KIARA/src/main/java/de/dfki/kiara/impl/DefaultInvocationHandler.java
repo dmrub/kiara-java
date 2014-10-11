@@ -340,28 +340,33 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
     }
 
     @Override
-    public boolean onSuccess(TransportMessage result) {
-        if (result == null) {
+    public boolean onSuccess(final TransportMessage tmessage) {
+        if (tmessage == null) {
             logger.error("Received null transport message");
             return true;
         }
 
         try {
-            Message message = protocol.createMessageFromData(result.getPayload());
+            Message message = protocol.createMessageFromData(tmessage.getPayload());
 
             if (message.getMessageKind() == Message.Kind.REQUEST) {
                 // FIXME compare with ServerConnectionHandler.onRequest
-                final TransportConnection tc = result.getConnection();
-                final TransportMessage response = tc.createResponse(result);
-                final Transport transport = tc.getTransport();
 
-                ListenableFuture<TransportMessage> tm = serviceMethodBinding.performCall(null, protocol, message, response);
-                if (tm != null) {
-                    Futures.addCallback(tm, new FutureCallback<TransportMessage>() {
+                ListenableFuture<Message> fmsg = serviceMethodBinding.performCall(null, message);
+                if (fmsg != null) {
+                    Futures.addCallback(fmsg, new FutureCallback<Message>() {
 
                         @Override
-                        public void onSuccess(TransportMessage result) {
-                            tc.send(result);
+                        public void onSuccess(Message resultMessage) {
+                            try {
+                                final TransportConnection tc = tmessage.getConnection();
+                                final TransportMessage tresponse = tc.createResponse(tmessage);
+                                tresponse.setPayload(resultMessage.getMessageData());
+                                tresponse.setContentType(protocol.getMimeType());
+                                tc.send(tresponse);
+                            } catch (Exception ex) {
+                                logger.error("Error on callback response", ex);
+                            }
                         }
 
                         @Override

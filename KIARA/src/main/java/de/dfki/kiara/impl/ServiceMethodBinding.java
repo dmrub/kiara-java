@@ -88,6 +88,81 @@ public class ServiceMethodBinding implements ServiceMethodExecutor {
         }
     }
 
+    ListenableFuture<Message> performCall(InvocationEnvironment env, final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
+        if (requestMessage.getMessageKind() != Message.Kind.REQUEST) {
+            throw new IllegalArgumentException("message is not a request");
+        }
+        final String methodName = requestMessage.getMethodName();
+        final Protocol protocol = requestMessage.getProtocol();
+        final ServiceMethodBinder serviceMethodBinder = getServiceMethodBinder(methodName);
+
+        Object result;
+        boolean isException = false;
+
+        if (serviceMethodBinder == null) {
+            isException = true;
+            result = new GenericRemoteException("unbound method '"+methodName+"'", GenericRemoteException.METHOD_NOT_FOUND);
+
+            Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));
+            return Futures.immediateFuture(responseMessage);
+        } else {
+            final MethodEntry methodEntry = serviceMethodBinder.getMethodEntry();
+
+            final List<Object> args = requestMessage.getRequestObject(methodEntry.serializationParamTypes).args;
+
+            //methodEntry.hasFutureParams
+            final int numArgs = args.size();
+            for (int i = 0; i < numArgs; ++i) {
+                if (methodEntry.isFutureParam.get(i)) {
+                    final Function<Object, Object> f = ((Function<Object, Object>) methodEntry.serializationToParamConverters[i]);
+                    args.set(i, f.apply(args.get(i)));
+                } else if (methodEntry.specialParamTypes[i] != null && env != null) {
+                    final TypeToken<?> ptype = methodEntry.specialParamTypes[i];
+                    if (ptype.isAssignableFrom(de.dfki.kiara.ServiceConnection.class)) {
+                        args.set(i, env.getServiceConnection());
+                    } else if (ptype.isAssignableFrom(de.dfki.kiara.ServerConnection.class)) {
+                        args.set(i, env.getServerConnection());
+                    }
+                }
+            }
+
+            AsyncFunction<List<Object>, Message> ff = new AsyncFunction<List<Object>, Message>() {
+
+                @Override
+                public ListenableFuture<Message> apply(final List<Object> input) throws Exception {
+                    return Global.executor.submit(new Callable<Message>() {
+                        @Override
+                        public Message call() throws Exception {
+                            Object result;
+                            boolean isException = false;
+
+                            try {
+                                result = serviceMethodBinder.getBoundMethod().invoke(serviceMethodBinder.getImplementedClass(), args.toArray());
+
+                                if (methodEntry.futureParamOfReturnType != null) {
+                                    ListenableFuture<?> futureResult =
+                                            (ListenableFuture<?>)(methodEntry.returnTypeConverter != null ?
+                                                    ((Function<Object, Object>)(methodEntry.returnTypeConverter)).apply(result) :
+                                                    result);
+                                    result = futureResult.get();
+                                }
+
+                            } catch (InvocationTargetException ex) {
+                                isException = true;
+                                result = ex.getTargetException();
+                            }
+
+                            Message responseMessage = protocol.createResponseMessage(requestMessage, new Message.ResponseObject(result, isException));
+                            return responseMessage;
+                        }
+                    });
+                }
+            };
+            return Futures.transform(Futures.immediateFuture(args), ff);
+        }
+    }
+
+
     ListenableFuture<TransportMessage> performCall(InvocationEnvironment env, final Protocol protocol, final Message requestMessage, final TransportMessage response) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
         if (requestMessage.getMessageKind() != Message.Kind.REQUEST) {
             throw new IllegalArgumentException("message is not a request");

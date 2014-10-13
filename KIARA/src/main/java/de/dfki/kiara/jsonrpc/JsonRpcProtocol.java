@@ -159,23 +159,13 @@ public class JsonRpcProtocol implements Protocol {
     }
 
     @Override
-    public Message createRequestMessage(String methodName) {
-        return new JsonRpcMessage(this, methodName, getNextId(), null);
-    }
-
-    @Override
-    public Message createResponseMessage(Message requestMessage) {
-        return new JsonRpcMessage((JsonRpcMessage) requestMessage, false);
-    }
-
-    @Override
     public Message createRequestMessage(Message.RequestObject request) throws IOException {
         return new JsonRpcMessage(this, request, getNextId());
     }
 
     @Override
     public Message createResponseMessage(Message requestMessage, Message.ResponseObject response) {
-        return new JsonRpcMessage(this, response, ((JsonRpcMessage)requestMessage).getId());
+        return new JsonRpcMessage(this, response, ((JsonRpcMessage)requestMessage));
     }
 
     @Override

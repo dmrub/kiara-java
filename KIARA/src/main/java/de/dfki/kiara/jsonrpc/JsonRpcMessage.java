@@ -39,6 +39,7 @@ import de.dfki.kiara.Protocol;
 public class JsonRpcMessage implements Message {
 
     private final JsonRpcProtocol protocol;
+    private final JsonRpcMessage requestMessage;
     private Message.Kind kind;
     private final String methodName;
     private ResponseObject response;
@@ -108,6 +109,7 @@ public class JsonRpcMessage implements Message {
             }
             this.id = parseMessageId(body);
         }
+        this.requestMessage = null;
         this.protocol = protocol;
     }
 
@@ -139,60 +141,21 @@ public class JsonRpcMessage implements Message {
         this(protocol, readFromBuffer(protocol, data));
     }
 
-    /**
-     * Create request message.
-     *
-     * @param protocol
-     * @param methodName
-     * @param id
-     * @param params
-     */
-    public JsonRpcMessage(JsonRpcProtocol protocol, String methodName, Object id, JsonNode params) {
+    public JsonRpcMessage(JsonRpcProtocol protocol, ResponseObject response, JsonRpcMessage requestMessage) {
         this.protocol = protocol;
-        this.methodName = methodName;
-        this.kind = Kind.REQUEST;
-        this.request = null;
-        this.response = null;
-        this.id = id;
-        this.params = params;
-        this.error = null;
-    }
-
-    public JsonRpcMessage(JsonRpcMessage requestMessage, boolean isException) {
-        this.protocol = requestMessage.protocol;
-        this.methodName = null;
-        this.kind = isException ? Kind.EXCEPTION : Kind.RESPONSE;
-        this.request = null;
-        this.response = null;
-        this.id = requestMessage.id;
-        this.params = null;
-        this.error = null;
-    }
-
-    public JsonRpcMessage(JsonRpcProtocol protocol, Message.Kind kind) {
-        this.protocol = protocol;
-        this.methodName = null;
-        this.kind = kind;
-        this.request = null;
-        this.response = null;
-        this.id = null;
-        this.params = null;
-        this.error = null;
-    }
-
-    public JsonRpcMessage(JsonRpcProtocol protocol, ResponseObject response, Object id) {
-        this.protocol = protocol;
+        this.requestMessage = requestMessage;
         this.methodName = null;
         this.kind = response.isException ? Kind.EXCEPTION : Kind.RESPONSE;
         this.request = null;
         this.response = response;
-        this.id = id;
+        this.id = requestMessage.getId();
         this.params = null;
         this.error = null;
     }
 
     public JsonRpcMessage(JsonRpcProtocol protocol, RequestObject request, Object id) {
         this.protocol = protocol;
+        this.requestMessage = null;
         this.methodName = request.methodName;
         this.kind = Kind.REQUEST;
         this.request = request;
@@ -204,6 +167,12 @@ public class JsonRpcMessage implements Message {
 
     public Object getId() {
         return id;
+    }
+
+
+    @Override
+    public Message getRequestMessage() {
+        return requestMessage;
     }
 
     @Override

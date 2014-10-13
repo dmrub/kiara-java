@@ -37,17 +37,7 @@ public interface Protocol {
 
     public Message createMessageFromData(ByteBuffer data) throws IOException;
 
-    /** Create message for calling service method name.
-     *
-     * @param methodName
-     * @return
-     * @throws java.io.IOException
-     */
-    public Message createRequestMessage(String methodName) throws IOException;
-
     public Message createRequestMessage(Message.RequestObject request) throws IOException;
-
-    public Message createResponseMessage(Message requestMessage);
 
     public Message createResponseMessage(Message requestMessage, Message.ResponseObject response) throws IOException;
 

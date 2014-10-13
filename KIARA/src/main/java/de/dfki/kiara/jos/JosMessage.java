@@ -37,6 +37,7 @@ import java.util.List;
 public class JosMessage implements Message {
 
     private final JosProtocol protocol;
+    private final JosMessage requestMessage;
     private final String methodName;
     private Message.Kind kind;
     private ResponseObject response;
@@ -83,44 +84,34 @@ public class JosMessage implements Message {
                 throw new IOException("Invalid request code: " + messageCode);
             }
 
+            this.requestMessage = null;
             this.protocol = protocol;
         }
     }
 
-    public JosMessage(JosProtocol protocol, String methodName, long id) {
+    public JosMessage(JosProtocol protocol, ResponseObject response, JosMessage requestMessage) {
         this.protocol = protocol;
-        this.methodName = methodName;
-        this.kind = Kind.REQUEST;
-        this.request = null;
-        this.response = null;
-        this.id = id;
-    }
-
-    public JosMessage(JosProtocol protocol, Message.Kind kind) {
-        this.protocol = protocol;
-        this.methodName = null;
-        this.kind = kind;
-        this.request = null;
-        this.response = null;
-        this.id = -1;
-    }
-
-    public JosMessage(JosProtocol protocol, ResponseObject response, long id) {
-        this.protocol = protocol;
+        this.requestMessage = requestMessage;
         this.methodName = null;
         this.kind = response.isException ? Kind.EXCEPTION : Kind.RESPONSE;
         this.request = null;
         this.response = response;
-        this.id = id;
+        this.id = requestMessage.getId();
     }
 
     public JosMessage(JosProtocol protocol, RequestObject request, long id) {
         this.protocol = protocol;
+        this.requestMessage = null;
         this.methodName = request.methodName;
         this.kind = Kind.REQUEST;
         this.request = request;
         this.response = null;
         this.id = id;
+    }
+
+    @Override
+    public Message getRequestMessage() {
+        return requestMessage;
     }
 
     @Override
@@ -214,5 +205,4 @@ public class JosMessage implements Message {
     public String toString() {
         return "JosMessage("+kind+", "+methodName+", "+request+", "+response+", "+id+")";
     }
-
 }

@@ -259,7 +259,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         return channel.remoteAddress();
     }
 
-    public void onResponse(TcpBlockMessage response) {
+    private void onResponse(TcpBlockMessage response) {
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }

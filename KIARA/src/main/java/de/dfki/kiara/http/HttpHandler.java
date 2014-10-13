@@ -208,7 +208,9 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
                 HttpResponseMessage responseTransportMessage = tm != null ? (HttpResponseMessage)tm.get() : null;
                 HttpResponse httpResponse;
                 if (responseTransportMessage != null) {
-                    logger.debug("RESPONSE CONTENT: {}", responseTransportMessage.getContent().content().toString(StandardCharsets.UTF_8));
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("RESPONSE CONTENT: {}", responseTransportMessage.getContent().content().toString(StandardCharsets.UTF_8));
+                    }
                     httpResponse = responseTransportMessage.finalizeResponse();
                 } else {
                     httpResponse = new DefaultFullHttpResponse(
@@ -282,7 +284,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         return channel.remoteAddress();
     }
 
-    public void onResponse(HttpResponseMessage response) {
+    private void onResponse(HttpResponseMessage response) {
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
@@ -298,7 +300,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         }
     }
 
-    public void onErrorResponse(Throwable error) {
+    private void onErrorResponse(Throwable error) {
         synchronized (responseHandlers) {
             if (!responseHandlers.isEmpty()) {
                 for (Handler<TransportMessage> handler : responseHandlers) {

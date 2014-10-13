@@ -62,6 +62,13 @@ public interface Message {
 
     public Kind getMessageKind();
 
+    /** Returns the request message when this message is a response.
+     *  Returns null when this is not a response message.
+     *
+     * @return
+     */
+    public Message getRequestMessage();
+
     public Protocol getProtocol();
 
     public String getMethodName();

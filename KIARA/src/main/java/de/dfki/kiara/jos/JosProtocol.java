@@ -71,23 +71,13 @@ public class JosProtocol implements Protocol {
     }
 
     @Override
-    public Message createRequestMessage(String methodName) {
-        return new JosMessage(this, methodName, getNextId());
-    }
-
-    @Override
-    public Message createResponseMessage(Message requestMessage) {
-        return new JosMessage(this, Message.Kind.RESPONSE);
-    }
-
-    @Override
     public Message createRequestMessage(Message.RequestObject request) {
         return new JosMessage(this, request, getNextId());
     }
 
     @Override
     public Message createResponseMessage(Message requestMessage, Message.ResponseObject response) {
-        return new JosMessage(this, response, ((JosMessage)requestMessage).getId());
+        return new JosMessage(this, response, ((JosMessage)requestMessage));
     }
 
 }

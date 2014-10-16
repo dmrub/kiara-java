@@ -30,7 +30,7 @@ import java.util.concurrent.LinkedBlockingDeque;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class TransportConnectionReceiver implements Handler<TransportMessage>, TransportConnection {
+public class TransportConnectionReceiver implements TransportMessageListener, TransportConnection {
 
     private final TransportConnection connection;
     private final BlockingQueue<Object> queue = new LinkedBlockingDeque<>();
@@ -41,11 +41,11 @@ public class TransportConnectionReceiver implements Handler<TransportMessage>, T
             throw new NullPointerException("connection");
         }
         this.connection = connection;
-        this.connection.addResponseHandler(this);
+        this.connection.addMessageListener(this);
     }
 
     public void detach() {
-        this.connection.removeResponseHandler(this);
+        this.connection.removeMessageListener(this);
     }
 
     public TransportConnection getConnection() {
@@ -103,18 +103,6 @@ public class TransportConnectionReceiver implements Handler<TransportMessage>, T
     }
 
     @Override
-    public boolean onSuccess(TransportMessage result) {
-        queue.add(result);
-        return true;
-    }
-
-    @Override
-    public boolean onFailure(Throwable t) {
-        queue.add(t);
-        return true;
-    }
-
-    @Override
     public void close() throws IOException {
         connection.close();
     }
@@ -152,5 +140,25 @@ public class TransportConnectionReceiver implements Handler<TransportMessage>, T
     @Override
     public Transport getTransport() {
         return connection.getTransport();
+    }
+
+    @Override
+    public TransportMessage createTransportMessage(TransportMessage message) {
+        return connection.createTransportMessage(message);
+    }
+
+    @Override
+    public void addMessageListener(TransportMessageListener listener) {
+        connection.addMessageListener(listener);
+    }
+
+    @Override
+    public boolean removeMessageListener(TransportMessageListener listener) {
+        return connection.removeMessageListener(listener);
+    }
+
+    @Override
+    public void onMessage(TransportMessage message) {
+        queue.add(message);
     }
 }

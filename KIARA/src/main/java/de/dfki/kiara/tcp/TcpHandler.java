@@ -27,6 +27,7 @@ import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.impl.Global;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -69,6 +70,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
 
     private final List<RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>> requestHandlers = new ArrayList<>();
     private final List<Handler<TransportMessage>> responseHandlers = new ArrayList<>();
+    private final List<TransportMessageListener> listeners = new ArrayList<>();
 
     @Override
     public TransportAddress getLocalTransportAddress() {
@@ -199,6 +201,14 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
                         }
                     }
 
+                    synchronized (listeners) {
+                        if (!listeners.isEmpty()) {
+                            for (TransportMessageListener listener : listeners) {
+                                listener.onMessage(transportMessage);
+                            }
+                        }
+                    }
+
                     if (tm != null) {
                         Futures.addCallback(tm, new FutureCallback<TransportMessage>() {
 
@@ -273,6 +283,14 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
                 }
             }
         }
+
+        synchronized (listeners) {
+            if (!listeners.isEmpty()) {
+                for (TransportMessageListener listener : listeners) {
+                    listener.onMessage(response);
+                }
+            }
+        }
     }
 
     public void onErrorResponse(Throwable error) {
@@ -300,6 +318,14 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         TcpBlockMessage request = (TcpBlockMessage) transportMessage;
 
         return new TcpBlockMessage(this, null);
+    }
+
+    @Override
+    public TransportMessage createTransportMessage(TransportMessage transportMessage) {
+        if (transportMessage instanceof TcpBlockMessage)
+            return createResponse(transportMessage);
+        else
+            return createRequest();
     }
 
     @Override
@@ -336,6 +362,27 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         }
         synchronized (responseHandlers) {
             responseHandlers.remove(handler);
+        }
+        return false;
+    }
+
+    @Override
+    public void addMessageListener(TransportMessageListener listener) {
+        if (listener == null) {
+            throw new NullPointerException("listener");
+        }
+        synchronized (listeners) {
+            listeners.add(listener);
+        }
+    }
+
+    @Override
+    public boolean removeMessageListener(TransportMessageListener listener) {
+        if (listener == null) {
+            return false;
+        }
+        synchronized (listeners) {
+            listeners.remove(listener);
         }
         return false;
     }

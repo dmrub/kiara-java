@@ -17,14 +17,12 @@
  */
 package de.dfki.kiara.testapp;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.Kiara;
-import de.dfki.kiara.RequestHandler;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.TransportRegistry;
 import de.dfki.kiara.TransportServer;
 import de.dfki.kiara.config.ServerConfiguration;
@@ -67,14 +65,15 @@ public class TransportServerTest {
         config.servers.add(si);
     }
 
-    private static class ServerHandler implements Handler<TransportConnection>, RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> {
+    private static class ServerHandler implements Handler<TransportConnection>, TransportMessageListener {
 
         @Override
         public boolean onSuccess(TransportConnection result) {
             System.out.printf("Opened connection %s, local address %s, remote address %s%n",
                     result, result.getLocalAddress(), result.getRemoteAddress());
 
-            result.addRequestHandler(this);
+            // result.addRequestHandler(this);
+            result.addMessageListener(this);
             return true;
         }
 
@@ -85,7 +84,7 @@ public class TransportServerTest {
         }
 
         @Override
-        public ListenableFuture<TransportMessage> onRequest(TransportMessage message) {
+        public void onMessage(TransportMessage message) {
             byte[] array;
             int arrayOffset;
             int arrayLength;
@@ -106,7 +105,8 @@ public class TransportServerTest {
                     message.getRequestUri(),
                     message.getContentType(),
                     arrayLength == 0 ? "empty" : HexDump.dumpHexString(array, arrayOffset, arrayLength));
-            TransportMessage response = message.getConnection().createResponse(message);
+            final TransportConnection tc = message.getConnection();
+            final TransportMessage response = tc.createTransportMessage(message);
 
             String responseText;
             String contentType;
@@ -137,9 +137,9 @@ public class TransportServerTest {
             } catch (UnsupportedEncodingException ex) {
 
             }
-            return Futures.immediateFuture(response);
-        }
 
+            tc.send(response);
+        }
     }
 
     public static void main(String[] args) throws Exception {

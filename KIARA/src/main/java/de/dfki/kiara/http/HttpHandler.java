@@ -25,6 +25,7 @@ import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import io.netty.buffer.ByteBuf;
@@ -85,6 +86,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
     private final List<RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>> requestHandlers = new ArrayList<>();
     private final List<Handler<TransportMessage>> responseHandlers = new ArrayList<>();
+    private final List<TransportMessageListener> listeners = new ArrayList<>();
 
     @Override
     public TransportAddress getLocalTransportAddress() {
@@ -203,6 +205,14 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
                     }
                 }
 
+                synchronized (listeners) {
+                    if (!listeners.isEmpty()) {
+                        for (TransportMessageListener listener : listeners) {
+                            listener.onMessage(transportMessage);
+                        }
+                    }
+                }
+
                 boolean keepAlive = HttpHeaders.isKeepAlive(request);
 
                 HttpResponseMessage responseTransportMessage = tm != null ? (HttpResponseMessage)tm.get() : null;
@@ -212,16 +222,17 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
                         logger.debug("RESPONSE CONTENT: {}", responseTransportMessage.getContent().content().toString(StandardCharsets.UTF_8));
                     }
                     httpResponse = responseTransportMessage.finalizeResponse();
-                } else {
-                    httpResponse = new DefaultFullHttpResponse(
-                            HTTP_1_1, BAD_REQUEST, Unpooled.copiedBuffer("Could not handle request", CharsetUtil.UTF_8));
-                }
 
-                ctx.write(httpResponse);
+                    //httpResponse = new DefaultFullHttpResponse(
+                    //        HTTP_1_1, BAD_REQUEST, Unpooled.copiedBuffer("Could not handle request", CharsetUtil.UTF_8));
 
-                if (!keepAlive) {
-                    // If keep-alive is off, close the connection once the content is fully written.
-                    ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+                    ctx.write(httpResponse);
+
+                    if (!keepAlive) {
+                        // If keep-alive is off, close the connection once the content is fully written.
+                        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+                    }
+
                 }
             }
         } else {
@@ -298,6 +309,14 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
                 }
             }
         }
+
+        synchronized (listeners) {
+            if (!listeners.isEmpty()) {
+                for (TransportMessageListener listener : listeners) {
+                    listener.onMessage(response);
+                }
+            }
+        }
     }
 
     private void onErrorResponse(Throwable error) {
@@ -324,6 +343,14 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
         return new HttpRequestMessage(this, request);
+    }
+
+    @Override
+    public TransportMessage createTransportMessage(TransportMessage transportMessage) {
+        if (transportMessage instanceof HttpRequestMessage)
+            return createResponse(transportMessage);
+        else
+            return createRequest();
     }
 
     @Override
@@ -363,6 +390,8 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
         HttpMessage httpMsg;
 
+        boolean keepAlive = true;
+
         if (message instanceof HttpRequestMessage) {
             HttpRequestMessage msg = (HttpRequestMessage) message;
 
@@ -376,6 +405,8 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
             httpMsg = msg.finalizeResponse();
 
+            keepAlive = HttpHeaders.isKeepAlive(httpMsg);
+
             if (logger.isDebugEnabled()) {
                 logger.debug("SEND CONTENT: {}", msg.getContent().content().toString(StandardCharsets.UTF_8));
             }
@@ -384,6 +415,12 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         }
 
         ChannelFuture result = channel.writeAndFlush(httpMsg);
+
+        if (!keepAlive) {
+            // If keep-alive is off, close the connection once the content is fully written.
+            channel.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+        }
+
         return new ListenableConstantFutureAdapter<>(result, null);
     }
 
@@ -407,6 +444,28 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         }
         return false;
     }
+
+    @Override
+    public void addMessageListener(TransportMessageListener listener) {
+        if (listener == null) {
+            throw new NullPointerException("listener");
+        }
+        synchronized (listeners) {
+            listeners.add(listener);
+        }
+    }
+
+    @Override
+    public boolean removeMessageListener(TransportMessageListener listener) {
+        if (listener == null) {
+            return false;
+        }
+        synchronized (listeners) {
+            listeners.remove(listener);
+        }
+        return false;
+    }
+
 
     @Override
     public void addRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler) {

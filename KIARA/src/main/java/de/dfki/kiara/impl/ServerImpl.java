@@ -318,7 +318,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
                 result, result.getLocalAddress(), result.getRemoteAddress());
         List<TransportAddressAndServiceHandler> serviceHandlers = findAllServiceHandlers(result.getLocalTransportAddress());
         ServerConnectionHandler handler = new ServerConnectionHandler(this, result, serviceHandlers);
-        result.addRequestHandler(handler);
+        result.addMessageListener(handler);
         connectionHandlers.add(handler);
         fireClientConnectionOpened(handler);
         return true;

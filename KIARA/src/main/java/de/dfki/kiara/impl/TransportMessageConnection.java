@@ -26,6 +26,7 @@ import de.dfki.kiara.Protocol;
 import de.dfki.kiara.RequestHandler;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
+import de.dfki.kiara.TransportMessageListener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -36,7 +37,8 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class TransportMessageConnection implements MessageConnection, Handler<TransportMessage>, RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> {
+public class TransportMessageConnection implements MessageConnection, TransportMessageListener {
+
     private static final Logger logger = LoggerFactory.getLogger(TransportMessageConnection.class);
     private final TransportConnection transportConnection;
     private final Protocol protocol;
@@ -45,7 +47,7 @@ public class TransportMessageConnection implements MessageConnection, Handler<Tr
 
     public TransportMessageConnection(TransportConnection transportConnection, Protocol protocol) {
         this.transportConnection = transportConnection;
-        this.transportConnection.addResponseHandler(this);
+        this.transportConnection.addMessageListener(this);
         this.protocol = protocol;
         this.listeners = new ArrayList<>();
         this.messageMap = new IdentityHashMap<>();
@@ -101,10 +103,10 @@ public class TransportMessageConnection implements MessageConnection, Handler<Tr
     }
 
     @Override
-    public boolean onSuccess(final TransportMessage tmessage) {
+    public void onMessage(TransportMessage tmessage) {
         if (tmessage == null) {
             logger.error("Received null transport message");
-            return true;
+            return;
         }
 
         try {
@@ -118,28 +120,6 @@ public class TransportMessageConnection implements MessageConnection, Handler<Tr
         } catch (Exception ex) {
             logger.error("Message processing failed", ex);
         }
-        return true;
-    }
-
-    @Override
-    public boolean onFailure(Throwable t) {
-        return true;
-    }
-
-    @Override
-    public ListenableFuture<TransportMessage> onRequest(TransportMessage trequest) throws Exception {
-        try {
-            Message message = protocol.createMessageFromData(trequest.getPayload());
-
-            synchronized (messageMap) {
-                messageMap.put(message, trequest);
-            }
-
-            processMessage(message);
-        } catch (Exception ex) {
-            logger.error("Message processing failed", ex);
-        }
-        return null;
     }
 
 }

@@ -46,7 +46,7 @@ import de.dfki.kiara.util.Pipeline;
  *
  * @param <PROTOCOL>
  */
-public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler implements Handler<TransportMessage> {
+public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler implements TransportMessageListener {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultInvocationHandler.class);
     protected final ConnectionBase connection;
@@ -63,7 +63,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         this.protocol = protocol;
         this.interfaceMapping = interfaceMapping;
         this.serviceMethodBinding = serviceMethodBinding;
-        this.transportConnection.addResponseHandler(this);
+        this.transportConnection.addMessageListener(this);
     }
 
     public static ListenableFuture<TransportMessage> performAsyncCall(TransportMessage request, final ListeningExecutorService executor) {
@@ -110,7 +110,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
     }
 
     protected Message performSyncCall(Message request, Method method) throws InterruptedException, ExecutionException, IOException {
-        transportConnection.removeResponseHandler(this);
+        transportConnection.removeMessageListener(this);
         final TransportConnectionReceiver tcr = new TransportConnectionReceiver(transportConnection);
 
         final TransportMessage transportRequest = tcr.createRequest();
@@ -125,7 +125,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
         tcr.detach();
 
-        transportConnection.addResponseHandler(this);
+        transportConnection.addMessageListener(this);
 
         return protocol.createMessageFromData(transportResponse.getPayload());
     }
@@ -340,14 +340,16 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
     }
 
     @Override
-    public boolean onSuccess(final TransportMessage tmessage) {
+    public void onMessage(final TransportMessage tmessage) {
         if (tmessage == null) {
             logger.error("Received null transport message");
-            return true;
+            return;
         }
 
         try {
-            Message message = protocol.createMessageFromData(tmessage.getPayload());
+            final Message message = protocol.createMessageFromData(tmessage.getPayload());
+
+            logger.info("Incoming message: {}", message);
 
             if (message.getMessageKind() == Message.Kind.REQUEST) {
                 // FIXME compare with ServerConnectionHandler.onRequest
@@ -375,7 +377,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                     }
                 }, Global.executor);
 
-                return true;
+                return;
             }
 
             // process via pipeline
@@ -386,18 +388,6 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         } catch (Exception ex) {
             logger.error("Pipeline processing failed", ex);
         }
-        return true;
-    }
-
-    @Override
-    public boolean onFailure(Throwable t) {
-        try {
-            pipeline.process(t);
-            return true;
-        } catch (Exception ex) {
-            logger.error("Pipeline processing failed", ex);
-        }
-        return true;
     }
 
 }

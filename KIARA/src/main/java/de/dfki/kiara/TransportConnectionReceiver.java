@@ -108,26 +108,6 @@ public class TransportConnectionReceiver implements TransportMessageListener, Tr
     }
 
     @Override
-    public void addResponseHandler(Handler<TransportMessage> handler) {
-        connection.addResponseHandler(handler);
-    }
-
-    @Override
-    public boolean removeResponseHandler(Handler<TransportMessage> handler) {
-        return connection.removeResponseHandler(handler);
-    }
-
-    @Override
-    public void addRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler) {
-        connection.addRequestHandler(handler);
-    }
-
-    @Override
-    public void removeRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler) {
-        connection.removeRequestHandler(handler);
-    }
-
-    @Override
     public TransportMessage createResponse(TransportMessage request) {
         return connection.createResponse(request);
     }

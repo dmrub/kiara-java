@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -27,8 +26,11 @@ import java.net.SocketAddress;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public interface TransportConnection extends Closeable {
+
     public Transport getTransport();
+
     public SocketAddress getLocalAddress();
+
     public SocketAddress getRemoteAddress();
 
     public TransportAddress getLocalTransportAddress();
@@ -37,32 +39,16 @@ public interface TransportConnection extends Closeable {
 
     public TransportMessage createResponse(TransportMessage request);
 
-    /** Create response message when passed message is request message,
-     *  and request message otherwise.
+    /**
+     * Create response message when passed message is request message, and
+     * request message otherwise.
      *
      * @param message
      * @return
      */
     public TransportMessage createTransportMessage(TransportMessage message);
 
-    /** Handler is executed in the unspecified thread.
-     *
-     * @param handler
-     */
-    public void addResponseHandler(Handler<TransportMessage> handler);
-
-    /** Handler is executed in the unspecified thread.
-     *
-     * @param handler
-     * @return
-     */
-    public boolean removeResponseHandler(Handler<TransportMessage> handler);
-
     public ListenableFuture<Void> send(TransportMessage message);
-
-    public void addRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler);
-
-    public void removeRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler);
 
     public void addMessageListener(TransportMessageListener listener);
 

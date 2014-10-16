@@ -18,6 +18,7 @@
 package de.dfki.kiara.impl;
 
 import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.*;
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServerConnectionHandler implements RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>, ServerConnection {
+public class ServerConnectionHandler implements TransportMessageListener, ServerConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerConnectionHandler.class);
 
@@ -65,7 +66,7 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
     }
 
     @Override
-    public ListenableFuture<TransportMessage> onRequest(TransportMessage trequest) throws Exception {
+    public void onMessage(TransportMessage trequest) {
         final TransportConnection tconnection = trequest.getConnection();
         final TransportMessage tresponse = tconnection.createResponse(trequest);
         final Transport transport = tconnection.getTransport();
@@ -116,26 +117,41 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
             }
 
             if (sc != null) {
-                final Protocol protocol = sc.getProtocol();
-                final Message message = protocol.createMessageFromData(trequest.getPayload());
+                try {
+                    final Protocol protocol = sc.getProtocol();
+                    final Message message = protocol.createMessageFromData(trequest.getPayload());
 
-                if (message.getMessageKind() == Message.Kind.RESPONSE) {
-                    // FIXME process RESPONSE
-                    System.err.println("RECEIVED RESPONSE "+message);
-                }
+                    if (message.getMessageKind() == Message.Kind.RESPONSE) {
+                        // FIXME process RESPONSE
+                        System.err.println("RECEIVED RESPONSE " + message);
+                    }
 
-                ListenableFuture<Message> fmsg = sc.performCall(message);
+                    ListenableFuture<Message> fmsg = sc.performCall(message);
 
-                AsyncFunction<Message, TransportMessage> f =
-                        new AsyncFunction<Message, TransportMessage>() {
-                            public ListenableFuture<TransportMessage> apply(Message message) throws Exception {
-                                tresponse.setPayload(message.getMessageData());
+                    Futures.addCallback(fmsg, new FutureCallback<Message>() {
+
+                        @Override
+                        public void onSuccess(Message result) {
+                            try {
+                                tresponse.setPayload(result.getMessageData());
                                 tresponse.setContentType(protocol.getMimeType());
-                                return Futures.immediateFuture(tresponse);
+                                tconnection.send(tresponse);
+                            } catch (IOException ex) {
+                                logger.error("Could not process message", ex);
                             }
-                        };
+                        }
 
-                return Futures.transform(fmsg, f);
+                        @Override
+                        public void onFailure(Throwable t) {
+                            logger.error("Could not process message", t);
+                        }
+
+                    });
+
+                    return;
+                } catch (Exception ex) {
+                    logger.error("Could not process message", ex);
+                }
             } else {
                 logger.error("No service handler for request: {}", trequest);
                 responseText = "No service handler for request";
@@ -147,12 +163,11 @@ public class ServerConnectionHandler implements RequestHandler<TransportMessage,
             if (responseText != null && contentType != null) {
                 tresponse.setPayload(ByteBuffer.wrap(responseText.getBytes("UTF-8")));
                 tresponse.setContentType(contentType);
+                tconnection.send(tresponse);
             }
         } catch (UnsupportedEncodingException ex) {
             logger.error("No UTF-8 encoding", ex);
         }
-
-        return Futures.immediateFuture(tresponse);
     }
 
     public void close() throws IOException {

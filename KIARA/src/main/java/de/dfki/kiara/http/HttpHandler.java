@@ -26,6 +26,7 @@ import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
+import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import io.netty.buffer.ByteBuf;
@@ -50,7 +51,6 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import io.netty.handler.codec.http.HttpVersion;
 import static io.netty.handler.codec.http.HttpVersion.*;
 import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.util.CharsetUtil;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -84,8 +84,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
     private final Handler<TransportConnection> connectionHandler;
 
-    private final List<RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>> requestHandlers = new ArrayList<>();
-    private final List<Handler<TransportMessage>> responseHandlers = new ArrayList<>();
     private final List<TransportMessageListener> listeners = new ArrayList<>();
 
     @Override
@@ -197,12 +195,8 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
                 HttpRequestMessage transportMessage = new HttpRequestMessage(this, request);
                 transportMessage.setPayload(request.content().nioBuffer());
 
-                ListenableFuture<TransportMessage> tm = null;
-                for (RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> requestHandler : requestHandlers) {
-                    tm = requestHandler.onRequest(transportMessage);
-                    if (tm != null) {
-                        break;
-                    }
+                if (logger.isDebugEnabled()) {
+                    logger.debug("RECEIVED REQUEST WITH CONTENT {}", Util.bufferToString(transportMessage.getPayload()));
                 }
 
                 synchronized (listeners) {
@@ -214,26 +208,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
                 }
 
                 boolean keepAlive = HttpHeaders.isKeepAlive(request);
-
-                HttpResponseMessage responseTransportMessage = tm != null ? (HttpResponseMessage)tm.get() : null;
-                HttpResponse httpResponse;
-                if (responseTransportMessage != null) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("RESPONSE CONTENT: {}", responseTransportMessage.getContent().content().toString(StandardCharsets.UTF_8));
-                    }
-                    httpResponse = responseTransportMessage.finalizeResponse();
-
-                    //httpResponse = new DefaultFullHttpResponse(
-                    //        HTTP_1_1, BAD_REQUEST, Unpooled.copiedBuffer("Could not handle request", CharsetUtil.UTF_8));
-
-                    ctx.write(httpResponse);
-
-                    if (!keepAlive) {
-                        // If keep-alive is off, close the connection once the content is fully written.
-                        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-                    }
-
-                }
             }
         } else {
             // CLIENT
@@ -272,11 +246,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         ctx.close();
 
-        logger.error("Transport error", cause);
-
-        if (mode == Mode.CLIENT) {
-            onErrorResponse(cause);
-        }
+        logger.error("Http error", cause);
     }
 
     @Override
@@ -297,35 +267,13 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
     private void onResponse(HttpResponseMessage response) {
         if (logger.isDebugEnabled()) {
-            logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
-        }
-
-        synchronized (responseHandlers) {
-            if (!responseHandlers.isEmpty()) {
-                for (Handler<TransportMessage> handler : responseHandlers) {
-                    if (handler.onSuccess(response)) {
-                        return;
-                    }
-                }
-            }
+            logger.debug("RECEIVED RESPONSE WITH CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
 
         synchronized (listeners) {
             if (!listeners.isEmpty()) {
                 for (TransportMessageListener listener : listeners) {
                     listener.onMessage(response);
-                }
-            }
-        }
-    }
-
-    private void onErrorResponse(Throwable error) {
-        synchronized (responseHandlers) {
-            if (!responseHandlers.isEmpty()) {
-                for (Handler<TransportMessage> handler : responseHandlers) {
-                    if (handler.onFailure(error)) {
-                        return;
-                    }
                 }
             }
         }
@@ -425,27 +373,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     }
 
     @Override
-    public void addResponseHandler(Handler<TransportMessage> handler) {
-        if (handler == null) {
-            throw new NullPointerException("handler");
-        }
-        synchronized (responseHandlers) {
-            responseHandlers.add(handler);
-        }
-    }
-
-    @Override
-    public boolean removeResponseHandler(Handler<TransportMessage> handler) {
-        if (handler == null) {
-            return false;
-        }
-        synchronized (responseHandlers) {
-            responseHandlers.remove(handler);
-        }
-        return false;
-    }
-
-    @Override
     public void addMessageListener(TransportMessageListener listener) {
         if (listener == null) {
             throw new NullPointerException("listener");
@@ -464,27 +391,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
             listeners.remove(listener);
         }
         return false;
-    }
-
-
-    @Override
-    public void addRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler) {
-        if (handler == null) {
-            throw new NullPointerException("handler");
-        }
-        synchronized (requestHandlers) {
-            requestHandlers.add(handler);
-        }
-    }
-
-    @Override
-    public void removeRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler) {
-        if (handler == null) {
-            throw new NullPointerException("handler");
-        }
-        synchronized (requestHandlers) {
-            requestHandlers.remove(handler);
-        }
     }
 
     public void closeChannel() {

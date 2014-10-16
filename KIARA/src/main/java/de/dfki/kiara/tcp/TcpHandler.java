@@ -17,19 +17,15 @@
  */
 package de.dfki.kiara.tcp;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
-import de.dfki.kiara.RequestHandler;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
-import de.dfki.kiara.impl.Global;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import io.netty.channel.Channel;
@@ -68,8 +64,6 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
 
     private final Handler<TransportConnection> connectionHandler;
 
-    private final List<RequestHandler<TransportMessage, ListenableFuture<TransportMessage>>> requestHandlers = new ArrayList<>();
-    private final List<Handler<TransportMessage>> responseHandlers = new ArrayList<>();
     private final List<TransportMessageListener> listeners = new ArrayList<>();
 
     @Override
@@ -193,45 +187,12 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
                     }
                     sessionId = Util.bufferToString(transportMessage.getPayload(), "UTF-8");
                 } else {
-                    ListenableFuture<TransportMessage> tm = null;
-                    for (RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> requestHandler : requestHandlers) {
-                        tm = requestHandler.onRequest(transportMessage);
-                        if (tm != null) {
-                            break;
-                        }
-                    }
-
                     synchronized (listeners) {
                         if (!listeners.isEmpty()) {
                             for (TransportMessageListener listener : listeners) {
                                 listener.onMessage(transportMessage);
                             }
                         }
-                    }
-
-                    if (tm != null) {
-                        Futures.addCallback(tm, new FutureCallback<TransportMessage>() {
-
-                            @Override
-                            public void onSuccess(TransportMessage result) {
-                                TcpBlockMessage responseTransportMessage = (TcpBlockMessage)result;
-                                if (responseTransportMessage.getPayload() != null) {
-                                    if (logger.isDebugEnabled()) {
-                                        logger.debug("RESPONSE CONTENT: {}", Util.bufferToString(responseTransportMessage.getPayload()));
-                                    }
-                                    ctx.writeAndFlush(responseTransportMessage.getPayload());
-                                } else {
-                                    logger.info("NO RESPONSE CONTENT");
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(Throwable t) {
-                                logger.error("Error on response", t);
-                            }
-                        }, Global.executor);
-                    } else {
-                        logger.info("NO RESPONSE CONTENT");
                     }
                 }
             } else {
@@ -245,12 +206,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         ctx.close();
-
         logger.error("Tcp Error", cause);
-
-        if (mode == Mode.CLIENT) {
-            onErrorResponse(cause);
-        }
     }
 
     @Override
@@ -274,32 +230,10 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
             logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
 
-        synchronized (responseHandlers) {
-            if (!responseHandlers.isEmpty()) {
-                for (Handler<TransportMessage> handler : responseHandlers) {
-                    if (handler.onSuccess(response)) {
-                        return;
-                    }
-                }
-            }
-        }
-
         synchronized (listeners) {
             if (!listeners.isEmpty()) {
                 for (TransportMessageListener listener : listeners) {
                     listener.onMessage(response);
-                }
-            }
-        }
-    }
-
-    public void onErrorResponse(Throwable error) {
-        synchronized (responseHandlers) {
-            if (!responseHandlers.isEmpty()) {
-                for (Handler<TransportMessage> handler : responseHandlers) {
-                    if (handler.onFailure(error)) {
-                        return;
-                    }
                 }
             }
         }
@@ -346,27 +280,6 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     }
 
     @Override
-    public void addResponseHandler(Handler<TransportMessage> handler) {
-        if (handler == null) {
-            throw new NullPointerException("handler");
-        }
-        synchronized (responseHandlers) {
-            responseHandlers.add(handler);
-        }
-    }
-
-    @Override
-    public boolean removeResponseHandler(Handler<TransportMessage> handler) {
-        if (handler == null) {
-            return false;
-        }
-        synchronized (responseHandlers) {
-            responseHandlers.remove(handler);
-        }
-        return false;
-    }
-
-    @Override
     public void addMessageListener(TransportMessageListener listener) {
         if (listener == null) {
             throw new NullPointerException("listener");
@@ -385,26 +298,6 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
             listeners.remove(listener);
         }
         return false;
-    }
-
-    @Override
-    public void addRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler) {
-        if (handler == null) {
-            throw new NullPointerException("handler");
-        }
-        synchronized (requestHandlers) {
-            requestHandlers.add(handler);
-        }
-    }
-
-    @Override
-    public void removeRequestHandler(RequestHandler<TransportMessage, ListenableFuture<TransportMessage>> handler) {
-        if (handler == null) {
-            throw new NullPointerException("handler");
-        }
-        synchronized (requestHandlers) {
-            requestHandlers.remove(handler);
-        }
     }
 
     public void closeChannel() {

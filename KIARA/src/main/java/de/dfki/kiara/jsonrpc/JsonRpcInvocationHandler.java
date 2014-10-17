@@ -30,8 +30,8 @@ import de.dfki.kiara.util.MessageDispatcher;
  */
 public class JsonRpcInvocationHandler extends DefaultInvocationHandler<JsonRpcProtocol> {
 
-    public JsonRpcInvocationHandler(ConnectionBase connection, TransportConnection transportConnection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, JsonRpcProtocol protocol) {
-        super(connection, transportConnection, interfaceMapping, serviceMethodBinding, protocol);
+    public JsonRpcInvocationHandler(ConnectionBase connection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, JsonRpcProtocol protocol) {
+        super(connection, interfaceMapping, serviceMethodBinding, protocol);
     }
 
     @Override

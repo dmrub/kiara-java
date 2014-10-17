@@ -46,24 +46,22 @@ import de.dfki.kiara.util.Pipeline;
  *
  * @param <PROTOCOL>
  */
-public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler implements TransportMessageListener {
+public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler implements MessageListener {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultInvocationHandler.class);
     protected final ConnectionBase connection;
-    protected final TransportConnection transportConnection;
     protected final InterfaceMapping<?> interfaceMapping;
     protected final ServiceMethodBinding serviceMethodBinding;
     protected final PROTOCOL protocol;
     protected final Pipeline pipeline;
 
-    public DefaultInvocationHandler(ConnectionBase connection, TransportConnection transportConnection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, PROTOCOL protocol) {
+    public DefaultInvocationHandler(ConnectionBase connection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, PROTOCOL protocol) {
         this.connection = connection;
-        this.transportConnection = transportConnection;
         this.pipeline = new Pipeline();
         this.protocol = protocol;
         this.interfaceMapping = interfaceMapping;
         this.serviceMethodBinding = serviceMethodBinding;
-        this.transportConnection.addMessageListener(this);
+        this.connection.getMessageConnection().addMessageListener(this);
     }
 
     public static ListenableFuture<TransportMessage> performAsyncCall(TransportMessage request, final ListeningExecutorService executor) {
@@ -83,63 +81,13 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         return interfaceMapping;
     }
 
-    public TransportConnection getTransportConnection() {
-        return transportConnection;
-    }
-
-    @Deprecated
-    protected ListenableFuture<Message> performAsyncCallOld(Message request, final Method method, final ListeningExecutorService executor) throws IOException {
-        final TransportMessage transportRequest = transportConnection.createRequest();
-        transportRequest.setContentType(protocol.getMimeType());
-        transportRequest.setPayload(request.getMessageData());
-
-        ListenableFuture<TransportMessage> transportResponse = performAsyncCall(transportRequest, executor);
-        Function<TransportMessage, Message> f = new Function<TransportMessage, Message>() {
-
-            @Override
-            public Message apply(TransportMessage input) {
-                try {
-                    return protocol.createMessageFromData(input.getPayload());
-                } catch (IOException ex) {
-                    return null;
-                }
-            }
-        };
-
-        return Futures.transform(transportResponse, f);
-    }
-
-    protected Message performSyncCall(Message request, Method method) throws InterruptedException, ExecutionException, IOException {
-        transportConnection.removeMessageListener(this);
-        final TransportConnectionReceiver tcr = new TransportConnectionReceiver(transportConnection);
-
-        final TransportMessage transportRequest = tcr.createRequest();
-        transportRequest.setContentType(protocol.getMimeType());
-        transportRequest.setPayload(request.getMessageData());
-
-        // send & wait
-        tcr.send(transportRequest).get();
-        // receive
-        ListenableFuture<TransportMessage> responseFuture = tcr.receive(null);
-        TransportMessage transportResponse = responseFuture.get();
-
-        tcr.detach();
-
-        transportConnection.addMessageListener(this);
-
-        return protocol.createMessageFromData(transportResponse.getPayload());
-    }
-
     public abstract MessageDispatcher createMessageDispatcher(Message request);
 
     protected ListenableFuture<Message> performAsyncCall(final Message request, final TypeToken<?> returnType, ListeningExecutorService executor) throws IOException {
-        final TransportMessage transportRequest = transportConnection.createRequest();
-        transportRequest.setContentType(protocol.getMimeType());
-        transportRequest.setPayload(request.getMessageData());
         final MessageDispatcher dispatcher = createMessageDispatcher(request);
         pipeline.addHandler(dispatcher);
 
-        final ListenableFuture<Void> reqSent = transportConnection.send(transportRequest);
+        final ListenableFuture<Void> reqSent = this.connection.getMessageConnection().send(request);
 
         final ListeningExecutorService myExecutor = executor == null ? Global.sameThreadExecutor : executor;
 
@@ -340,14 +288,13 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
     }
 
     @Override
-    public void onMessage(final TransportMessage tmessage) {
-        if (tmessage == null) {
-            logger.error("Received null transport message");
+    public void onMessage(final MessageConnection messageConnection, final Message message) {
+        if (message == null) {
+            logger.error("Received null message");
             return;
         }
 
         try {
-            final Message message = protocol.createMessageFromData(tmessage.getPayload());
 
             logger.info("Incoming message: {}", message);
 
@@ -361,11 +308,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
                     @Override
                     public void onSuccess(Message resultMessage) {
                         try {
-                            final TransportConnection tc = tmessage.getConnection();
-                            final TransportMessage tresponse = tc.createResponse(tmessage);
-                            tresponse.setPayload(resultMessage.getMessageData());
-                            tresponse.setContentType(protocol.getMimeType());
-                            tc.send(tresponse);
+                            connection.getMessageConnection().send(resultMessage);
                         } catch (Exception ex) {
                             logger.error("Error on callback response", ex);
                         }

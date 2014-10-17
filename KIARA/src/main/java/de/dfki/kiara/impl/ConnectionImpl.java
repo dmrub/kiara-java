@@ -22,6 +22,7 @@ import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.InvalidAddressException;
+import de.dfki.kiara.MessageConnection;
 import de.dfki.kiara.MethodAlreadyBoundException;
 import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.NoSuchIDLFunctionException;
@@ -67,6 +68,7 @@ public class ConnectionImpl implements Connection {
     private final Protocol protocol;
     private final Transport transport;
     private final TransportConnection transportConnection;
+    private final TransportMessageConnection messageConnection;
     private final World world;
     private final Module module;
     private final ServiceMethodBinding methodBinding;
@@ -193,6 +195,7 @@ public class ConnectionImpl implements Connection {
             throw new ConnectException(ex);
         }
 
+        messageConnection = new TransportMessageConnection(transportConnection, protocol);
         codegen = protocol.createInterfaceCodeGen(this);
     }
 
@@ -298,6 +301,11 @@ public class ConnectionImpl implements Connection {
     @Override
     public void unregisterServiceFunction(String idlFunctionName) throws NoSuchIDLFunctionException {
         methodBinding.unbindServiceMethod(idlFunctionName);
+    }
+
+    @Override
+    public MessageConnection getMessageConnection() {
+        return messageConnection;
     }
 
 }

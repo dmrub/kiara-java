@@ -17,7 +17,6 @@
  */
 package de.dfki.kiara.impl;
 
-import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -31,6 +30,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -39,28 +39,34 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServerConnectionHandler implements TransportMessageListener, ServerConnection {
+public class ServerConnectionHandler implements MessageConnection, TransportMessageListener, ServerConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerConnectionHandler.class);
 
     private final ServerImpl server;
     private final TransportConnection transportConnection;
     private final List<ServiceConnectionImpl> serviceHandlers;
+    private final List<MessageListener> listeners;
+    private final IdentityHashMap<Message, TransportMessage> messageMap;
 
     public ServerConnectionHandler(ServerImpl server, TransportConnection transportConnection, List<TransportAddressAndServiceHandler> serviceHandlers) {
         this.server = server;
         this.transportConnection = transportConnection;
+        this.transportConnection.addMessageListener(this);
 
         this.serviceHandlers = new ArrayList<>(serviceHandlers.size());
         for (TransportAddressAndServiceHandler element : serviceHandlers) {
             this.serviceHandlers.add(new ServiceConnectionImpl(this, element));
         }
+        this.listeners = new ArrayList<>();
+        this.messageMap = new IdentityHashMap<>();
     }
 
     public List<ServiceConnectionImpl> getServiceHandlers() {
         return serviceHandlers;
     }
 
+    @Override
     public TransportConnection getTransportConnection() {
         return transportConnection;
     }
@@ -124,6 +130,13 @@ public class ServerConnectionHandler implements TransportMessageListener, Server
                     if (message.getMessageKind() == Message.Kind.RESPONSE) {
                         // FIXME process RESPONSE
                         System.err.println("RECEIVED RESPONSE " + message);
+
+                        synchronized (messageMap) {
+                            messageMap.put(message, trequest);
+                        }
+
+                        processMessage(message);
+                        return;
                     }
 
                     ListenableFuture<Message> fmsg = sc.performCall(message);
@@ -172,6 +185,47 @@ public class ServerConnectionHandler implements TransportMessageListener, Server
 
     public void close() throws IOException {
         transportConnection.close();
+    }
+
+    @Override
+    public ListenableFuture<Void> send(Message message) {
+        try {
+            final TransportMessage tmessage;
+
+            synchronized (messageMap) {
+                tmessage = messageMap.remove(message.getRequestMessage());
+            }
+
+            final TransportMessage tresponse = transportConnection.createTransportMessage(tmessage);
+            tresponse.setPayload(message.getMessageData());
+            tresponse.setContentType(message.getProtocol().getMimeType());
+            return transportConnection.send(tresponse);
+        } catch (IOException ex) {
+            logger.error("Could not process message", ex);
+            return Futures.immediateFailedFuture(ex);
+        }
+    }
+
+    private void processMessage(Message message) {
+        synchronized (listeners) {
+            for (MessageListener listener : listeners) {
+                listener.onMessage(this, message);
+            }
+        }
+    }
+
+    @Override
+    public void addMessageListener(MessageListener listener) {
+        synchronized (listeners) {
+            listeners.add(listener);
+        }
+    }
+
+    @Override
+    public boolean removeMessageListener(MessageListener listener) {
+        synchronized (listeners) {
+            return listeners.remove(listener);
+        }
     }
 
 }

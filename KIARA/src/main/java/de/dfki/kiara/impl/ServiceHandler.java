@@ -36,7 +36,7 @@ public class ServiceHandler implements Closeable {
     private final ProtocolInfo protocolInfo;
     private final Protocol protocol;
 
-    public ServiceHandler(ServiceImpl service, Transport transport, String protocolName) throws InstantiationException, IllegalAccessException {
+    public ServiceHandler(ServiceImpl service, String protocolName) throws InstantiationException, IllegalAccessException {
         this.service = service;
         this.protocolInfo = new ProtocolInfo();
         this.protocolInfo.name = protocolName;

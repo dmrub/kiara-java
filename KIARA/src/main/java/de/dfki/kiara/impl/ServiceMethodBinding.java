@@ -33,7 +33,6 @@ import java.util.Map;
 
 import de.dfki.kiara.ServiceMethodBinder;
 import de.dfki.kiara.ServiceMethodExecutor;
-import de.dfki.kiara.TransportMessage;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;

@@ -18,12 +18,10 @@
 package de.dfki.kiara.impl;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import de.dfki.kiara.Handler;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageConnection;
 import de.dfki.kiara.MessageListener;
 import de.dfki.kiara.Protocol;
-import de.dfki.kiara.RequestHandler;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
@@ -65,7 +63,7 @@ public class TransportMessageConnection implements MessageConnection, TransportM
                 tmessage = messageMap.remove(message.getRequestMessage());
             }
 
-            final TransportMessage tresponse = transportConnection.createResponse(tmessage);
+            final TransportMessage tresponse = transportConnection.createTransportMessage(tmessage);
             tresponse.setPayload(message.getMessageData());
             tresponse.setContentType(protocol.getMimeType());
             return transportConnection.send(tresponse);

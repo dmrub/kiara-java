@@ -33,8 +33,8 @@ import de.dfki.kiara.util.MessageDispatcher;
  */
 public class JosInvocationHandler extends DefaultInvocationHandler<JosProtocol> {
 
-    public JosInvocationHandler(ConnectionBase connection, TransportConnection transportConnection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, JosProtocol protocol) {
-        super(connection, transportConnection, interfaceMapping, serviceMethodBinding, protocol);
+    public JosInvocationHandler(ConnectionBase connection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, JosProtocol protocol) {
+        super(connection, interfaceMapping, serviceMethodBinding, protocol);
     }
 
     @Override

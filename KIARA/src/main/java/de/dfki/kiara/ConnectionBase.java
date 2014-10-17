@@ -25,5 +25,6 @@ import java.io.Closeable;
  */
 public interface ConnectionBase extends Closeable {
     public TransportConnection getTransportConnection();
+    public MessageConnection getMessageConnection();
     public ServiceMethodExecutor getServiceMethodExecutor();
 }

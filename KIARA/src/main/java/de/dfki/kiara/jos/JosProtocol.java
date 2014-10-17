@@ -59,7 +59,7 @@ public class JosProtocol implements Protocol {
                 final ServiceMethodBinding smb = (ServiceMethodBinding)connection.getServiceMethodExecutor();
                 Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
                         new Class<?>[]{interfaceClass, RemoteInterface.class},
-                        new JosInvocationHandler(connection, connection.getTransportConnection(), mapping, smb, thisProtocol));
+                        new JosInvocationHandler(connection, mapping, smb, thisProtocol));
                 return interfaceClass.cast(impl);
             }
         };

@@ -97,6 +97,11 @@ public class ServiceConnectionImpl implements ServiceConnection, InvocationEnvir
 
     @Override
     public void close() throws IOException {
+        // FIXME implement close
+    }
 
+    @Override
+    public MessageConnection getMessageConnection() {
+        return serverConnectionHandler;
     }
 }

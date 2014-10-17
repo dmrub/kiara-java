@@ -174,7 +174,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
 
         ServiceHandler handler;
         try {
-            handler = new ServiceHandler(serviceImpl, transport, protocol);
+            handler = new ServiceHandler(serviceImpl, protocol);
         } catch (InstantiationException ex) {
             throw new IOException(ex);
         } catch (IllegalAccessException ex) {
@@ -318,7 +318,6 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
                 result, result.getLocalAddress(), result.getRemoteAddress());
         List<TransportAddressAndServiceHandler> serviceHandlers = findAllServiceHandlers(result.getLocalTransportAddress());
         ServerConnectionHandler handler = new ServerConnectionHandler(this, result, serviceHandlers);
-        result.addMessageListener(handler);
         connectionHandlers.add(handler);
         fireClientConnectionOpened(handler);
         return true;

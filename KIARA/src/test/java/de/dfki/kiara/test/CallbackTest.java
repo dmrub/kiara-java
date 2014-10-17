@@ -17,23 +17,18 @@
  */
 package de.dfki.kiara.test;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
-import de.dfki.kiara.Message;
 import de.dfki.kiara.MethodBinding;
-import de.dfki.kiara.Protocol;
 import de.dfki.kiara.Server;
-import de.dfki.kiara.ServerConnection;
 import de.dfki.kiara.Service;
 import de.dfki.kiara.ServiceConnection;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportMessage;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,19 +47,6 @@ public class CallbackTest {
     public static class CallbackImpl {
         public String add(ServiceConnection connection, int a, int b) throws Exception {
             System.out.println("add("+a+","+b+") via connection="+connection);
-/*
-            final ServerConnection srvc = connection.getServerConnection();
-            final Protocol protocol = connection.getProtocol();
-            final TransportConnection tc = srvc.getTransportConnection();
-
-            Message msg = protocol.createRequestMessage(new Message.RequestObject("calc.addResult", new Object[] { a, b, a+b }));
-
-            TransportMessage tmsg = tc.createRequest();
-            tmsg.setPayload(msg.getMessageData());
-            tmsg.setContentType(protocol.getMimeType());
-            tc.send(tmsg);
-*/
-            // T2
 
             MethodBinding<CallbackClient> binder
                     = new MethodBinding<>(CallbackClient.class)
@@ -72,7 +54,7 @@ public class CallbackTest {
 
             CallbackClient cc = connection.getServiceInterface(binder);
             String c = cc.addResult(a, b, a+b);
-            return c;
+            return "calc.add: "+c;
         }
     }
 
@@ -180,9 +162,8 @@ public class CallbackTest {
      */
     @Test
     public void testCallback() throws Exception {
-        calc.add(5, 10);
-
-        //Thread.sleep(1000);
+        assertEquals("calc.add: result is 15", calc.add(5, 10));
+        assertEquals("calc.add: result is 0", calc.add(-2, 2));
     }
 
 }

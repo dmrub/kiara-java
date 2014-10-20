@@ -126,7 +126,8 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
                     final Protocol protocol = sc.getProtocol();
                     final Message message = protocol.createMessageFromData(trequest.getPayload());
 
-                    if (message.getMessageKind() == Message.Kind.RESPONSE) {
+                    if (message.getMessageKind() == Message.Kind.RESPONSE
+                            || message.getMessageKind() == Message.Kind.EXCEPTION) {
 
                         synchronized (messageMap) {
                             messageMap.put(message, trequest);
@@ -225,23 +226,34 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
         }
     }
 
-    void fireClientConnectionOpened(List<ServerConnectionListener> listeners) {
-        synchronized (listeners) {
-            for (ServerConnectionListener listener : listeners) {
-                for (ServerConnection connection : serviceHandlers) {
-                    listener.onConnectionOpened(connection);
+    void fireClientConnectionOpened(final List<ServerConnectionListener> listeners) {
+        Global.executor.execute(new Runnable() {
+
+            @Override
+            public void run() {
+                synchronized (listeners) {
+                    for (ServerConnectionListener listener : listeners) {
+                        for (ServerConnection connection : serviceHandlers) {
+                            listener.onConnectionOpened(connection);
+                        }
+                    }
                 }
             }
-        }
+        });
     }
 
-    void fireClientConnectionClosed(List<ServerConnectionListener> listeners) {
-        synchronized (listeners) {
-            for (ServerConnectionListener listener : listeners) {
-                for (ServerConnection connection : serviceHandlers) {
-                    listener.onConnectionClosed(connection);
+    void fireClientConnectionClosed(final List<ServerConnectionListener> listeners) {
+        Global.executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                synchronized (listeners) {
+                    for (ServerConnectionListener listener : listeners) {
+                        for (ServerConnection connection : serviceHandlers) {
+                            listener.onConnectionClosed(connection);
+                        }
+                    }
                 }
             }
-        }
+        });
     }
 }

@@ -194,6 +194,10 @@ public class JsonRpcMessage implements Message {
         return params;
     }
 
+    public JsonNode getError() {
+        return error;
+    }
+
     @Override
     public ByteBuffer getMessageData() throws IOException {
         ByteBuffer buf = null;
@@ -342,7 +346,7 @@ public class JsonRpcMessage implements Message {
 
     @Override
     public String toString() {
-        return "JsonRpcMessage("+kind+", "+getMethodName()+", "+getParams()+")";
+        return "JsonRpcMessage("+kind+", "+getMethodName()+", id="+id+", params="+getParams()+", error="+getError()+")";
     }
 
 }

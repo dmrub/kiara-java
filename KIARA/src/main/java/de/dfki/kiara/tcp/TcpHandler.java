@@ -152,12 +152,12 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
             case UNINITIALIZED:
             case WAIT_CONNECT:
                 state = State.CONNECTED;
-                if (connectionListener != null) {
-                    connectionListener.onConnectionOpened(this);
-                }
                 if (mode == Mode.CLIENT) {
                     // FIXME send sessionID
                     ctx.writeAndFlush(EMPTY_BUFFER);
+                }
+                if (connectionListener != null) {
+                    connectionListener.onConnectionOpened(this);
                 }
                 break;
             case WAIT_CLOSE:

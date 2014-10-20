@@ -18,15 +18,15 @@
 package de.dfki.kiara.impl;
 
 import com.google.common.base.Objects;
-import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
-import de.dfki.kiara.ServerEventListener;
+import de.dfki.kiara.ServerConnectionListener;
 import de.dfki.kiara.Service;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportRegistry;
 import de.dfki.kiara.TransportServer;
 import de.dfki.kiara.config.ServerConfiguration;
@@ -38,6 +38,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author shahzad, Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServerImpl implements Server, Handler<TransportConnection> {
+public class ServerImpl implements Server, TransportConnectionListener {
 
     private final String configHost;
     private final int configPort;
@@ -58,8 +59,8 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     private final List<TransportAddressAndServiceHandler> serviceHandlers;
     private final Map<HostAndPort, TransportEntry> transportEntries;
     private final TransportServer transportServer;
-    private final List<ServerConnectionHandler> connectionHandlers;
-    private final List<ServerEventListener> eventListeners;
+    private final IdentityHashMap<TransportConnection, ServerConnectionHandler> connectionHandlers;
+    private final List<ServerConnectionListener> eventListeners;
 
     private static class HostAndPort implements Comparable<HostAndPort> {
 
@@ -89,7 +90,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
                 return true;
             }
             if (other instanceof HostAndPort) {
-                HostAndPort that = (HostAndPort)other;
+                HostAndPort that = (HostAndPort) other;
                 return Objects.equal(this.host, that.host) && this.port == that.port;
             }
             return false;
@@ -97,10 +98,9 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
 
         @Override
         public int hashCode() {
-             return (host == null ? 0 : host.hashCode()) ^ port;
+            return (host == null ? 0 : host.hashCode()) ^ port;
         }
     }
-
 
     private static class TransportEntry {
 
@@ -129,7 +129,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         this.serviceHandlers = new ArrayList<>();
         this.transportEntries = new HashMap<>();
         this.transportServer = Kiara.createTransportServer();
-        this.connectionHandlers = new ArrayList<>();
+        this.connectionHandlers = new IdentityHashMap<>();
         this.eventListeners = new ArrayList<>();
         // listen for negotiation connection
         addPortListener(configHost, configPort, "http");
@@ -161,7 +161,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     public void addService(String path, String protocol, Service service) throws IOException {
         URI uri = configUri.resolve(path);
 
-        final ServiceImpl serviceImpl = (ServiceImpl)service;
+        final ServiceImpl serviceImpl = (ServiceImpl) service;
 
         logger.debug("Server::addService: {}", uri);
 
@@ -312,35 +312,44 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
     }
 
     @Override
-    public boolean onSuccess(TransportConnection result) {
+    public void onConnectionOpened(TransportConnection connection) {
         logger.info("Opened connection {}, local address {}, remote address {}",
-                result, result.getLocalAddress(), result.getRemoteAddress());
-        List<TransportAddressAndServiceHandler> serviceHandlers = findAllServiceHandlers(result.getLocalTransportAddress());
-        ServerConnectionHandler handler = new ServerConnectionHandler(this, result, serviceHandlers);
-        connectionHandlers.add(handler);
+                connection, connection.getLocalAddress(), connection.getRemoteAddress());
+        List<TransportAddressAndServiceHandler> serviceHandlers = findAllServiceHandlers(connection.getLocalTransportAddress());
+        ServerConnectionHandler handler = new ServerConnectionHandler(this, connection, serviceHandlers);
+        synchronized (connectionHandlers) {
+            connectionHandlers.put(connection, handler);
+        }
         handler.fireClientConnectionOpened(eventListeners);
-        return true;
     }
 
     @Override
-    public boolean onFailure(Throwable t) {
-        logger.error("Could not open connection", t);
-        return true;
+    public void onConnectionClosed(TransportConnection connection) {
+        logger.info("Closed connection {}", connection);
+        ServerConnectionHandler handler;
+        synchronized (connectionHandlers) {
+            handler = connectionHandlers.remove(connection);
+        }
+        if (handler != null) {
+            handler.fireClientConnectionClosed(eventListeners);
+        }
     }
 
     @Override
-    public void addEventListener(ServerEventListener listener) {
-        if (listener == null)
+    public void addEventListener(ServerConnectionListener listener) {
+        if (listener == null) {
             throw new NullPointerException("listener");
+        }
         synchronized (eventListeners) {
             eventListeners.add(listener);
         }
     }
 
     @Override
-    public void removeEventListener(ServerEventListener listener) {
-        if (listener == null)
+    public void removeEventListener(ServerConnectionListener listener) {
+        if (listener == null) {
             throw new NullPointerException("listener");
+        }
         synchronized (eventListeners) {
             eventListeners.remove(listener);
         }

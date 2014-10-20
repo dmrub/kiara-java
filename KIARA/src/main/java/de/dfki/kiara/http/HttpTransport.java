@@ -22,6 +22,7 @@ import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.netty.AbstractTransport;
 import de.dfki.kiara.netty.ChannelFutureAndConnection;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -129,9 +130,9 @@ public class HttpTransport extends AbstractTransport {
     }
 
     @Override
-    public ChannelHandler createServerChildHandler(Handler<TransportConnection> connectionHandler) {
+    public ChannelHandler createServerChildHandler(TransportConnectionListener connectionListener) {
         try {
-            return new HttpServerInitializer(this, createServerSslContext(), connectionHandler);
+            return new HttpServerInitializer(this, createServerSslContext(), connectionListener);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

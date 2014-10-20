@@ -41,6 +41,9 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class CalcTest {
 
+    static {
+        System.setProperty("java.util.logging.config.file", "/home/rubinste/.kiara/logging.properties");
+    }
 
     public static class CalcImpl {
 

@@ -21,7 +21,7 @@ package de.dfki.kiara;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface ServerEventListener {
-    public void onClientConnectionOpened(ServerConnection connection);
-    public void onClientConnectionClosed(ServerConnection connection);
+public interface ServerConnectionListener {
+    public void onConnectionOpened(ServerConnection connection);
+    public void onConnectionClosed(ServerConnection connection);
 }

@@ -24,6 +24,7 @@ import de.dfki.kiara.RequestHandler;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
@@ -82,7 +83,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
     private volatile Channel channel = null;
 
-    private final Handler<TransportConnection> connectionHandler;
+    private final TransportConnectionListener connectionListener;
 
     private final List<TransportMessageListener> listeners = new ArrayList<>();
 
@@ -139,23 +140,23 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         this.transport = transport;
         this.uri = uri;
         this.method = method;
-        this.connectionHandler = null;
+        this.connectionListener = null;
         this.state = State.UNINITIALIZED;
         this.mode = Mode.CLIENT;
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public HttpHandler(HttpTransport transport, Handler<TransportConnection> connectionHandler) {
+    public HttpHandler(HttpTransport transport, TransportConnectionListener connectionListener) {
         if (transport == null) {
             throw new NullPointerException("transport");
         }
-        if (connectionHandler == null) {
-            throw new NullPointerException("connectionHandler");
+        if (connectionListener == null) {
+            throw new NullPointerException("connectionListener");
         }
         this.transport = transport;
         this.uri = null;
         this.method = null;
-        this.connectionHandler = connectionHandler;
+        this.connectionListener = connectionListener;
         this.state = State.UNINITIALIZED;
         this.mode = Mode.SERVER;
         this.bout = null;
@@ -168,8 +169,8 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
             case UNINITIALIZED:
             case WAIT_CONNECT:
                 state = State.CONNECTED;
-                if (connectionHandler != null) {
-                    connectionHandler.onSuccess(this);
+                if (connectionListener != null) {
+                    connectionListener.onConnectionOpened(this);
                 }
                 break;
             case WAIT_CLOSE:
@@ -177,6 +178,16 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
                 break;
             default:
                 throw new IllegalStateException();
+        }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        logger.debug("Http channel closed {}", ctx);
+        state = State.CLOSED;
+        channel = null;
+        if (connectionListener != null) {
+            connectionListener.onConnectionClosed(this);
         }
     }
 

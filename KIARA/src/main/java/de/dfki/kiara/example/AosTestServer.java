@@ -21,7 +21,7 @@ import de.dfki.kiara.Context;
 import de.dfki.kiara.IDLParseException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
-import de.dfki.kiara.ServerEventListener;
+import de.dfki.kiara.ServerConnectionListener;
 import de.dfki.kiara.Service;
 import de.dfki.kiara.ServerConnection;
 import java.util.List;
@@ -109,11 +109,11 @@ public class AosTestServer {
 
             System.out.printf("Starting server...\n");
 
-            server.addEventListener(new ServerEventListener() {
+            server.addEventListener(new ServerConnectionListener() {
 
                 @Override
-                public void onClientConnectionOpened(ServerConnection connection) {
-                    System.err.printf("New service connection %s opened: transport %s, local address %s, remote address %s, local transport address %s%n",
+                public void onConnectionOpened(ServerConnection connection) {
+                    System.err.printf("New server connection %s opened: transport %s, local address %s, remote address %s, local transport address %s%n",
                             connection,
                             connection.getTransportConnection().getLocalTransportAddress().getTransport().getName(),
                             connection.getTransportConnection().getLocalAddress(),
@@ -122,7 +122,8 @@ public class AosTestServer {
                 }
 
                 @Override
-                public void onClientConnectionClosed(ServerConnection connection) {
+                public void onConnectionClosed(ServerConnection connection) {
+                    System.err.printf("Server connection %s closed%n", connection);
                 }
 
             });

@@ -22,6 +22,7 @@ import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.netty.AbstractTransport;
 import de.dfki.kiara.netty.ChannelFutureAndConnection;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -143,7 +144,7 @@ public class TcpBlockTransport extends AbstractTransport {
     }
 
     @Override
-    public ChannelHandler createServerChildHandler(Handler<TransportConnection> connectionHandler) {
+    public ChannelHandler createServerChildHandler(TransportConnectionListener connectionHandler) {
         try {
             return new TcpServerInitializer(this, createServerSslContext(), connectionHandler);
         } catch (CertificateException ex) {

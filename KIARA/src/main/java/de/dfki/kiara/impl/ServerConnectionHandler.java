@@ -225,21 +225,21 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
         }
     }
 
-    void fireClientConnectionOpened(List<ServerEventListener> listeners) {
+    void fireClientConnectionOpened(List<ServerConnectionListener> listeners) {
         synchronized (listeners) {
-            for (ServerEventListener listener : listeners) {
+            for (ServerConnectionListener listener : listeners) {
                 for (ServerConnection connection : serviceHandlers) {
-                    listener.onClientConnectionOpened(connection);
+                    listener.onConnectionOpened(connection);
                 }
             }
         }
     }
 
-    void fireClientConnectionClosed(List<ServerEventListener> listeners) {
+    void fireClientConnectionClosed(List<ServerConnectionListener> listeners) {
         synchronized (listeners) {
-            for (ServerEventListener listener : listeners) {
+            for (ServerConnectionListener listener : listeners) {
                 for (ServerConnection connection : serviceHandlers) {
-                    listener.onClientConnectionOpened(connection);
+                    listener.onConnectionClosed(connection);
                 }
             }
         }

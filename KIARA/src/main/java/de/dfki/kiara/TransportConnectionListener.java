@@ -17,17 +17,11 @@
  */
 package de.dfki.kiara;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 /**
  *
- * @author shahzad
+ * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface Server extends Closeable {
-    public void addService(String path, String protocol, Service service) throws IOException;
-    public boolean removeService(Service service);
-    public void run() throws IOException;
-    public void addEventListener(ServerConnectionListener listener);
-    public void removeEventListener(ServerConnectionListener listener);
+public interface TransportConnectionListener {
+    public void onConnectionOpened(TransportConnection connection);
+    public void onConnectionClosed(TransportConnection connection);
 }

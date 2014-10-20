@@ -22,6 +22,7 @@ import de.dfki.kiara.Kiara;
 import de.dfki.kiara.RunningService;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportServer;
 import de.dfki.kiara.netty.AbstractTransport;
 import io.netty.bootstrap.ServerBootstrap;
@@ -52,14 +53,14 @@ public class TransportServerImpl implements TransportServer, RunningService {
         public final String address;
         public final String port;
         public final AbstractTransport transport;
-        public final Handler<TransportConnection> handler;
+        public final TransportConnectionListener listener;
         public Channel channel;
 
-        public ServerEntry(String address, String port, AbstractTransport transport, Handler<TransportConnection> handler) {
+        public ServerEntry(String address, String port, AbstractTransport transport, TransportConnectionListener listener) {
             this.address = address;
             this.port = port;
             this.transport = transport;
-            this.handler = handler;
+            this.listener = listener;
             this.channel = null;
         }
 
@@ -78,11 +79,11 @@ public class TransportServerImpl implements TransportServer, RunningService {
     }
 
     @Override
-    public void listen(String address, String port, Transport transport, Handler<TransportConnection> handler) {
+    public void listen(String address, String port, Transport transport, TransportConnectionListener listener) {
         if (!(transport instanceof AbstractTransport))
             throw new IllegalArgumentException("transport is not an instance of " + AbstractTransport.class.getName() + " class");
         synchronized (serverEntries) {
-            serverEntries.add(new ServerEntry(address, port, (AbstractTransport) transport, handler));
+            serverEntries.add(new ServerEntry(address, port, (AbstractTransport) transport, listener));
         }
     }
 
@@ -98,7 +99,7 @@ public class TransportServerImpl implements TransportServer, RunningService {
                     b.group(bossGroup, workerGroup)
                             .channel(NioServerSocketChannel.class)
                             .handler(new LoggingHandler(LogLevel.INFO))
-                            .childHandler(serverEntry.transport.createServerChildHandler(serverEntry.handler));
+                            .childHandler(serverEntry.transport.createServerChildHandler(serverEntry.listener));
 
                     serverEntry.channel = b.bind(serverEntry.address, port).sync().channel();
                     ++numServers;

@@ -20,6 +20,7 @@ package de.dfki.kiara.http;
 
 import de.dfki.kiara.Handler;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -33,12 +34,12 @@ import io.netty.handler.ssl.SslContext;
 public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
-    private final Handler<TransportConnection> connectionHandler;
+    private final TransportConnectionListener connectionListener;
     private final HttpTransport transport;
 
-    public HttpServerInitializer(HttpTransport transport, SslContext sslCtx, Handler<TransportConnection> connectionHandler) {
+    public HttpServerInitializer(HttpTransport transport, SslContext sslCtx, TransportConnectionListener connectionListener) {
         this.sslCtx = sslCtx;
-        this.connectionHandler = connectionHandler;
+        this.connectionListener = connectionListener;
         this.transport = transport;
     }
 
@@ -57,6 +58,6 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         // Remove the following line if you don't want automatic content compression.
         //p.addLast(new HttpContentCompressor());
         p.addLast("aggregator", new HttpObjectAggregator(1048576));
-        p.addLast(new HttpHandler(transport, connectionHandler));
+        p.addLast(new HttpHandler(transport, connectionListener));
     }
 }

@@ -21,6 +21,7 @@ import de.dfki.kiara.Handler;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.TransportRegistry;
@@ -65,22 +66,21 @@ public class TransportServerTest {
         config.servers.add(si);
     }
 
-    private static class ServerHandler implements Handler<TransportConnection>, TransportMessageListener {
+    private static class ServerHandler implements TransportConnectionListener, TransportMessageListener {
 
         @Override
-        public boolean onSuccess(TransportConnection result) {
+        public void onConnectionOpened(TransportConnection connection) {
             System.out.printf("Opened connection %s, local address %s, remote address %s%n",
-                    result, result.getLocalAddress(), result.getRemoteAddress());
+                    connection, connection.getLocalAddress(), connection.getRemoteAddress());
 
             // result.addRequestHandler(this);
-            result.addMessageListener(this);
-            return true;
+            connection.addMessageListener(this);
         }
 
         @Override
-        public boolean onFailure(Throwable t) {
-            t.printStackTrace();
-            return true;
+        public void onConnectionClosed(TransportConnection connection) {
+            System.out.printf("Closed connection %s%n", connection);
+            connection.removeMessageListener(this);
         }
 
         @Override
@@ -140,6 +140,7 @@ public class TransportServerTest {
 
             tc.send(response);
         }
+
     }
 
     public static void main(String[] args) throws Exception {

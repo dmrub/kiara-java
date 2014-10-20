@@ -39,13 +39,13 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServerConnectionHandler implements MessageConnection, TransportMessageListener, ServerConnection {
+public class ServerConnectionHandler implements MessageConnection, TransportMessageListener {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerConnectionHandler.class);
 
     private final ServerImpl server;
     private final TransportConnection transportConnection;
-    private final List<ServiceConnectionImpl> serviceHandlers;
+    private final List<ServerConnectionImpl> serviceHandlers;
     private final List<MessageListener> listeners;
     private final IdentityHashMap<Message, TransportMessage> messageMap;
 
@@ -56,17 +56,16 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
 
         this.serviceHandlers = new ArrayList<>(serviceHandlers.size());
         for (TransportAddressAndServiceHandler element : serviceHandlers) {
-            this.serviceHandlers.add(new ServiceConnectionImpl(this, element));
+            this.serviceHandlers.add(new ServerConnectionImpl(this, element));
         }
         this.listeners = new ArrayList<>();
         this.messageMap = new IdentityHashMap<>();
     }
 
-    public List<ServiceConnectionImpl> getServiceHandlers() {
+    public List<ServerConnectionImpl> getServiceHandlers() {
         return serviceHandlers;
     }
 
-    @Override
     public TransportConnection getTransportConnection() {
         return transportConnection;
     }
@@ -110,10 +109,10 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
         }
 
         if (!requestProcessed) {
-            ServiceConnectionImpl sc = null;
+            ServerConnectionImpl sc = null;
             if (serviceHandlers.size() > 1 || transport.isAddressContainsRequestPath()) {
                 final TransportAddress localTransportAddress = trequest.getLocalTransportAddress();
-                for (ServiceConnectionImpl element : serviceHandlers) {
+                for (ServerConnectionImpl element : serviceHandlers) {
                     if (element.getTransportAddress().acceptsConnection(localTransportAddress)) {
                         sc = element;
                     }
@@ -128,8 +127,6 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
                     final Message message = protocol.createMessageFromData(trequest.getPayload());
 
                     if (message.getMessageKind() == Message.Kind.RESPONSE) {
-                        // FIXME process RESPONSE
-                        System.err.println("RECEIVED RESPONSE " + message);
 
                         synchronized (messageMap) {
                             messageMap.put(message, trequest);
@@ -228,4 +225,23 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
         }
     }
 
+    void fireClientConnectionOpened(List<ServerEventListener> listeners) {
+        synchronized (listeners) {
+            for (ServerEventListener listener : listeners) {
+                for (ServerConnection connection : serviceHandlers) {
+                    listener.onClientConnectionOpened(connection);
+                }
+            }
+        }
+    }
+
+    void fireClientConnectionClosed(List<ServerEventListener> listeners) {
+        synchronized (listeners) {
+            for (ServerEventListener listener : listeners) {
+                for (ServerConnection connection : serviceHandlers) {
+                    listener.onClientConnectionOpened(connection);
+                }
+            }
+        }
+    }
 }

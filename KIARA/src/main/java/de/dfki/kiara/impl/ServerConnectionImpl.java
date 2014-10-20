@@ -27,38 +27,40 @@ import java.util.concurrent.ExecutionException;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServiceConnectionImpl implements ServiceConnection, InvocationEnvironment {
+public class ServerConnectionImpl implements ServerConnection, InvocationEnvironment {
 
     private final ServerConnectionHandler serverConnectionHandler;
     private final TransportAddress transportAddress;
     private final ServiceHandler serviceHandler;
     private final InterfaceCodeGen codegen;
 
-    public ServiceConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddress transportAddress, ServiceHandler serviceHandler) {
+    public ServerConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddress transportAddress, ServiceHandler serviceHandler) {
         this.serverConnectionHandler = serverConnectionHandler;
         this.transportAddress = transportAddress;
         this.serviceHandler = serviceHandler;
         this.codegen = serviceHandler.getProtocol().createInterfaceCodeGen(this);
     }
 
-    public ServiceConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddressAndServiceHandler transportAddressAndServiceHandler) {
+    public ServerConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddressAndServiceHandler transportAddressAndServiceHandler) {
         this(serverConnectionHandler, transportAddressAndServiceHandler.transportAddress, transportAddressAndServiceHandler.serviceHandler);
     }
 
+    @Override
     public ServerConnectionHandler getServerConnectionHandler() {
         return serverConnectionHandler;
     }
 
+    @Override
     public TransportAddress getTransportAddress() {
         return transportAddress;
     }
 
+    @Override
     public ServiceHandler getServiceHandler() {
         return serviceHandler;
     }
 
-    @Override
-    public ServerConnection getServerConnection() {
+    public ServerConnectionHandler getServerConnection() {
         return serverConnectionHandler;
     }
 
@@ -68,7 +70,7 @@ public class ServiceConnectionImpl implements ServiceConnection, InvocationEnvir
     }
 
     @Override
-    public ServiceConnection getServiceConnection() {
+    public ServerConnection getServiceConnection() {
         return this;
     }
 

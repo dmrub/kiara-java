@@ -21,9 +21,9 @@ import de.dfki.kiara.Context;
 import de.dfki.kiara.IDLParseException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
-import de.dfki.kiara.ServerConnection;
 import de.dfki.kiara.ServerEventListener;
 import de.dfki.kiara.Service;
+import de.dfki.kiara.ServerConnection;
 import java.util.List;
 
 /**
@@ -55,11 +55,9 @@ public class AosTestServer {
         try (Context context = Kiara.createContext()) {
 
             /* Create a new service */
-
             Service service = context.newService();
 
             /* Add IDL to the service */
-
             service.loadServiceIDLFromString("KIARA",
                     "namespace * aostest "
                     + "struct Vec3f {"
@@ -86,7 +84,6 @@ public class AosTestServer {
             System.out.printf("Register aostest.setLocations ...\n");
 
             /* Create new instance of the implementation class */
-
             GetSetLocationsImpl locationsImpl = new GetSetLocationsImpl();
 
             /* Register methods of the instance with the sepcified IDL service methods
@@ -99,17 +96,15 @@ public class AosTestServer {
              * serviceImpl   - arbitrary Java object that implements IDL service method
              * serviceMethodName - name of the Java object method that implements IDL service method
              */
-
             service.registerServiceFunction("aostest.setLocations", locationsImpl, "setLocations");
             service.registerServiceFunction("aostest.getLocations", locationsImpl, "getLocations");
 
             /*
              * Create new server and register service
              */
-
             Server server = context.newServer("0.0.0.0", port, "/service");
 
-            // server.addService("/rpc/aostest", protocol, service);
+            server.addService("/rpc/aostest", protocol, service);
             server.addService("tcp://0.0.0.0:5555/", protocol, service);
 
             System.out.printf("Starting server...\n");
@@ -118,7 +113,7 @@ public class AosTestServer {
 
                 @Override
                 public void onClientConnectionOpened(ServerConnection connection) {
-                    System.err.printf("New connection %s opened: transport %s, local address %s, remote address %s, local transport address %s%n",
+                    System.err.printf("New service connection %s opened: transport %s, local address %s, remote address %s, local transport address %s%n",
                             connection,
                             connection.getTransportConnection().getLocalTransportAddress().getTransport().getName(),
                             connection.getTransportConnection().getLocalAddress(),
@@ -133,7 +128,6 @@ public class AosTestServer {
             });
 
             /* Run server */
-
             server.run();
         } catch (IDLParseException e) {
             System.out.printf("Error: could not parse IDL: %s", e.getMessage());

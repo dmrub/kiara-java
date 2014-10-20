@@ -22,7 +22,6 @@ import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
-import de.dfki.kiara.ServerConnection;
 import de.dfki.kiara.ServerEventListener;
 import de.dfki.kiara.Service;
 import de.dfki.kiara.Transport;
@@ -319,7 +318,7 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
         List<TransportAddressAndServiceHandler> serviceHandlers = findAllServiceHandlers(result.getLocalTransportAddress());
         ServerConnectionHandler handler = new ServerConnectionHandler(this, result, serviceHandlers);
         connectionHandlers.add(handler);
-        fireClientConnectionOpened(handler);
+        handler.fireClientConnectionOpened(eventListeners);
         return true;
     }
 
@@ -344,22 +343,6 @@ public class ServerImpl implements Server, Handler<TransportConnection> {
             throw new NullPointerException("listener");
         synchronized (eventListeners) {
             eventListeners.remove(listener);
-        }
-    }
-
-    void fireClientConnectionOpened(ServerConnection connection) {
-        synchronized (eventListeners) {
-            for (ServerEventListener listener : eventListeners) {
-                listener.onClientConnectionOpened(connection);
-            }
-        }
-    }
-
-    void fireClientConnectionClosed(ServerConnection connection) {
-        synchronized (eventListeners) {
-            for (ServerEventListener listener : eventListeners) {
-                listener.onClientConnectionClosed(connection);
-            }
         }
     }
 

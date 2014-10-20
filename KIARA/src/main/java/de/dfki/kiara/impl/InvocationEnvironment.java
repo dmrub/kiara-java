@@ -19,7 +19,6 @@ package de.dfki.kiara.impl;
 
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ServerConnection;
-import de.dfki.kiara.ServiceConnection;
 import de.dfki.kiara.TransportAddress;
 
 /**
@@ -29,13 +28,11 @@ import de.dfki.kiara.TransportAddress;
 public interface InvocationEnvironment {
     public ServerConnectionHandler getServerConnectionHandler();
 
-    public ServiceConnection getServiceConnection();
+    public ServerConnection getServiceConnection();
 
     public TransportAddress getTransportAddress();
 
     public ServiceHandler getServiceHandler();
-
-    public ServerConnection getServerConnection();
 
     public Protocol getProtocol();
 }

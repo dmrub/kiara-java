@@ -117,10 +117,8 @@ public class ServiceMethodBinding implements ServiceMethodExecutor {
                     args.set(i, f.apply(args.get(i)));
                 } else if (methodEntry.specialParamTypes[i] != null && env != null) {
                     final TypeToken<?> ptype = methodEntry.specialParamTypes[i];
-                    if (ptype.isAssignableFrom(de.dfki.kiara.ServiceConnection.class)) {
+                    if (ptype.isAssignableFrom(de.dfki.kiara.ServerConnection.class)) {
                         args.set(i, env.getServiceConnection());
-                    } else if (ptype.isAssignableFrom(de.dfki.kiara.ServerConnection.class)) {
-                        args.set(i, env.getServerConnection());
                     }
                 }
             }

@@ -281,6 +281,9 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
     @Override
     public TransportMessage createRequest() {
+        if (mode == Mode.SERVER) {
+            throw new IllegalStateException("Requests from server are not supported");
+        }
         // Prepare the HTTP request.
         String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         FullHttpRequest request = new DefaultFullHttpRequest(

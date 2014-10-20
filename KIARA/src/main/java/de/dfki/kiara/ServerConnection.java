@@ -15,13 +15,12 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface ServerConnection {
-    public TransportConnection getTransportConnection();
+public interface ServerConnection extends ConnectionBase, ServiceInterfaceProvider {
+    public Protocol getProtocol();
 }

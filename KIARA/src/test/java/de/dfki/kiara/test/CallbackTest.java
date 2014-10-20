@@ -22,7 +22,7 @@ import de.dfki.kiara.Context;
 import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.Server;
 import de.dfki.kiara.Service;
-import de.dfki.kiara.ServiceConnection;
+import de.dfki.kiara.ServerConnection;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.After;
@@ -45,7 +45,7 @@ public class CallbackTest {
     }
 
     public static class CallbackImpl {
-        public String add(ServiceConnection connection, int a, int b) throws Exception {
+        public String add(ServerConnection connection, int a, int b) throws Exception {
             System.out.println("add("+a+","+b+") via connection="+connection);
 
             MethodBinding<CallbackClient> binder
@@ -146,7 +146,7 @@ public class CallbackTest {
                 //{ "http", "jsonrpc" },
                 //{ "http", "javaobjectstream" },
                 { "tcp", "jsonrpc" },
-                //{ "tcp", "javaobjectstream" }
+                { "tcp", "javaobjectstream" }
         };
         return Arrays.asList(data);
     }

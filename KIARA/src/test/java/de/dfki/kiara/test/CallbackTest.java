@@ -27,6 +27,8 @@ import de.dfki.kiara.ServerConnection;
 import de.dfki.kiara.ServerConnectionListener;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -52,12 +54,12 @@ public class CallbackTest {
 
             MethodBinding<CallbackClient> binder
                     = new MethodBinding<>(CallbackClient.class)
-                    .bind("calc.addResult", "addResult");
+                    .bind("cb.addResult", "addResult");
 
             CallbackClient cc = connection.getServiceInterface(binder);
             String c = cc.addResult(a, b, a+b);
 
-            return "calc.add: "+c;
+            return "cb.add: "+c;
         }
     }
 
@@ -66,6 +68,11 @@ public class CallbackTest {
             System.out.println("addResult: "+a+" + "+b+" = "+result);
             Assert.assertEquals(a+b, result);
             return "result is "+result;
+        }
+
+        public String clientMsg(String msg) {
+            System.out.println("cb.clientMsg: "+msg);
+            return "cb.clientMsg: "+msg;
         }
     }
 
@@ -90,8 +97,8 @@ public class CallbackTest {
         protected Server createServer(Context context, int port, String transport, String protocol, String configPath) throws Exception {
             Service service = context.newService();
             service.loadServiceIDLFromString("KIARA",
-                    "namespace * calc "
-                            + "service calc { "
+                    "namespace * cb "
+                            + "service cb { "
                             + "    void add(i32 a, i32 b) "
                             + "    [Callback] string addResult(i32 a, i32 b, i32 result) "
                             + "    [Callback] string clientMsg(string msg) "
@@ -100,12 +107,12 @@ public class CallbackTest {
 
             System.out.printf("Register server functions ....%n");
             CallbackImpl impl = new CallbackImpl();
-            service.registerServiceFunction("calc.add", impl, "add");
+            service.registerServiceFunction("cb.add", impl, "add");
             System.out.printf("Starting server...%n");
 
             Server server = context.newServer("0.0.0.0", port, "/service");
             if ("http".equals(transport))
-                server.addService("/rpc/calc", protocol, service);
+                server.addService("/rpc/cb", protocol, service);
             else if ("tcp".equals(transport))
                 server.addService("tcp://0.0.0.0:53212", protocol, service);
             else
@@ -118,11 +125,17 @@ public class CallbackTest {
                     try {
                         MethodBinding<CallbackClient> binder
                                 = new MethodBinding<>(CallbackClient.class)
-                                .bind("calc.clientMsg", "clientMsg");
+                                .bind("cb.clientMsg", "clientMsg");
 
                         CallbackClient cc = connection.getServiceInterface(binder);
-                        cc.clientMsg("MSG1");
-                    } catch (Exception ex) {
+                        assertEquals("cb.clientMsg: MSG1", cc.clientMsg("MSG1"));
+                    } catch (RemoteException ex) {
+                        System.err.printf("MSG1 Exception: %s%n", ex);
+                        ex.printStackTrace();
+                    } catch (NoSuchMethodException ex) {
+                        System.err.printf("MSG1 Exception: %s%n", ex);
+                        ex.printStackTrace();
+                    } catch (SecurityException ex) {
                         System.err.printf("MSG1 Exception: %s%n", ex);
                         ex.printStackTrace();
                     }
@@ -141,27 +154,28 @@ public class CallbackTest {
         protected Callback createClient(Connection connection) throws Exception {
             callbackClientImpl = new CallbackClientImpl();
 
-            connection.registerServiceFunction("calc.addResult", callbackClientImpl, "addResult");
+            connection.registerServiceFunction("cb.addResult", callbackClientImpl, "addResult");
+            connection.registerServiceFunction("cb.clientMsg", callbackClientImpl, "clientMsg");
 
             MethodBinding<Callback> binder
                     = new MethodBinding<>(Callback.class)
-                    .bind("calc.add", "add");
+                    .bind("cb.add", "add");
 
             return connection.getServiceInterface(binder);
         }
     }
 
-    private final CallbackSetup calcSetup;
-    private Callback calc = null;
+    private final CallbackSetup cbSetup;
+    private Callback cb = null;
 
     @Before
     public void setUp() throws Exception {
-        calc = calcSetup.start(100);
+        cb = cbSetup.start(100);
     }
 
     @After
     public void tearDown() throws Exception {
-        calcSetup.shutdown();
+        cbSetup.shutdown();
     }
 
     @AfterClass
@@ -183,16 +197,13 @@ public class CallbackTest {
     final int PORT = 8080;
 
     public CallbackTest(String transport, String protocol) {
-        calcSetup =  new CallbackSetup(PORT, transport, protocol, "/service");
+        cbSetup =  new CallbackSetup(PORT, transport, protocol, "/service");
     }
 
-    /**
-     * Test of main method, of class CalcTestServer.
-     */
     @Test
     public void testCallback() throws Exception {
-        assertEquals("calc.add: result is 15", calc.add(5, 10));
-        assertEquals("calc.add: result is 0", calc.add(-2, 2));
+        assertEquals("cb.add: result is 15", cb.add(5, 10));
+        assertEquals("cb.add: result is 0", cb.add(-2, 2));
     }
 
 }

@@ -229,7 +229,7 @@ public class ConnectionImpl implements Connection {
                             @Override
                             public void onSuccess(Message resultMessage) {
                                 try {
-                                    getMessageConnection().send(resultMessage);
+                                    messageConnection.send(resultMessage);
                                 } catch (Exception ex) {
                                     logger.error("Error on callback response", ex);
                                 }

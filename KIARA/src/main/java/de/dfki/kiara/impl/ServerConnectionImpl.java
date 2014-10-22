@@ -48,6 +48,7 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
 
         final ServiceMethodBinding serviceMethodBinding = (ServiceMethodBinding)serviceHandler.getServiceMethodExecutor();
         final Pipeline pipeline = serverConnectionHandler.getPipeline();
+        final MessageConnection messageConnection = serverConnectionHandler;
         serverConnectionHandler.addMessageListener(new MessageListener() {
 
             @Override
@@ -71,7 +72,7 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
                             @Override
                             public void onSuccess(Message resultMessage) {
                                 try {
-                                    getMessageConnection().send(resultMessage);
+                                    messageConnection.send(resultMessage);
                                 } catch (Exception ex) {
                                     logger.error("Error on callback response", ex);
                                 }

@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 import de.dfki.kiara.*;
 import org.slf4j.Logger;
@@ -33,7 +32,6 @@ import com.google.common.base.Function;
 import com.google.common.reflect.AbstractInvocationHandler;
 import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -54,6 +52,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
     protected final ServiceMethodBinding serviceMethodBinding;
     protected final PROTOCOL protocol;
     protected final Pipeline pipeline;
+    protected final MessageConnection messageConnection;
 
     public DefaultInvocationHandler(ConnectionBase connection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, PROTOCOL protocol) {
         this.connection = connection;
@@ -61,6 +60,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         this.protocol = protocol;
         this.interfaceMapping = interfaceMapping;
         this.serviceMethodBinding = serviceMethodBinding;
+        this.messageConnection = connection.getMessageConnection();
     }
 
     public static ListenableFuture<TransportMessage> performAsyncCall(TransportMessage request, final ListeningExecutorService executor) {
@@ -86,7 +86,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         final MessageDispatcher dispatcher = createMessageDispatcher(request);
         pipeline.addHandler(dispatcher);
 
-        final ListenableFuture<Void> reqSent = this.connection.getMessageConnection().send(request);
+        final ListenableFuture<Void> reqSent = messageConnection.send(request);
 
         final ListeningExecutorService myExecutor = executor == null ? Global.sameThreadExecutor : executor;
 

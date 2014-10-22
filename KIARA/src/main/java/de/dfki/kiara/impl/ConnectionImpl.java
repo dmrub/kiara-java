@@ -17,12 +17,17 @@
  */
 package de.dfki.kiara.impl;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.ConnectException;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.InvalidAddressException;
+import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageConnection;
+import de.dfki.kiara.MessageListener;
 import de.dfki.kiara.MethodAlreadyBoundException;
 import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.NoSuchIDLFunctionException;
@@ -73,12 +78,12 @@ public class ConnectionImpl implements Connection {
     private final Pipeline pipeline;
     private final World world;
     private final Module module;
-    private final ServiceMethodBinding methodBinding;
+    private final ServiceMethodBinding serviceMethodBinding;
     private final InterfaceCodeGen codegen;
 
     @SuppressWarnings("null")
     ConnectionImpl(String configUriStr) throws IOException {
-        methodBinding = new ServiceMethodBinding();
+        serviceMethodBinding = new ServiceMethodBinding();
         world = new World();
         module = new Module(world, "kiara");
 
@@ -118,7 +123,6 @@ public class ConnectionImpl implements Connection {
         //???DEBUG END
 
         // load IDL
-
         if (serverConfig.idlContents != null && !serverConfig.idlContents.isEmpty()) {
             loadIDL(serverConfig.idlContents, configUri.toString());
         } else if (serverConfig.idlURL != null && !serverConfig.idlURL.isEmpty()) {
@@ -139,7 +143,6 @@ public class ConnectionImpl implements Connection {
         }
 
         // 2. perform negotation
-
         // find matching endpoint
         ServerInfo serverInfo = null;
         Transport selectedTransport = null;
@@ -149,16 +152,18 @@ public class ConnectionImpl implements Connection {
             if (t != null) {
                 // we change selected endpoint only if priority is higher
                 // i.e. when priority value is less than current one
-                if (selectedTransport != null && selectedTransport.getPriority() < t.getPriority())
+                if (selectedTransport != null && selectedTransport.getPriority() < t.getPriority()) {
                     continue;
+                }
 
                 serverInfo = si;
                 selectedTransport = t;
             }
         }
 
-        if (serverInfo == null)
+        if (serverInfo == null) {
             throw new ConnectException("No matching endpoint found");
+        }
 
         transport = selectedTransport;
 
@@ -166,7 +171,6 @@ public class ConnectionImpl implements Connection {
         logger.debug("Selected protocol: {}", serverInfo.protocol.name);
 
         // FIXME load plugin classes ?
-
         // load required protocol
         String protocolName = serverInfo.protocol.name;
         //String protocolName = "javaobjectstream";
@@ -179,9 +183,9 @@ public class ConnectionImpl implements Connection {
             throw new ConnectException("Could not instantiate protocol", ex);
         }
 
-        if (protocol == null)
+        if (protocol == null) {
             throw new ConnectException("Unsupported protocol '" + protocolName + "'");
-
+        }
 
         URI transportUri = configUri.resolve(serverInfo.transport.url);
 
@@ -200,6 +204,57 @@ public class ConnectionImpl implements Connection {
         messageConnection = new TransportMessageConnection(transportConnection, protocol);
         pipeline = new Pipeline();
         codegen = protocol.createInterfaceCodeGen(this);
+
+        // FIXME
+        messageConnection.addMessageListener(new MessageListener() {
+
+            @Override
+            public void onMessage(MessageConnection connection, Message message) {
+                if (message == null) {
+                    logger.error("Received null message");
+                    return;
+                }
+
+                try {
+
+                    logger.info("Incoming message: {}", message);
+
+                    if (message.getMessageKind() == Message.Kind.REQUEST) {
+                        // FIXME compare with ServerConnectionHandler.onRequest
+
+                        ListenableFuture<Message> fmsg = serviceMethodBinding.performCall(null, message);
+
+                        Futures.addCallback(fmsg, new FutureCallback<Message>() {
+
+                            @Override
+                            public void onSuccess(Message resultMessage) {
+                                try {
+                                    getMessageConnection().send(resultMessage);
+                                } catch (Exception ex) {
+                                    logger.error("Error on callback response", ex);
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Throwable t) {
+                                logger.error("Error on callback response", t);
+                            }
+                        }, Global.executor);
+
+                        return;
+                    }
+
+                    // process via pipeline
+                    Object processResult = pipeline.process(message);
+                    if (processResult != null) {
+                        logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
+                    }
+                } catch (Exception ex) {
+                    logger.error("Pipeline processing failed", ex);
+                }
+
+            }
+        });
     }
 
     private void loadIDL(InputStream stream, String fileName) throws IOException {
@@ -237,8 +292,9 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public void close() throws IOException {
-        if (transportConnection != null)
+        if (transportConnection != null) {
             transportConnection.close();
+        }
     }
 
     @Override
@@ -250,12 +306,12 @@ public class ConnectionImpl implements Connection {
     }
 
     public ServiceMethodBinding getServiceMethodBinding() {
-        return methodBinding;
+        return serviceMethodBinding;
     }
 
     @Override
     public ServiceMethodExecutor getServiceMethodExecutor() {
-        return methodBinding;
+        return serviceMethodBinding;
     }
 
     @Override
@@ -267,43 +323,47 @@ public class ConnectionImpl implements Connection {
     public void registerServiceFunction(String idlFunctionName, Object serviceImpl, String serviceMethodName) throws NoSuchIDLFunctionException, MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
         KTDObject object = module.lookupObject(idlFunctionName);
 
-        if (!(object instanceof FunctionType))
-            throw new NoSuchIDLFunctionException("No such IDL function: '"+idlFunctionName+"'");
+        if (!(object instanceof FunctionType)) {
+            throw new NoSuchIDLFunctionException("No such IDL function: '" + idlFunctionName + "'");
+        }
 
-        FunctionType funcTy = (FunctionType)object;
+        FunctionType funcTy = (FunctionType) object;
 
         Annotation annotation = Annotation.getFirstAnnotationOfType(funcTy, module.getWorld().getCallbackAnnotation());
-        if (annotation == null)
-            throw new IllegalArgumentException(idlFunctionName+" is not a callback function");
+        if (annotation == null) {
+            throw new IllegalArgumentException(idlFunctionName + " is not a callback function");
+        }
 
-        if (methodBinding.getServiceMethodBinder(idlFunctionName) != null) {
+        if (serviceMethodBinding.getServiceMethodBinder(idlFunctionName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        methodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName);
+        serviceMethodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName);
     }
 
     @Override
-    public void registerServiceFunction(String idlFunctionName, Object serviceImpl, String serviceMethodName, Class<?>... parameterTypes) throws NoSuchIDLFunctionException, MethodAlreadyBoundException, NoSuchMethodException, SecurityException  {
+    public void registerServiceFunction(String idlFunctionName, Object serviceImpl, String serviceMethodName, Class<?>... parameterTypes) throws NoSuchIDLFunctionException, MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
         KTDObject object = module.lookupObject(idlFunctionName);
 
-        if (!(object instanceof FunctionType))
-            throw new NoSuchIDLFunctionException("No such IDL function: '"+idlFunctionName+"'");
+        if (!(object instanceof FunctionType)) {
+            throw new NoSuchIDLFunctionException("No such IDL function: '" + idlFunctionName + "'");
+        }
 
-        FunctionType funcTy = (FunctionType)object;
+        FunctionType funcTy = (FunctionType) object;
 
         Annotation annotation = Annotation.getFirstAnnotationOfType(funcTy, module.getWorld().getCallbackAnnotation());
-        if (annotation == null)
-            throw new IllegalArgumentException(idlFunctionName+" is not a callback function");
+        if (annotation == null) {
+            throw new IllegalArgumentException(idlFunctionName + " is not a callback function");
+        }
 
-        if (methodBinding.getServiceMethodBinder(idlFunctionName) != null) {
+        if (serviceMethodBinding.getServiceMethodBinder(idlFunctionName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        methodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName, parameterTypes);
+        serviceMethodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName, parameterTypes);
     }
 
     @Override
     public void unregisterServiceFunction(String idlFunctionName) throws NoSuchIDLFunctionException {
-        methodBinding.unbindServiceMethod(idlFunctionName);
+        serviceMethodBinding.unbindServiceMethod(idlFunctionName);
     }
 
     @Override

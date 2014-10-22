@@ -46,7 +46,7 @@ import de.dfki.kiara.util.Pipeline;
  *
  * @param <PROTOCOL>
  */
-public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler implements MessageListener {
+public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultInvocationHandler.class);
     protected final ConnectionBase connection;
@@ -61,7 +61,6 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         this.protocol = protocol;
         this.interfaceMapping = interfaceMapping;
         this.serviceMethodBinding = serviceMethodBinding;
-        this.connection.getMessageConnection().addMessageListener(this);
     }
 
     public static ListenableFuture<TransportMessage> performAsyncCall(TransportMessage request, final ListeningExecutorService executor) {
@@ -285,52 +284,6 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
             }
         }
 
-    }
-
-    @Override
-    public void onMessage(final MessageConnection messageConnection, final Message message) {
-        if (message == null) {
-            logger.error("Received null message");
-            return;
-        }
-
-        try {
-
-            logger.info("Incoming message: {}", message);
-
-            if (message.getMessageKind() == Message.Kind.REQUEST) {
-                // FIXME compare with ServerConnectionHandler.onRequest
-
-                ListenableFuture<Message> fmsg = serviceMethodBinding.performCall(null, message);
-
-                Futures.addCallback(fmsg, new FutureCallback<Message>() {
-
-                    @Override
-                    public void onSuccess(Message resultMessage) {
-                        try {
-                            connection.getMessageConnection().send(resultMessage);
-                        } catch (Exception ex) {
-                            logger.error("Error on callback response", ex);
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Throwable t) {
-                        logger.error("Error on callback response", t);
-                    }
-                }, Global.executor);
-
-                return;
-            }
-
-            // process via pipeline
-            Object processResult = pipeline.process(message);
-            if (processResult != null) {
-                logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
-            }
-        } catch (Exception ex) {
-            logger.error("Pipeline processing failed", ex);
-        }
     }
 
 }

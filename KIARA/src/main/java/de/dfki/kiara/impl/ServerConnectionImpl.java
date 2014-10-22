@@ -17,12 +17,16 @@
  */
 package de.dfki.kiara.impl;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.*;
 import de.dfki.kiara.util.Pipeline;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -30,6 +34,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class ServerConnectionImpl implements ServerConnection, InvocationEnvironment {
 
+    private static final Logger logger = LoggerFactory.getLogger(ServerConnectionImpl.class);
     private final ServerConnectionHandler serverConnectionHandler;
     private final TransportAddress transportAddress;
     private final ServiceHandler serviceHandler;
@@ -40,6 +45,57 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
         this.transportAddress = transportAddress;
         this.serviceHandler = serviceHandler;
         this.codegen = serviceHandler.getProtocol().createInterfaceCodeGen(this);
+
+        final ServiceMethodBinding serviceMethodBinding = (ServiceMethodBinding)serviceHandler.getServiceMethodExecutor();
+        final Pipeline pipeline = serverConnectionHandler.getPipeline();
+        serverConnectionHandler.addMessageListener(new MessageListener() {
+
+            @Override
+            public void onMessage(MessageConnection connection, Message message) {
+                if (message == null) {
+                    logger.error("Received null message");
+                    return;
+                }
+
+                try {
+
+                    logger.info("Incoming message: {}", message);
+
+                    if (message.getMessageKind() == Message.Kind.REQUEST) {
+                        // FIXME compare with ServerConnectionHandler.onRequest
+
+                        ListenableFuture<Message> fmsg = serviceMethodBinding.performCall(null, message);
+
+                        Futures.addCallback(fmsg, new FutureCallback<Message>() {
+
+                            @Override
+                            public void onSuccess(Message resultMessage) {
+                                try {
+                                    getMessageConnection().send(resultMessage);
+                                } catch (Exception ex) {
+                                    logger.error("Error on callback response", ex);
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Throwable t) {
+                                logger.error("Error on callback response", t);
+                            }
+                        }, Global.executor);
+
+                        return;
+                    }
+
+                    // process via pipeline
+                    Object processResult = pipeline.process(message);
+                    if (processResult != null) {
+                        logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
+                    }
+                } catch (Exception ex) {
+                    logger.error("Pipeline processing failed", ex);
+                }
+            }
+        });
     }
 
     public ServerConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddressAndServiceHandler transportAddressAndServiceHandler) {

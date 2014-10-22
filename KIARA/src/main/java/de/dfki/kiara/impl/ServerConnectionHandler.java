@@ -55,14 +55,14 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
         this.server = server;
         this.transportConnection = transportConnection;
         this.transportConnection.addMessageListener(this);
+        this.listeners = new ArrayList<>();
+        this.messageMap = new IdentityHashMap<>();
+        this.pipeline = new Pipeline();
 
         this.serviceHandlers = new ArrayList<>(serviceHandlers.size());
         for (TransportAddressAndServiceHandler element : serviceHandlers) {
             this.serviceHandlers.add(new ServerConnectionImpl(this, element));
         }
-        this.listeners = new ArrayList<>();
-        this.messageMap = new IdentityHashMap<>();
-        this.pipeline = new Pipeline();
     }
 
     public List<ServerConnectionImpl> getServiceHandlers() {

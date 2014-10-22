@@ -17,6 +17,7 @@
  */
 package de.dfki.kiara;
 
+import de.dfki.kiara.util.Pipeline;
 import java.io.Closeable;
 
 /**
@@ -26,5 +27,6 @@ import java.io.Closeable;
 public interface ConnectionBase extends Closeable {
     public TransportConnection getTransportConnection();
     public MessageConnection getMessageConnection();
+    public Pipeline getMessagePipeline();
     public ServiceMethodExecutor getServiceMethodExecutor();
 }

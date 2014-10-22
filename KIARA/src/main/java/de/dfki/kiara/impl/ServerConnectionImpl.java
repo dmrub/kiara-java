@@ -19,6 +19,7 @@ package de.dfki.kiara.impl;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.*;
+import de.dfki.kiara.util.Pipeline;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -105,5 +106,10 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     @Override
     public MessageConnection getMessageConnection() {
         return serverConnectionHandler;
+    }
+
+    @Override
+    public Pipeline getMessagePipeline() {
+        return serverConnectionHandler.getPipeline();
     }
 }

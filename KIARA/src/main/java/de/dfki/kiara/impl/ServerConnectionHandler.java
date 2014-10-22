@@ -22,6 +22,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.*;
 import de.dfki.kiara.config.ServerConfiguration;
+import de.dfki.kiara.util.Pipeline;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -48,6 +49,7 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
     private final List<ServerConnectionImpl> serviceHandlers;
     private final List<MessageListener> listeners;
     private final IdentityHashMap<Message, TransportMessage> messageMap;
+    private final Pipeline pipeline;
 
     public ServerConnectionHandler(ServerImpl server, TransportConnection transportConnection, List<TransportAddressAndServiceHandler> serviceHandlers) {
         this.server = server;
@@ -60,6 +62,7 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
         }
         this.listeners = new ArrayList<>();
         this.messageMap = new IdentityHashMap<>();
+        this.pipeline = new Pipeline();
     }
 
     public List<ServerConnectionImpl> getServiceHandlers() {
@@ -68,6 +71,10 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
 
     public TransportConnection getTransportConnection() {
         return transportConnection;
+    }
+
+    public Pipeline getPipeline() {
+        return pipeline;
     }
 
     @Override

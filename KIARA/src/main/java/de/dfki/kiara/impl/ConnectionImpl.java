@@ -43,6 +43,7 @@ import de.dfki.kiara.ktd.FunctionType;
 import de.dfki.kiara.ktd.KTDObject;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.World;
+import de.dfki.kiara.util.Pipeline;
 import de.dfki.kiara.util.URILoader;
 
 import java.io.IOException;
@@ -69,6 +70,7 @@ public class ConnectionImpl implements Connection {
     private final Transport transport;
     private final TransportConnection transportConnection;
     private final TransportMessageConnection messageConnection;
+    private final Pipeline pipeline;
     private final World world;
     private final Module module;
     private final ServiceMethodBinding methodBinding;
@@ -196,6 +198,7 @@ public class ConnectionImpl implements Connection {
         }
 
         messageConnection = new TransportMessageConnection(transportConnection, protocol);
+        pipeline = new Pipeline();
         codegen = protocol.createInterfaceCodeGen(this);
     }
 
@@ -306,6 +309,11 @@ public class ConnectionImpl implements Connection {
     @Override
     public MessageConnection getMessageConnection() {
         return messageConnection;
+    }
+
+    @Override
+    public Pipeline getMessagePipeline() {
+        return pipeline;
     }
 
 }

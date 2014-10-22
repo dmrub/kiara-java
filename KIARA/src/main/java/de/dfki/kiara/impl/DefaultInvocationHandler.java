@@ -57,7 +57,7 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
 
     public DefaultInvocationHandler(ConnectionBase connection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, PROTOCOL protocol) {
         this.connection = connection;
-        this.pipeline = new Pipeline();
+        this.pipeline = connection.getMessagePipeline();
         this.protocol = protocol;
         this.interfaceMapping = interfaceMapping;
         this.serviceMethodBinding = serviceMethodBinding;

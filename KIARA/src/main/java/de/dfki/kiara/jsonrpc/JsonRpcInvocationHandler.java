@@ -18,7 +18,6 @@
 package de.dfki.kiara.jsonrpc;
 
 import de.dfki.kiara.ConnectionBase;
-import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.impl.DefaultInvocationHandler;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.Message;

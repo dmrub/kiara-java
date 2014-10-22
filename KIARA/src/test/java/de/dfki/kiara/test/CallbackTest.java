@@ -20,9 +20,11 @@ package de.dfki.kiara.test;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.Context;
 import de.dfki.kiara.MethodBinding;
+import de.dfki.kiara.RemoteException;
 import de.dfki.kiara.Server;
 import de.dfki.kiara.Service;
 import de.dfki.kiara.ServerConnection;
+import de.dfki.kiara.ServerConnectionListener;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.After;
@@ -54,6 +56,7 @@ public class CallbackTest {
 
             CallbackClient cc = connection.getServiceInterface(binder);
             String c = cc.addResult(a, b, a+b);
+
             return "calc.add: "+c;
         }
     }
@@ -72,6 +75,7 @@ public class CallbackTest {
 
     public static interface CallbackClient {
         public String addResult(int a, int b, int result);
+        public String clientMsg(String msg) throws RemoteException;
     }
 
     public static class CallbackSetup extends TestSetup<Callback> {
@@ -90,6 +94,7 @@ public class CallbackTest {
                             + "service calc { "
                             + "    void add(i32 a, i32 b) "
                             + "    [Callback] string addResult(i32 a, i32 b, i32 result) "
+                            + "    [Callback] string clientMsg(string msg) "
                             + "} "
             );
 
@@ -105,6 +110,30 @@ public class CallbackTest {
                 server.addService("tcp://0.0.0.0:53212", protocol, service);
             else
                 throw new IllegalArgumentException("Unknown transport "+transport);
+
+            server.addEventListener(new ServerConnectionListener() {
+
+                @Override
+                public void onConnectionOpened(ServerConnection connection) {
+                    try {
+                        MethodBinding<CallbackClient> binder
+                                = new MethodBinding<>(CallbackClient.class)
+                                .bind("calc.clientMsg", "clientMsg");
+
+                        CallbackClient cc = connection.getServiceInterface(binder);
+                        cc.clientMsg("MSG1");
+                    } catch (Exception ex) {
+                        System.err.printf("MSG1 Exception: %s%n", ex);
+                        ex.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onConnectionClosed(ServerConnection connection) {
+
+                }
+            });
+
             return server;
         }
 

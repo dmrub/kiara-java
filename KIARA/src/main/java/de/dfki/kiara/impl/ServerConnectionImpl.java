@@ -47,7 +47,6 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
         this.codegen = serviceHandler.getProtocol().createInterfaceCodeGen(this);
 
         final ServiceMethodBinding serviceMethodBinding = (ServiceMethodBinding)serviceHandler.getServiceMethodExecutor();
-        final Pipeline pipeline = serverConnectionHandler.getPipeline();
         final MessageConnection messageConnection = serverConnectionHandler;
         serverConnectionHandler.addMessageListener(new MessageListener() {
 
@@ -87,13 +86,9 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
                         return;
                     }
 
-                    // process via pipeline
-                    Object processResult = pipeline.process(message);
-                    if (processResult != null) {
-                        logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
-                    }
+                    logger.warn("Unprocessed message: {}: {}", message.getClass(), message);
                 } catch (Exception ex) {
-                    logger.error("Pipeline processing failed", ex);
+                    logger.error("Message processing failed", ex);
                 }
             }
         });

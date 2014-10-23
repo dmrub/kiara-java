@@ -212,6 +212,23 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
     }
 
     private void processMessage(Message message) {
+        // responses are processed by the pipeline
+        logger.info("Process message: {}", message);
+
+        if (message.getMessageKind() == Message.Kind.RESPONSE
+                || message.getMessageKind() == Message.Kind.EXCEPTION) {
+            try {
+                Object processResult = pipeline.process(message);
+                if (processResult != null) {
+                    logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
+                }
+            } catch (Exception ex) {
+                logger.error("Pipeline processing failed", ex);
+            }
+            return;
+        }
+
+        // requests are processed by message listeners
         synchronized (listeners) {
             for (MessageListener listener : listeners) {
                 listener.onMessage(this, message);

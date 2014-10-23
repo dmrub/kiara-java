@@ -18,6 +18,7 @@
 package de.dfki.kiara.jos;
 
 import de.dfki.kiara.*;
+import de.dfki.kiara.impl.DefaultInvocationHandler;
 import de.dfki.kiara.impl.ServiceMethodBinding;
 
 import java.io.IOException;
@@ -59,7 +60,7 @@ public class JosProtocol implements Protocol {
                 final ServiceMethodBinding smb = (ServiceMethodBinding)connection.getServiceMethodExecutor();
                 Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
                         new Class<?>[]{interfaceClass, RemoteInterface.class},
-                        new JosInvocationHandler(connection, mapping, smb, thisProtocol));
+                        new DefaultInvocationHandler(connection, mapping, smb, thisProtocol));
                 return interfaceClass.cast(impl);
             }
         };
@@ -78,6 +79,17 @@ public class JosProtocol implements Protocol {
     @Override
     public Message createResponseMessage(Message requestMessage, Message.ResponseObject response) {
         return new JosMessage(this, response, ((JosMessage)requestMessage));
+    }
+
+    @Override
+    public boolean equalMessageIds(Object id1, Object id2) {
+        if (id1 == id2) {
+            return true;
+        }
+        if (id1 == null || id2 == null) {
+            return false;
+        }
+        return id1.equals(id2);
     }
 
 }

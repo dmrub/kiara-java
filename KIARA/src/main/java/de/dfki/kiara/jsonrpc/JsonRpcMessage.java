@@ -349,4 +349,9 @@ public class JsonRpcMessage implements Message {
         return "JsonRpcMessage("+kind+", "+getMethodName()+", id="+id+", params="+getParams()+", error="+getError()+")";
     }
 
+    @Override
+    public Object getMessageId() {
+        return id;
+    }
+
 }

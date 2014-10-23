@@ -80,6 +80,8 @@ public interface Message {
      */
     public ByteBuffer getMessageData() throws IOException;
 
+    public Object getMessageId();
+
     public RequestObject getRequestObject(TypeToken<?>[] paramTypes) throws MessageDeserializationException;
 
     public ResponseObject getResponseObject(TypeToken<?> returnType) throws MessageDeserializationException;

@@ -42,19 +42,18 @@ import de.dfki.kiara.util.Pipeline;
 /**
  * Created by Dmitri Rubinstein on 30.07.2014.
  *
- * @param <PROTOCOL>
  */
-public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extends AbstractInvocationHandler {
+public class DefaultInvocationHandler extends AbstractInvocationHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultInvocationHandler.class);
     protected final ConnectionBase connection;
     protected final InterfaceMapping<?> interfaceMapping;
     protected final ServiceMethodBinding serviceMethodBinding;
-    protected final PROTOCOL protocol;
+    protected final Protocol protocol;
     protected final Pipeline pipeline;
     protected final MessageConnection messageConnection;
 
-    public DefaultInvocationHandler(ConnectionBase connection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, PROTOCOL protocol) {
+    public DefaultInvocationHandler(ConnectionBase connection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, Protocol protocol) {
         this.connection = connection;
         this.pipeline = connection.getMessagePipeline();
         this.protocol = protocol;
@@ -80,10 +79,8 @@ public abstract class DefaultInvocationHandler<PROTOCOL extends Protocol> extend
         return interfaceMapping;
     }
 
-    public abstract MessageDispatcher createMessageDispatcher(Message request);
-
     protected ListenableFuture<Message> performAsyncCall(final Message request, final TypeToken<?> returnType, ListeningExecutorService executor) throws IOException {
-        final MessageDispatcher dispatcher = createMessageDispatcher(request);
+        final MessageDispatcher dispatcher = new DefaultMessageDispatcher(request.getMessageId());
         pipeline.addHandler(dispatcher);
 
         final ListenableFuture<Void> reqSent = messageConnection.send(request);

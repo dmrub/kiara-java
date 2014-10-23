@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import de.dfki.kiara.*;
+import de.dfki.kiara.impl.DefaultInvocationHandler;
 import de.dfki.kiara.impl.ServiceMethodBinding;
 
 import java.io.IOException;
@@ -138,6 +139,11 @@ public class JsonRpcProtocol implements Protocol {
         return new JsonRpcMessage(this, node);
     }
 
+    @Override
+    public boolean equalMessageIds(Object id1, Object id2) {
+        return equalIds(id1, id2);
+    }
+
     public static boolean equalIds(Object id1, Object id2) {
         if (id1 == id2) {
             return true;
@@ -177,7 +183,7 @@ public class JsonRpcProtocol implements Protocol {
                 final ServiceMethodBinding smb = (ServiceMethodBinding)connection.getServiceMethodExecutor();
                 Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
                         new Class<?>[]{interfaceClass, RemoteInterface.class},
-                        new JsonRpcInvocationHandler(connection, mapping, smb, thisProtocol));
+                        new DefaultInvocationHandler(connection, mapping, smb, thisProtocol));
                 return interfaceClass.cast(impl);
             }
         };

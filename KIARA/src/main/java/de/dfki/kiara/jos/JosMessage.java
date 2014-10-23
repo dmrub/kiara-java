@@ -205,4 +205,9 @@ public class JosMessage implements Message {
     public String toString() {
         return "JosMessage("+kind+", "+methodName+", "+request+", "+response+", "+id+")";
     }
+
+    @Override
+    public Object getMessageId() {
+        return id;
+    }
 }

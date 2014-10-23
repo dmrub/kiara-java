@@ -41,4 +41,5 @@ public interface Protocol {
 
     public Message createResponseMessage(Message requestMessage, Message.ResponseObject response) throws IOException;
 
+    public boolean equalMessageIds(Object id1, Object id2);
 }

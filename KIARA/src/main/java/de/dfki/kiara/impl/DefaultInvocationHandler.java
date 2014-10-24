@@ -33,7 +33,6 @@ import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import de.dfki.kiara.util.Pipeline;
 
 /**
  * Created by Dmitri Rubinstein on 30.07.2014.
@@ -44,18 +43,12 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
     private static final Logger logger = LoggerFactory.getLogger(DefaultInvocationHandler.class);
     protected final ConnectionBase connection;
     protected final InterfaceMapping<?> interfaceMapping;
-    protected final ServiceMethodBinding serviceMethodBinding;
     protected final Protocol protocol;
-    protected final Pipeline pipeline;
-    protected final MessageConnection messageConnection;
 
-    public DefaultInvocationHandler(ConnectionBase connection, InterfaceMapping<?> interfaceMapping, ServiceMethodBinding serviceMethodBinding, Protocol protocol) {
+    public DefaultInvocationHandler(ConnectionBase connection, InterfaceMapping<?> interfaceMapping, Protocol protocol) {
         this.connection = connection;
-        this.pipeline = connection.getMessagePipeline();
         this.protocol = protocol;
         this.interfaceMapping = interfaceMapping;
-        this.serviceMethodBinding = serviceMethodBinding;
-        this.messageConnection = connection.getMessageConnection();
     }
 
     public InterfaceMapping<?> getInterfaceMapping() {
@@ -119,7 +112,7 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
                     public ListenableFuture<Object> apply(List<Object> params) throws Exception {
                         final Message request = protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, params));
                         final TypeToken<?> returnType = TypeToken.of(methodEntry.futureParamOfReturnType);
-                        final ListenableFuture<Message> responseFuture = AsyncCall.performAsyncCall(pipeline, messageConnection, request, Global.executor);
+                        final ListenableFuture<Message> responseFuture = connection.performAsyncCall(request, Global.executor);
                         AsyncFunction<Message, Object> g = new AsyncFunction<Message, Object>() {
 
                             @Override
@@ -171,7 +164,7 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
 
                 final TypeToken<?> returnType = methodEntry.futureParamOfReturnType != null ? TypeToken.of(methodEntry.futureParamOfReturnType) : TypeToken.of(method.getGenericReturnType());
 
-                final ListenableFuture<Message> responseFuture = AsyncCall.performAsyncCall(pipeline, messageConnection, request, Global.executor);
+                final ListenableFuture<Message> responseFuture = connection.performAsyncCall(request, Global.executor);
 
                 if (methodEntry.futureParamOfReturnType != null) {
                     AsyncFunction<Message, Object> f = new AsyncFunction<Message, Object>() {

@@ -20,6 +20,7 @@ package de.dfki.kiara.impl;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.ConnectException;
 import de.dfki.kiara.Connection;
 import de.dfki.kiara.InterfaceCodeGen;
@@ -374,6 +375,11 @@ public class ConnectionImpl implements Connection {
     @Override
     public Pipeline getMessagePipeline() {
         return pipeline;
+    }
+
+    @Override
+    public ListenableFuture<Message> performAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
+        return AsyncCall.performAsyncCall(pipeline, messageConnection, request, executor);
     }
 
 }

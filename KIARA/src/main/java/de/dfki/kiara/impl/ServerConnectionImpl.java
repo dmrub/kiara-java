@@ -20,6 +20,7 @@ package de.dfki.kiara.impl;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.*;
 import de.dfki.kiara.util.Pipeline;
 
@@ -163,5 +164,10 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     @Override
     public Pipeline getMessagePipeline() {
         return serverConnectionHandler.getPipeline();
+    }
+
+    @Override
+    public ListenableFuture<Message> performAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
+        return AsyncCall.performAsyncCall(serverConnectionHandler.getPipeline(), serverConnectionHandler, request, executor);
     }
 }

@@ -17,16 +17,20 @@
  */
 package de.dfki.kiara;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.util.Pipeline;
 import java.io.Closeable;
+import java.io.IOException;
 
 /**
  *
- * @author rubinste
+ * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public interface ConnectionBase extends Closeable {
     public TransportConnection getTransportConnection();
     public MessageConnection getMessageConnection();
     public Pipeline getMessagePipeline();
     public ServiceMethodExecutor getServiceMethodExecutor();
+    public ListenableFuture<Message> performAsyncCall(final Message request, ListeningExecutorService executor) throws IOException;
 }

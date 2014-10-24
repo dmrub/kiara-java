@@ -183,7 +183,7 @@ public class JsonRpcProtocol implements Protocol {
                 final ServiceMethodBinding smb = (ServiceMethodBinding)connection.getServiceMethodExecutor();
                 Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
                         new Class<?>[]{interfaceClass, RemoteInterface.class},
-                        new DefaultInvocationHandler(connection, mapping, smb, thisProtocol));
+                        new DefaultInvocationHandler(connection, mapping, thisProtocol));
                 return interfaceClass.cast(impl);
             }
         };

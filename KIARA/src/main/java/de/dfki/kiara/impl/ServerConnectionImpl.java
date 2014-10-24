@@ -22,7 +22,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.*;
-import de.dfki.kiara.util.Pipeline;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -147,23 +146,8 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     }
 
     @Override
-    public ServiceMethodExecutor getServiceMethodExecutor() {
-        return getServiceHandler().getServiceMethodExecutor();
-    }
-
-    @Override
     public void close() throws IOException {
         // FIXME implement close
-    }
-
-    @Override
-    public MessageConnection getMessageConnection() {
-        return serverConnectionHandler;
-    }
-
-    @Override
-    public Pipeline getMessagePipeline() {
-        return serverConnectionHandler.getPipeline();
     }
 
     @Override

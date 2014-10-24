@@ -34,7 +34,6 @@ import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.NoSuchIDLFunctionException;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ProtocolRegistry;
-import de.dfki.kiara.ServiceMethodExecutor;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportRegistry;
@@ -311,11 +310,6 @@ public class ConnectionImpl implements Connection {
     }
 
     @Override
-    public ServiceMethodExecutor getServiceMethodExecutor() {
-        return serviceMethodBinding;
-    }
-
-    @Override
     public TransportConnection getTransportConnection() {
         return transportConnection;
     }
@@ -365,16 +359,6 @@ public class ConnectionImpl implements Connection {
     @Override
     public void unregisterServiceFunction(String idlFunctionName) throws NoSuchIDLFunctionException {
         serviceMethodBinding.unbindServiceMethod(idlFunctionName);
-    }
-
-    @Override
-    public MessageConnection getMessageConnection() {
-        return messageConnection;
-    }
-
-    @Override
-    public Pipeline getMessagePipeline() {
-        return pipeline;
     }
 
     @Override

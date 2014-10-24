@@ -57,7 +57,6 @@ public class JosProtocol implements Protocol {
         return new InterfaceCodeGen() {
             @Override
             public <T> T generateInterfaceImpl(Class<T> interfaceClass, InterfaceMapping<T> mapping) {
-                final ServiceMethodBinding smb = (ServiceMethodBinding)connection.getServiceMethodExecutor();
                 Object impl = Proxy.newProxyInstance(interfaceClass.getClassLoader(),
                         new Class<?>[]{interfaceClass, RemoteInterface.class},
                         new DefaultInvocationHandler(connection, mapping, thisProtocol));

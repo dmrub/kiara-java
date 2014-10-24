@@ -62,24 +62,12 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
         this.messageConnection = connection.getMessageConnection();
     }
 
-    public static ListenableFuture<TransportMessage> performAsyncCall(TransportMessage request, final ListeningExecutorService executor) {
-        final TransportConnectionReceiver connection = new TransportConnectionReceiver(request.getConnection());
-        ListenableFuture<Void> reqSent = connection.send(request);
-        AsyncFunction<Void, TransportMessage> f = new AsyncFunction<Void, TransportMessage>() {
-
-            @Override
-            public ListenableFuture<TransportMessage> apply(Void input) throws Exception {
-                return connection.receive(executor);
-            }
-        };
-        return Futures.transform(reqSent, f);
-    }
 
     public InterfaceMapping<?> getInterfaceMapping() {
         return interfaceMapping;
     }
 
-    protected ListenableFuture<Message> performAsyncCall(final Message request, final TypeToken<?> returnType, ListeningExecutorService executor) throws IOException {
+    protected ListenableFuture<Message> performAsyncCall(final Message request, ListeningExecutorService executor) throws IOException {
         final MessageDispatcher dispatcher = new DefaultMessageDispatcher(request.getMessageId());
         pipeline.addHandler(dispatcher);
 
@@ -179,7 +167,7 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
                     public ListenableFuture<Object> apply(List<Object> params) throws Exception {
                         final Message request = protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, params));
                         final TypeToken<?> returnType = TypeToken.of(methodEntry.futureParamOfReturnType);
-                        final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, Global.executor);
+                        final ListenableFuture<Message> responseFuture = performAsyncCall(request, Global.executor);
                         AsyncFunction<Message, Object> g = new AsyncFunction<Message, Object>() {
 
                             @Override
@@ -231,7 +219,7 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
 
                 final TypeToken<?> returnType = methodEntry.futureParamOfReturnType != null ? TypeToken.of(methodEntry.futureParamOfReturnType) : TypeToken.of(method.getGenericReturnType());
 
-                final ListenableFuture<Message> responseFuture = performAsyncCall(request, returnType, Global.executor);
+                final ListenableFuture<Message> responseFuture = performAsyncCall(request, Global.executor);
 
                 if (methodEntry.futureParamOfReturnType != null) {
                     AsyncFunction<Message, Object> f = new AsyncFunction<Message, Object>() {

@@ -19,7 +19,8 @@ package de.dfki.kiara.impl;
 
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
-import de.dfki.kiara.util.MessageDispatcher;
+import de.dfki.kiara.util.Pipeline;
+
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -27,12 +28,12 @@ import java.util.concurrent.BlockingQueue;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class DefaultMessageDispatcher implements MessageDispatcher {
+public class MessageDispatcher implements Pipeline.Handler {
 
     private final Object messageId;
     private final BlockingQueue<Object> messageQueue;
 
-    DefaultMessageDispatcher(Object messageId) {
+    MessageDispatcher(Object messageId) {
         this.messageId = messageId;
         this.messageQueue = new ArrayBlockingQueue<>(1);
     }

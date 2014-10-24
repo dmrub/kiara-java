@@ -23,9 +23,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageConnection;
-import de.dfki.kiara.util.MessageDispatcher;
 import de.dfki.kiara.util.Pipeline;
-import java.io.IOException;
+
 import java.util.concurrent.Callable;
 
 /**
@@ -35,7 +34,7 @@ import java.util.concurrent.Callable;
 public class AsyncCall {
 
     public static ListenableFuture<Message> performAsyncCall(final Pipeline pipeline, final MessageConnection messageConnection, final Message request, ListeningExecutorService executor) {
-        final MessageDispatcher dispatcher = new DefaultMessageDispatcher(request.getMessageId());
+        final MessageDispatcher dispatcher = new MessageDispatcher(request.getMessageId());
         pipeline.addHandler(dispatcher);
 
         final ListenableFuture<Void> reqSent = messageConnection.send(request);

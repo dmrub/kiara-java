@@ -17,8 +17,6 @@
  */
 package de.dfki.kiara.tcp;
 
-import de.dfki.kiara.Handler;
-import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.netty.ByteBufferDecoder;
 import de.dfki.kiara.netty.ByteBufferEncoder;

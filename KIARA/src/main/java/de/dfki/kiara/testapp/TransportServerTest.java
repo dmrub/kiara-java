@@ -17,7 +17,6 @@
  */
 package de.dfki.kiara.testapp;
 
-import de.dfki.kiara.Handler;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportConnection;

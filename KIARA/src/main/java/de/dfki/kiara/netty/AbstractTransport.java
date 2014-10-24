@@ -18,9 +18,7 @@
 
 package de.dfki.kiara.netty;
 
-import de.dfki.kiara.Handler;
 import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.impl.Global;
 import io.netty.channel.ChannelHandler;

@@ -19,7 +19,6 @@ package de.dfki.kiara.jos;
 
 import de.dfki.kiara.*;
 import de.dfki.kiara.impl.DefaultInvocationHandler;
-import de.dfki.kiara.impl.ServiceMethodBinding;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;

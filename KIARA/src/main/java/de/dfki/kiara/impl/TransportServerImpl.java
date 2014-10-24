@@ -17,11 +17,9 @@
  */
 package de.dfki.kiara.impl;
 
-import de.dfki.kiara.Handler;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.RunningService;
 import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportServer;
 import de.dfki.kiara.netty.AbstractTransport;

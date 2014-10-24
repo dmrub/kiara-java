@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import de.dfki.kiara.*;
 import de.dfki.kiara.impl.DefaultInvocationHandler;
-import de.dfki.kiara.impl.ServiceMethodBinding;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;

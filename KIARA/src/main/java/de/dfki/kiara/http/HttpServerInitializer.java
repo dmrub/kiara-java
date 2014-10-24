@@ -18,8 +18,6 @@
 
 package de.dfki.kiara.http;
 
-import de.dfki.kiara.Handler;
-import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportConnectionListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;

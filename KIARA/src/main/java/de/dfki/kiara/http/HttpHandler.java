@@ -18,9 +18,7 @@
 package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import de.dfki.kiara.Handler;
 import de.dfki.kiara.InvalidAddressException;
-import de.dfki.kiara.RequestHandler;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnection;

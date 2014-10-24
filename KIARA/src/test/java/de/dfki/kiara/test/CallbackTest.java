@@ -27,8 +27,7 @@ import de.dfki.kiara.ServerConnection;
 import de.dfki.kiara.ServerConnectionListener;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -57,7 +56,7 @@ public class CallbackTest {
                     .bind("cb.addResult", "addResult");
 
             CallbackClient cc = connection.getServiceInterface(binder);
-            String c = cc.addResult(a, b, a+b);
+            String c = cc.addResult(a, b, a + b);
 
             return "cb.add: "+c;
         }
@@ -71,7 +70,7 @@ public class CallbackTest {
         }
 
         public String clientMsg(String msg) {
-            System.out.println("cb.clientMsg: "+msg);
+            System.out.println("cb.clientMsg: " + msg);
             return "cb.clientMsg: "+msg;
         }
     }

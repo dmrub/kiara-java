@@ -87,7 +87,7 @@ public class ServiceMethodBinding implements ServiceMethodExecutor {
         }
     }
 
-    public ListenableFuture<Message> performCall(InvocationEnvironment env, final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
+    public ListenableFuture<Message> performLocalCall(InvocationEnvironment env, final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
         if (requestMessage.getMessageKind() != Message.Kind.REQUEST) {
             throw new IllegalArgumentException("message is not a request");
         }

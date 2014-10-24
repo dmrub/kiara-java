@@ -28,5 +28,5 @@ import java.io.IOException;
  */
 public interface ConnectionBase extends Closeable {
     public TransportConnection getTransportConnection();
-    public ListenableFuture<Message> performAsyncCall(final Message request, ListeningExecutorService executor) throws IOException;
+    public ListenableFuture<Message> performRemoteAsyncCall(final Message request, ListeningExecutorService executor) throws IOException;
 }

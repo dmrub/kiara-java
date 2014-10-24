@@ -33,7 +33,7 @@ import java.util.concurrent.Callable;
  */
 public class AsyncCall {
 
-    public static ListenableFuture<Message> performAsyncCall(final Pipeline pipeline, final MessageConnection messageConnection, final Message request, ListeningExecutorService executor) {
+    public static ListenableFuture<Message> performRemoteAsyncCall(final Pipeline pipeline, final MessageConnection messageConnection, final Message request, ListeningExecutorService executor) {
         final MessageDispatcher dispatcher = new MessageDispatcher(request.getMessageId());
         pipeline.addHandler(dispatcher);
 

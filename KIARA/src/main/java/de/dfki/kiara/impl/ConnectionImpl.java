@@ -222,7 +222,7 @@ public class ConnectionImpl implements Connection {
                     if (message.getMessageKind() == Message.Kind.REQUEST) {
                         // FIXME compare with ServerConnectionHandler.onRequest
 
-                        ListenableFuture<Message> fmsg = serviceMethodBinding.performCall(null, message);
+                        ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(null, message);
 
                         Futures.addCallback(fmsg, new FutureCallback<Message>() {
 
@@ -362,8 +362,8 @@ public class ConnectionImpl implements Connection {
     }
 
     @Override
-    public ListenableFuture<Message> performAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
-        return AsyncCall.performAsyncCall(pipeline, messageConnection, request, executor);
+    public ListenableFuture<Message> performRemoteAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
+        return AsyncCall.performRemoteAsyncCall(pipeline, messageConnection, request, executor);
     }
 
 }

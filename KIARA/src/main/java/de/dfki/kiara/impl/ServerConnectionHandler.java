@@ -20,6 +20,7 @@ package de.dfki.kiara.impl;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.*;
 import de.dfki.kiara.config.ServerConfiguration;
 import de.dfki.kiara.util.Pipeline;
@@ -144,7 +145,7 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
                         return;
                     }
 
-                    ListenableFuture<Message> fmsg = sc.performCall(message);
+                    ListenableFuture<Message> fmsg = sc.performLocalCall(message);
 
                     Futures.addCallback(fmsg, new FutureCallback<Message>() {
 
@@ -226,14 +227,54 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
                 logger.error("Pipeline processing failed", ex);
             }
             return;
+        } else if (message.getMessageKind() == Message.Kind.REQUEST) {
+
+            for (ServerConnectionImpl conn : serviceHandlers) {
+                final ServiceMethodBinding serviceMethodBinding = conn.getServiceMethodBinding();
+
+                try {
+
+                    logger.info("Incoming message: {}", message);
+
+                    if (message.getMessageKind() == Message.Kind.REQUEST) {
+                        // FIXME compare with ServerConnectionHandler.onRequest
+
+                        ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(null, message);
+
+                        Futures.addCallback(fmsg, new FutureCallback<Message>() {
+
+                            @Override
+                            public void onSuccess(Message resultMessage) {
+                                try {
+                                    send(resultMessage);
+                                } catch (Exception ex) {
+                                    logger.error("Error on callback response", ex);
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Throwable t) {
+                                logger.error("Error on callback response", t);
+                            }
+                        }, Global.executor);
+
+                        return;
+                    }
+
+                    logger.warn("Unprocessed message: {}: {}", message.getClass(), message);
+                } catch (Exception ex) {
+                    logger.error("Message processing failed", ex);
+                }
+
+            }
         }
 
         // requests are processed by message listeners
-        synchronized (listeners) {
-            for (MessageListener listener : listeners) {
-                listener.onMessage(this, message);
-            }
-        }
+//        synchronized (listeners) {
+//            for (MessageListener listener : listeners) {
+//                listener.onMessage(this, message);
+//            }
+//        }
     }
 
     @Override
@@ -279,5 +320,9 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
                 }
             }
         });
+    }
+
+    public final ListenableFuture<Message> performRemoteAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
+        return AsyncCall.performRemoteAsyncCall(this.pipeline, this, request, executor);
     }
 }

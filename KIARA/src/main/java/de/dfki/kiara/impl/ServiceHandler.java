@@ -63,7 +63,7 @@ public class ServiceHandler implements Closeable {
     public void close() {
     }
 
-    public ListenableFuture<Message> performCall(final InvocationEnvironment env, final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
-        return service.getMethodBinding().performCall(env, requestMessage);
+    public ListenableFuture<Message> performLocalCall(final InvocationEnvironment env, final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
+        return service.getMethodBinding().performLocalCall(env, requestMessage);
     }
 }

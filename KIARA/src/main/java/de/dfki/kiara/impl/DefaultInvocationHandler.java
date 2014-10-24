@@ -112,7 +112,7 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
                     public ListenableFuture<Object> apply(List<Object> params) throws Exception {
                         final Message request = protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, params));
                         final TypeToken<?> returnType = TypeToken.of(methodEntry.futureParamOfReturnType);
-                        final ListenableFuture<Message> responseFuture = connection.performAsyncCall(request, Global.executor);
+                        final ListenableFuture<Message> responseFuture = connection.performRemoteAsyncCall(request, Global.executor);
                         AsyncFunction<Message, Object> g = new AsyncFunction<Message, Object>() {
 
                             @Override
@@ -164,7 +164,7 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
 
                 final TypeToken<?> returnType = methodEntry.futureParamOfReturnType != null ? TypeToken.of(methodEntry.futureParamOfReturnType) : TypeToken.of(method.getGenericReturnType());
 
-                final ListenableFuture<Message> responseFuture = connection.performAsyncCall(request, Global.executor);
+                final ListenableFuture<Message> responseFuture = connection.performRemoteAsyncCall(request, Global.executor);
 
                 if (methodEntry.futureParamOfReturnType != null) {
                     AsyncFunction<Message, Object> f = new AsyncFunction<Message, Object>() {

@@ -17,16 +17,12 @@
  */
 package de.dfki.kiara.impl;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.*;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -34,64 +30,18 @@ import org.slf4j.LoggerFactory;
  */
 public class ServerConnectionImpl implements ServerConnection, InvocationEnvironment {
 
-    private static final Logger logger = LoggerFactory.getLogger(ServerConnectionImpl.class);
     private final ServerConnectionHandler serverConnectionHandler;
     private final TransportAddress transportAddress;
     private final ServiceHandler serviceHandler;
     private final InterfaceCodeGen codegen;
+    private final ServiceMethodBinding serviceMethodBinding;
 
     public ServerConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddress transportAddress, ServiceHandler serviceHandler) {
         this.serverConnectionHandler = serverConnectionHandler;
         this.transportAddress = transportAddress;
         this.serviceHandler = serviceHandler;
         this.codegen = serviceHandler.getProtocol().createInterfaceCodeGen(this);
-
-        final ServiceMethodBinding serviceMethodBinding = (ServiceMethodBinding)serviceHandler.getServiceMethodExecutor();
-        final MessageConnection messageConnection = serverConnectionHandler;
-        serverConnectionHandler.addMessageListener(new MessageListener() {
-
-            @Override
-            public void onMessage(MessageConnection connection, Message message) {
-                if (message == null) {
-                    logger.error("Received null message");
-                    return;
-                }
-
-                try {
-
-                    logger.info("Incoming message: {}", message);
-
-                    if (message.getMessageKind() == Message.Kind.REQUEST) {
-                        // FIXME compare with ServerConnectionHandler.onRequest
-
-                        ListenableFuture<Message> fmsg = serviceMethodBinding.performCall(null, message);
-
-                        Futures.addCallback(fmsg, new FutureCallback<Message>() {
-
-                            @Override
-                            public void onSuccess(Message resultMessage) {
-                                try {
-                                    messageConnection.send(resultMessage);
-                                } catch (Exception ex) {
-                                    logger.error("Error on callback response", ex);
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(Throwable t) {
-                                logger.error("Error on callback response", t);
-                            }
-                        }, Global.executor);
-
-                        return;
-                    }
-
-                    logger.warn("Unprocessed message: {}: {}", message.getClass(), message);
-                } catch (Exception ex) {
-                    logger.error("Message processing failed", ex);
-                }
-            }
-        });
+        this.serviceMethodBinding = (ServiceMethodBinding)serviceHandler.getServiceMethodExecutor();
     }
 
     public ServerConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddressAndServiceHandler transportAddressAndServiceHandler) {
@@ -117,6 +67,10 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
         return serverConnectionHandler;
     }
 
+    public ServiceMethodBinding getServiceMethodBinding() {
+        return serviceMethodBinding;
+    }
+
     @Override
     public Protocol getProtocol() {
         return serviceHandler.getProtocol();
@@ -127,8 +81,8 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
         return this;
     }
 
-    public ListenableFuture<Message> performCall(final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
-        return getServiceHandler().performCall(this, requestMessage);
+    public ListenableFuture<Message> performLocalCall(final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
+        return getServiceHandler().performLocalCall(this, requestMessage);
     }
 
     @Override
@@ -151,7 +105,7 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     }
 
     @Override
-    public ListenableFuture<Message> performAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
-        return AsyncCall.performAsyncCall(serverConnectionHandler.getPipeline(), serverConnectionHandler, request, executor);
+    public ListenableFuture<Message> performRemoteAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
+        return serverConnectionHandler.performRemoteAsyncCall(request, executor);
     }
 }

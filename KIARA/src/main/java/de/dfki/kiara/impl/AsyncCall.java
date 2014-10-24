@@ -18,14 +18,13 @@
 package de.dfki.kiara.impl;
 
 import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageConnection;
 import de.dfki.kiara.util.Pipeline;
-
-import java.util.concurrent.Callable;
 
 /**
  *
@@ -36,41 +35,26 @@ public class AsyncCall {
     public static ListenableFuture<Message> performRemoteAsyncCall(final Pipeline pipeline, final MessageConnection messageConnection, final Message request, ListeningExecutorService executor) {
         final MessageDispatcher dispatcher = new MessageDispatcher(request.getMessageId());
         pipeline.addHandler(dispatcher);
+        Futures.addCallback(dispatcher, new FutureCallback<Message>() {
+
+            @Override
+            public void onSuccess(Message result) {
+                pipeline.removeHandler(dispatcher);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                pipeline.removeHandler(dispatcher);
+            }
+        });
 
         final ListenableFuture<Void> reqSent = messageConnection.send(request);
-
-        final ListeningExecutorService myExecutor = executor == null ? Global.sameThreadExecutor : executor;
 
         AsyncFunction<Void, Message> f = new AsyncFunction<Void, Message>() {
 
             @Override
             public ListenableFuture<Message> apply(Void input) throws Exception {
-                return myExecutor.submit(new Callable<Message>() {
-
-                    @Override
-                    public Message call() throws Exception {
-                        boolean interrupted = false;
-                        try {
-                            for (;;) {
-                                try {
-                                    Object value = dispatcher.getQueue().take();
-                                    if (value instanceof Exception) {
-                                        throw (Exception) value;
-                                    }
-                                    return (Message) value;
-                                } catch (InterruptedException ignore) {
-                                    interrupted = true;
-                                } finally {
-                                    pipeline.removeHandler(dispatcher);
-                                }
-                            }
-                        } finally {
-                            if (interrupted) {
-                                Thread.currentThread().interrupt();
-                            }
-                        }
-                    }
-                });
+                return dispatcher;
             }
         };
         return Futures.transform(reqSent, f);

@@ -17,29 +17,21 @@
  */
 package de.dfki.kiara.impl;
 
+import com.google.common.util.concurrent.AbstractFuture;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.util.Pipeline;
-
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class MessageDispatcher implements Pipeline.Handler {
+public class MessageDispatcher extends AbstractFuture<Message> implements Pipeline.Handler {
 
     private final Object messageId;
-    private final BlockingQueue<Object> messageQueue;
 
     MessageDispatcher(Object messageId) {
         this.messageId = messageId;
-        this.messageQueue = new ArrayBlockingQueue<>(1);
-    }
-
-    public BlockingQueue<Object> getQueue() {
-        return messageQueue;
     }
 
     @Override
@@ -54,7 +46,7 @@ public class MessageDispatcher implements Pipeline.Handler {
         if ((message.getMessageKind() == Message.Kind.RESPONSE
                 || message.getMessageKind() == Message.Kind.EXCEPTION)
                 && protocol.equalMessageIds(messageId, message.getMessageId())) {
-            messageQueue.add(message);
+            set(message);
             return null; // stop processing
         }
         return input;

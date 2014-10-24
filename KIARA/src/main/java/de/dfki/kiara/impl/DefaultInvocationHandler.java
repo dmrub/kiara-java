@@ -17,7 +17,6 @@
  */
 package de.dfki.kiara.impl;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,9 +33,6 @@ import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-
-import de.dfki.kiara.util.MessageDispatcher;
 import de.dfki.kiara.util.Pipeline;
 
 /**
@@ -62,52 +58,8 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
         this.messageConnection = connection.getMessageConnection();
     }
 
-
     public InterfaceMapping<?> getInterfaceMapping() {
         return interfaceMapping;
-    }
-
-    protected ListenableFuture<Message> performAsyncCall(final Message request, ListeningExecutorService executor) throws IOException {
-        final MessageDispatcher dispatcher = new DefaultMessageDispatcher(request.getMessageId());
-        pipeline.addHandler(dispatcher);
-
-        final ListenableFuture<Void> reqSent = messageConnection.send(request);
-
-        final ListeningExecutorService myExecutor = executor == null ? Global.sameThreadExecutor : executor;
-
-        AsyncFunction<Void, Message> f = new AsyncFunction<Void, Message>() {
-
-            @Override
-            public ListenableFuture<Message> apply(Void input) throws Exception {
-                return myExecutor.submit(new Callable<Message>() {
-
-                    @Override
-                    public Message call() throws Exception {
-                        boolean interrupted = false;
-                        try {
-                            for (;;) {
-                                try {
-                                    Object value = dispatcher.getQueue().take();
-                                    if (value instanceof Exception) {
-                                        throw (Exception) value;
-                                    }
-                                    return (Message) value;
-                                } catch (InterruptedException ignore) {
-                                    interrupted = true;
-                                } finally {
-                                    pipeline.removeHandler(dispatcher);
-                                }
-                            }
-                        } finally {
-                            if (interrupted) {
-                                Thread.currentThread().interrupt();
-                            }
-                        }
-                    }
-                });
-            }
-        };
-        return Futures.transform(reqSent, f);
     }
 
     @Override
@@ -167,7 +119,7 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
                     public ListenableFuture<Object> apply(List<Object> params) throws Exception {
                         final Message request = protocol.createRequestMessage(new Message.RequestObject(idlFunctionName, params));
                         final TypeToken<?> returnType = TypeToken.of(methodEntry.futureParamOfReturnType);
-                        final ListenableFuture<Message> responseFuture = performAsyncCall(request, Global.executor);
+                        final ListenableFuture<Message> responseFuture = AsyncCall.performAsyncCall(pipeline, messageConnection, request, Global.executor);
                         AsyncFunction<Message, Object> g = new AsyncFunction<Message, Object>() {
 
                             @Override
@@ -219,7 +171,7 @@ public class DefaultInvocationHandler extends AbstractInvocationHandler {
 
                 final TypeToken<?> returnType = methodEntry.futureParamOfReturnType != null ? TypeToken.of(methodEntry.futureParamOfReturnType) : TypeToken.of(method.getGenericReturnType());
 
-                final ListenableFuture<Message> responseFuture = performAsyncCall(request, Global.executor);
+                final ListenableFuture<Message> responseFuture = AsyncCall.performAsyncCall(pipeline, messageConnection, request, Global.executor);
 
                 if (methodEntry.futureParamOfReturnType != null) {
                     AsyncFunction<Message, Object> f = new AsyncFunction<Message, Object>() {

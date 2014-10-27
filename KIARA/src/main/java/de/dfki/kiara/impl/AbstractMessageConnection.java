@@ -17,17 +17,20 @@
  */
 package de.dfki.kiara.impl;
 
+import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageConnection;
+import de.dfki.kiara.Protocol;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
-import de.dfki.kiara.util.Pipeline;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,14 +42,36 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
     private static final Logger logger = LoggerFactory.getLogger(AbstractMessageConnection.class);
     private final TransportConnection transportConnection;
     protected final IdentityHashMap<Message, TransportMessage> messageMap;
-    protected final Pipeline pipeline;
+    private final List<Dispatcher> dispatchers;
     private final Iterable<ServiceMethodBinding> serviceMethodBindings;
+
+    private static class Dispatcher extends AbstractFuture<Message> {
+
+        private final Object messageId;
+
+        Dispatcher(Object messageId) {
+            this.messageId = messageId;
+        }
+
+        public boolean process(Message message) throws Exception {
+            final Protocol protocol = message.getProtocol();
+
+            if ((message.getMessageKind() == Message.Kind.RESPONSE
+                    || message.getMessageKind() == Message.Kind.EXCEPTION)
+                    && protocol.equalMessageIds(messageId, message.getMessageId())) {
+                set(message);
+                return true;
+            }
+            return false;
+        }
+
+    }
 
     AbstractMessageConnection(TransportConnection transportConnection, Iterable<ServiceMethodBinding> serviceMethodBindings) {
         this.transportConnection = transportConnection;
         this.transportConnection.addMessageListener(this);
         this.messageMap = new IdentityHashMap<>();
-        this.pipeline = new Pipeline();
+        this.dispatchers = new ArrayList<>();
         this.serviceMethodBindings = serviceMethodBindings;
     }
 
@@ -74,20 +99,10 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
 
     @Override
     public ListenableFuture<Message> receive(Object messageId) {
-        final MessageDispatcher dispatcher = new MessageDispatcher(messageId);
-        pipeline.addHandler(dispatcher);
-        Futures.addCallback(dispatcher, new FutureCallback<Message>() {
-
-            @Override
-            public void onSuccess(Message result) {
-                pipeline.removeHandler(dispatcher);
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-                pipeline.removeHandler(dispatcher);
-            }
-        });
+        final Dispatcher dispatcher = new Dispatcher(messageId);
+        synchronized (dispatchers) {
+            dispatchers.add(dispatcher);
+        }
         return dispatcher;
     }
 
@@ -111,9 +126,18 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
                 case RESPONSE:
                 case EXCEPTION:
                     // process via pipeline
-                    final Object processResult = pipeline.process(message);
-                    if (processResult != null) {
-                        logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
+                    boolean processed = false;
+                    synchronized (dispatchers) {
+                        for (Dispatcher handler : dispatchers) {
+                            if (handler.process(message)) {
+                                dispatchers.remove(handler);
+                                processed = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!processed) {
+                        logger.warn("Unprocessed transport message: {}: {}", message.getClass(), message);
                     }
                     break;
                 case REQUEST:

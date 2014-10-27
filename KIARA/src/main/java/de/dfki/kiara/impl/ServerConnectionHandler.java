@@ -47,8 +47,16 @@ public class ServerConnectionHandler extends AbstractMessageConnection {
     private final List<ServerConnectionImpl> serviceHandlers;
     private final List<MessageListener> listeners;
 
+    private static List<ServiceMethodBinding> makeServiceMethodBindings(final List<TransportAddressAndServiceHandler> serviceHandlers) {
+        List<ServiceMethodBinding> l = new ArrayList<>(serviceHandlers.size());
+        for (TransportAddressAndServiceHandler element : serviceHandlers) {
+            l.add(element.serviceHandler.getServiceMethodBinding());
+        }
+        return l;
+    }
+
     public ServerConnectionHandler(ServerImpl server, TransportConnection transportConnection, List<TransportAddressAndServiceHandler> serviceHandlers) {
-        super(transportConnection);
+        super(transportConnection, makeServiceMethodBindings(serviceHandlers));
         this.server = server;
         this.listeners = new ArrayList<>();
 
@@ -173,57 +181,6 @@ public class ServerConnectionHandler extends AbstractMessageConnection {
         }
     }
 
-    private void processMessage(Message message) {
-        // FIXME compare with TransportMessageConnection
-        assert message != null;
-
-        try {
-            logger.info("Incoming message: {}", message);
-
-            switch (message.getMessageKind()) {
-                case RESPONSE:
-                case EXCEPTION:
-                    // process via pipeline
-                    final Object processResult = pipeline.process(message);
-                    if (processResult != null) {
-                        logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
-                    }
-                    break;
-                case REQUEST:
-
-                    for (ServerConnectionImpl conn : serviceHandlers) {
-                        final ServiceMethodBinding serviceMethodBinding = conn.getServiceMethodBinding();
-
-                        ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(null, message);
-
-                        Futures.addCallback(fmsg, new FutureCallback<Message>() {
-
-                            @Override
-                            public void onSuccess(Message resultMessage) {
-                                try {
-                                    send(resultMessage);
-                                } catch (Exception ex) {
-                                    logger.error("Error on callback response", ex);
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(Throwable t) {
-                                logger.error("Error on callback response", t);
-                            }
-                        }, Global.executor);
-
-                    }
-                    break;
-                default:
-                    logger.warn("Unprocessed message: {}: {}", message.getClass(), message);
-                    break;
-            }
-        } catch (Exception ex) {
-            logger.error("Message processing failed", ex);
-        }
-    }
-
     void fireClientConnectionOpened(final List<ServerConnectionListener> listeners) {
         Global.executor.execute(new Runnable() {
 
@@ -258,4 +215,5 @@ public class ServerConnectionHandler extends AbstractMessageConnection {
     public final ListenableFuture<Message> performRemoteAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
         return AsyncCall.performRemoteAsyncCall(this, request, executor);
     }
+
 }

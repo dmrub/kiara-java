@@ -17,13 +17,11 @@
  */
 package de.dfki.kiara.impl;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,12 +32,10 @@ public class TransportMessageConnection extends AbstractMessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(TransportMessageConnection.class);
     private final Protocol protocol;
-    private final ServiceMethodBinding serviceMethodBinding;
 
     public TransportMessageConnection(TransportConnection transportConnection, ServiceMethodBinding serviceMethodBinding, Protocol protocol) {
-        super(transportConnection);
+        super(transportConnection, Collections.singletonList(serviceMethodBinding));
         this.protocol = protocol;
-        this.serviceMethodBinding = serviceMethodBinding;
     }
 
     @Override
@@ -57,52 +53,6 @@ public class TransportMessageConnection extends AbstractMessageConnection {
             }
 
             processMessage(message);
-        } catch (Exception ex) {
-            logger.error("Message processing failed", ex);
-        }
-    }
-
-    private void processMessage(Message message) {
-        // FIXME compare with ServerConnectionHandler
-        assert message != null;
-
-        try {
-            logger.info("Incoming message: {}", message);
-
-            switch (message.getMessageKind()) {
-                case RESPONSE:
-                case EXCEPTION:
-                    // process via pipeline
-                    final Object processResult = pipeline.process(message);
-                    if (processResult != null) {
-                        logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
-                    }
-                    break;
-                case REQUEST:
-
-                    ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(null, message);
-
-                    Futures.addCallback(fmsg, new FutureCallback<Message>() {
-
-                        @Override
-                        public void onSuccess(Message resultMessage) {
-                            try {
-                                send(resultMessage);
-                            } catch (Exception ex) {
-                                logger.error("Error on callback response", ex);
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(Throwable t) {
-                            logger.error("Error on callback response", t);
-                        }
-                    }, Global.executor);
-                    break;
-                default:
-                    logger.warn("Unprocessed message: {}: {}", message.getClass(), message);
-                    break;
-            }
         } catch (Exception ex) {
             logger.error("Message processing failed", ex);
         }

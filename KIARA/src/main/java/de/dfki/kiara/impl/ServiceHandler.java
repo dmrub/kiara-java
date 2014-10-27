@@ -51,6 +51,10 @@ public class ServiceHandler implements Closeable {
         return service.getMethodBinding();
     }
 
+    public ServiceMethodBinding getServiceMethodBinding() {
+        return service.getMethodBinding();
+    }
+
     public ProtocolInfo getProtocolInfo() {
         return protocolInfo;
     }

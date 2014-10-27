@@ -40,12 +40,14 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
     private final TransportConnection transportConnection;
     protected final IdentityHashMap<Message, TransportMessage> messageMap;
     protected final Pipeline pipeline;
+    private final Iterable<ServiceMethodBinding> serviceMethodBindings;
 
-    AbstractMessageConnection(TransportConnection transportConnection) {
+    AbstractMessageConnection(TransportConnection transportConnection, Iterable<ServiceMethodBinding> serviceMethodBindings) {
         this.transportConnection = transportConnection;
         this.transportConnection.addMessageListener(this);
         this.messageMap = new IdentityHashMap<>();
         this.pipeline = new Pipeline();
+        this.serviceMethodBindings = serviceMethodBindings;
     }
 
     @Override
@@ -97,4 +99,55 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
     public TransportConnection getTransportConnection() {
         return transportConnection;
     }
+
+    protected void processMessage(Message message) {
+        // FIXME compare with TransportMessageConnection
+        assert message != null;
+
+        try {
+            logger.info("Incoming message: {}", message);
+
+            switch (message.getMessageKind()) {
+                case RESPONSE:
+                case EXCEPTION:
+                    // process via pipeline
+                    final Object processResult = pipeline.process(message);
+                    if (processResult != null) {
+                        logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
+                    }
+                    break;
+                case REQUEST:
+
+                    for (ServiceMethodBinding serviceMethodBinding : serviceMethodBindings) {
+
+                        ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(null, message);
+
+                        Futures.addCallback(fmsg, new FutureCallback<Message>() {
+
+                            @Override
+                            public void onSuccess(Message resultMessage) {
+                                try {
+                                    send(resultMessage);
+                                } catch (Exception ex) {
+                                    logger.error("Error on callback response", ex);
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Throwable t) {
+                                logger.error("Error on callback response", t);
+                            }
+                        }, Global.executor);
+
+                    }
+                    break;
+                default:
+                    logger.warn("Unprocessed message: {}: {}", message.getClass(), message);
+                    break;
+            }
+        } catch (Exception ex) {
+            logger.error("Message processing failed", ex);
+        }
+    }
+
 }

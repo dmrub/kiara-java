@@ -23,7 +23,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.*;
 import de.dfki.kiara.config.ServerConfiguration;
-import de.dfki.kiara.util.Pipeline;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -32,7 +31,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -41,24 +39,18 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServerConnectionHandler implements MessageConnection, TransportMessageListener {
+public class ServerConnectionHandler extends AbstractMessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerConnectionHandler.class);
 
     private final ServerImpl server;
-    private final TransportConnection transportConnection;
     private final List<ServerConnectionImpl> serviceHandlers;
     private final List<MessageListener> listeners;
-    private final IdentityHashMap<Message, TransportMessage> messageMap;
-    private final Pipeline pipeline;
 
     public ServerConnectionHandler(ServerImpl server, TransportConnection transportConnection, List<TransportAddressAndServiceHandler> serviceHandlers) {
+        super(transportConnection);
         this.server = server;
-        this.transportConnection = transportConnection;
-        this.transportConnection.addMessageListener(this);
         this.listeners = new ArrayList<>();
-        this.messageMap = new IdentityHashMap<>();
-        this.pipeline = new Pipeline();
 
         this.serviceHandlers = new ArrayList<>(serviceHandlers.size());
         for (TransportAddressAndServiceHandler element : serviceHandlers) {
@@ -68,55 +60,6 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
 
     public List<ServerConnectionImpl> getServiceHandlers() {
         return serviceHandlers;
-    }
-
-    public TransportConnection getTransportConnection() {
-        return transportConnection;
-    }
-
-    @Override
-    public ListenableFuture<Void> send(Message message) {
-        if (message == null) {
-            throw new NullPointerException("message");
-        }
-        try {
-            final TransportMessage tmessage;
-
-            synchronized (messageMap) {
-                tmessage = messageMap.remove(message.getRequestMessage());
-            }
-
-            final TransportMessage tresponse = transportConnection.createTransportMessage(tmessage);
-            tresponse.setPayload(message.getMessageData());
-            tresponse.setContentType(message.getProtocol().getMimeType());
-            return transportConnection.send(tresponse);
-        } catch (Exception ex) {
-            logger.error("Could not send message", ex);
-            return Futures.immediateFailedFuture(ex);
-        }
-    }
-
-    @Override
-    public ListenableFuture<Message> receive(Object messageId) {
-        final MessageDispatcher dispatcher = new MessageDispatcher(messageId);
-        pipeline.addHandler(dispatcher);
-        Futures.addCallback(dispatcher, new FutureCallback<Message>() {
-
-            @Override
-            public void onSuccess(Message result) {
-                pipeline.removeHandler(dispatcher);
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-                pipeline.removeHandler(dispatcher);
-            }
-        });
-        return dispatcher;
-    }
-
-    public void close() throws IOException {
-        transportConnection.close();
     }
 
     @Override

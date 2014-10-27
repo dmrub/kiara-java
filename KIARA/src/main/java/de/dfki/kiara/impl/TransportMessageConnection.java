@@ -21,82 +21,25 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Message;
-import de.dfki.kiara.MessageConnection;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.TransportMessageListener;
-import de.dfki.kiara.util.Pipeline;
-import java.io.IOException;
-import java.util.IdentityHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class TransportMessageConnection implements MessageConnection, TransportMessageListener {
+public class TransportMessageConnection extends AbstractMessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(TransportMessageConnection.class);
-    private final TransportConnection transportConnection;
     private final Protocol protocol;
-    private final IdentityHashMap<Message, TransportMessage> messageMap;
-    private final Pipeline pipeline;
     private final ServiceMethodBinding serviceMethodBinding;
 
     public TransportMessageConnection(TransportConnection transportConnection, ServiceMethodBinding serviceMethodBinding, Protocol protocol) {
-        this.transportConnection = transportConnection;
-        this.transportConnection.addMessageListener(this);
+        super(transportConnection);
         this.protocol = protocol;
-        this.messageMap = new IdentityHashMap<>();
-        this.pipeline = new Pipeline();
         this.serviceMethodBinding = serviceMethodBinding;
-    }
-
-    @Override
-    public ListenableFuture<Void> send(Message message) {
-        if (message == null) {
-            throw new NullPointerException("message");
-        }
-        try {
-            final TransportMessage tmessage;
-
-            synchronized (messageMap) {
-                tmessage = messageMap.remove(message.getRequestMessage());
-            }
-
-            final TransportMessage tresponse = transportConnection.createTransportMessage(tmessage);
-            tresponse.setPayload(message.getMessageData());
-            tresponse.setContentType(message.getProtocol().getMimeType());
-            return transportConnection.send(tresponse);
-        } catch (Exception ex) {
-            logger.error("Could not send message", ex);
-            return Futures.immediateFailedFuture(ex);
-        }
-    }
-
-    @Override
-    public ListenableFuture<Message> receive(Object messageId) {
-        final MessageDispatcher dispatcher = new MessageDispatcher(messageId);
-        pipeline.addHandler(dispatcher);
-        Futures.addCallback(dispatcher, new FutureCallback<Message>() {
-
-            @Override
-            public void onSuccess(Message result) {
-                pipeline.removeHandler(dispatcher);
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-                pipeline.removeHandler(dispatcher);
-            }
-        });
-        return dispatcher;
-    }
-
-    @Override
-    public void close() throws IOException {
-        transportConnection.close();
     }
 
     @Override

@@ -17,8 +17,6 @@
  */
 package de.dfki.kiara.impl;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.ConnectException;
@@ -27,8 +25,6 @@ import de.dfki.kiara.InterfaceCodeGen;
 import de.dfki.kiara.InterfaceMapping;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.Message;
-import de.dfki.kiara.MessageConnection;
-import de.dfki.kiara.MessageListener;
 import de.dfki.kiara.MethodAlreadyBoundException;
 import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.NoSuchIDLFunctionException;
@@ -48,7 +44,6 @@ import de.dfki.kiara.ktd.FunctionType;
 import de.dfki.kiara.ktd.KTDObject;
 import de.dfki.kiara.ktd.Module;
 import de.dfki.kiara.ktd.World;
-import de.dfki.kiara.util.Pipeline;
 import de.dfki.kiara.util.URILoader;
 
 import java.io.IOException;

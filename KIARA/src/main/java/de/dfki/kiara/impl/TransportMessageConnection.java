@@ -17,18 +17,18 @@
  */
 package de.dfki.kiara.impl;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageConnection;
-import de.dfki.kiara.MessageListener;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
+import de.dfki.kiara.util.Pipeline;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.IdentityHashMap;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,15 +40,17 @@ public class TransportMessageConnection implements MessageConnection, TransportM
     private static final Logger logger = LoggerFactory.getLogger(TransportMessageConnection.class);
     private final TransportConnection transportConnection;
     private final Protocol protocol;
-    private final List<MessageListener> listeners;
     private final IdentityHashMap<Message, TransportMessage> messageMap;
+    private final Pipeline pipeline;
+    private final ServiceMethodBinding serviceMethodBinding;
 
-    public TransportMessageConnection(TransportConnection transportConnection, Protocol protocol) {
+    public TransportMessageConnection(TransportConnection transportConnection, ServiceMethodBinding serviceMethodBinding, Protocol protocol) {
         this.transportConnection = transportConnection;
         this.transportConnection.addMessageListener(this);
         this.protocol = protocol;
-        this.listeners = new ArrayList<>();
         this.messageMap = new IdentityHashMap<>();
+        this.pipeline = new Pipeline();
+        this.serviceMethodBinding = serviceMethodBinding;
     }
 
     @Override
@@ -65,39 +67,36 @@ public class TransportMessageConnection implements MessageConnection, TransportM
 
             final TransportMessage tresponse = transportConnection.createTransportMessage(tmessage);
             tresponse.setPayload(message.getMessageData());
-            tresponse.setContentType(protocol.getMimeType());
+            tresponse.setContentType(message.getProtocol().getMimeType());
             return transportConnection.send(tresponse);
         } catch (Exception ex) {
-            logger.error("Error when sending message", ex);
-        }
-        return null;
-    }
-
-    @Override
-    public void addMessageListener(MessageListener listener) {
-        synchronized (listeners) {
-            listeners.add(listener);
+            logger.error("Could not send message", ex);
+            return Futures.immediateFailedFuture(ex);
         }
     }
 
     @Override
-    public boolean removeMessageListener(MessageListener listener) {
-        synchronized (listeners) {
-            return listeners.remove(listener);
-        }
+    public ListenableFuture<Message> receive(Object messageId) {
+        final MessageDispatcher dispatcher = new MessageDispatcher(messageId);
+        pipeline.addHandler(dispatcher);
+        Futures.addCallback(dispatcher, new FutureCallback<Message>() {
+
+            @Override
+            public void onSuccess(Message result) {
+                pipeline.removeHandler(dispatcher);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                pipeline.removeHandler(dispatcher);
+            }
+        });
+        return dispatcher;
     }
 
     @Override
     public void close() throws IOException {
         transportConnection.close();
-    }
-
-    private void processMessage(Message message) {
-        synchronized (listeners) {
-            for (MessageListener listener : listeners) {
-                listener.onMessage(this, message);
-            }
-        }
     }
 
     @Override
@@ -115,6 +114,52 @@ public class TransportMessageConnection implements MessageConnection, TransportM
             }
 
             processMessage(message);
+        } catch (Exception ex) {
+            logger.error("Message processing failed", ex);
+        }
+    }
+
+    private void processMessage(Message message) {
+        // FIXME compare with ServerConnectionHandler
+        assert message != null;
+
+        try {
+            logger.info("Incoming message: {}", message);
+
+            switch (message.getMessageKind()) {
+                case RESPONSE:
+                case EXCEPTION:
+                    // process via pipeline
+                    final Object processResult = pipeline.process(message);
+                    if (processResult != null) {
+                        logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
+                    }
+                    break;
+                case REQUEST:
+
+                    ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(null, message);
+
+                    Futures.addCallback(fmsg, new FutureCallback<Message>() {
+
+                        @Override
+                        public void onSuccess(Message resultMessage) {
+                            try {
+                                send(resultMessage);
+                            } catch (Exception ex) {
+                                logger.error("Error on callback response", ex);
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Throwable t) {
+                            logger.error("Error on callback response", t);
+                        }
+                    }, Global.executor);
+                    break;
+                default:
+                    logger.warn("Unprocessed message: {}: {}", message.getClass(), message);
+                    break;
+            }
         } catch (Exception ex) {
             logger.error("Message processing failed", ex);
         }

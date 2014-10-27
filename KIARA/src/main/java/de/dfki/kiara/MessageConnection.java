@@ -33,16 +33,11 @@ public interface MessageConnection extends Closeable {
      */
     public ListenableFuture<Void> send(Message message);
 
-    /** Listener is executed in the unspecified thread.
+    /** Receive message with the specified messageId asynchronously
      *
-     * @param listener
-     */
-    public void addMessageListener(MessageListener listener);
-
-    /** Listener is executed in the unspecified thread.
-     *
-     * @param listener
+     * @param messageId
      * @return
      */
-    public boolean removeMessageListener(MessageListener listener);
+    public ListenableFuture<Message> receive(Object messageId);
+
 }

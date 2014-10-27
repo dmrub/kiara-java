@@ -74,8 +74,49 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
         return transportConnection;
     }
 
-    public Pipeline getPipeline() {
-        return pipeline;
+    @Override
+    public ListenableFuture<Void> send(Message message) {
+        if (message == null) {
+            throw new NullPointerException("message");
+        }
+        try {
+            final TransportMessage tmessage;
+
+            synchronized (messageMap) {
+                tmessage = messageMap.remove(message.getRequestMessage());
+            }
+
+            final TransportMessage tresponse = transportConnection.createTransportMessage(tmessage);
+            tresponse.setPayload(message.getMessageData());
+            tresponse.setContentType(message.getProtocol().getMimeType());
+            return transportConnection.send(tresponse);
+        } catch (Exception ex) {
+            logger.error("Could not send message", ex);
+            return Futures.immediateFailedFuture(ex);
+        }
+    }
+
+    @Override
+    public ListenableFuture<Message> receive(Object messageId) {
+        final MessageDispatcher dispatcher = new MessageDispatcher(messageId);
+        pipeline.addHandler(dispatcher);
+        Futures.addCallback(dispatcher, new FutureCallback<Message>() {
+
+            @Override
+            public void onSuccess(Message result) {
+                pipeline.removeHandler(dispatcher);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                pipeline.removeHandler(dispatcher);
+            }
+        });
+        return dispatcher;
+    }
+
+    public void close() throws IOException {
+        transportConnection.close();
     }
 
     @Override
@@ -189,55 +230,26 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
         }
     }
 
-    public void close() throws IOException {
-        transportConnection.close();
-    }
-
-    @Override
-    public ListenableFuture<Void> send(Message message) {
-        try {
-            final TransportMessage tmessage;
-
-            synchronized (messageMap) {
-                tmessage = messageMap.remove(message.getRequestMessage());
-            }
-
-            final TransportMessage tresponse = transportConnection.createTransportMessage(tmessage);
-            tresponse.setPayload(message.getMessageData());
-            tresponse.setContentType(message.getProtocol().getMimeType());
-            return transportConnection.send(tresponse);
-        } catch (IOException ex) {
-            logger.error("Could not process message", ex);
-            return Futures.immediateFailedFuture(ex);
-        }
-    }
-
     private void processMessage(Message message) {
-        // responses are processed by the pipeline
-        logger.info("Process message: {}", message);
+        // FIXME compare with TransportMessageConnection
+        assert message != null;
 
-        if (message.getMessageKind() == Message.Kind.RESPONSE
-                || message.getMessageKind() == Message.Kind.EXCEPTION) {
-            try {
-                Object processResult = pipeline.process(message);
-                if (processResult != null) {
-                    logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
-                }
-            } catch (Exception ex) {
-                logger.error("Pipeline processing failed", ex);
-            }
-            return;
-        } else if (message.getMessageKind() == Message.Kind.REQUEST) {
+        try {
+            logger.info("Incoming message: {}", message);
 
-            for (ServerConnectionImpl conn : serviceHandlers) {
-                final ServiceMethodBinding serviceMethodBinding = conn.getServiceMethodBinding();
+            switch (message.getMessageKind()) {
+                case RESPONSE:
+                case EXCEPTION:
+                    // process via pipeline
+                    final Object processResult = pipeline.process(message);
+                    if (processResult != null) {
+                        logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
+                    }
+                    break;
+                case REQUEST:
 
-                try {
-
-                    logger.info("Incoming message: {}", message);
-
-                    if (message.getMessageKind() == Message.Kind.REQUEST) {
-                        // FIXME compare with ServerConnectionHandler.onRequest
+                    for (ServerConnectionImpl conn : serviceHandlers) {
+                        final ServiceMethodBinding serviceMethodBinding = conn.getServiceMethodBinding();
 
                         ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(null, message);
 
@@ -258,36 +270,14 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
                             }
                         }, Global.executor);
 
-                        return;
                     }
-
+                    break;
+                default:
                     logger.warn("Unprocessed message: {}: {}", message.getClass(), message);
-                } catch (Exception ex) {
-                    logger.error("Message processing failed", ex);
-                }
-
+                    break;
             }
-        }
-
-        // requests are processed by message listeners
-//        synchronized (listeners) {
-//            for (MessageListener listener : listeners) {
-//                listener.onMessage(this, message);
-//            }
-//        }
-    }
-
-    @Override
-    public void addMessageListener(MessageListener listener) {
-        synchronized (listeners) {
-            listeners.add(listener);
-        }
-    }
-
-    @Override
-    public boolean removeMessageListener(MessageListener listener) {
-        synchronized (listeners) {
-            return listeners.remove(listener);
+        } catch (Exception ex) {
+            logger.error("Message processing failed", ex);
         }
     }
 
@@ -323,6 +313,6 @@ public class ServerConnectionHandler implements MessageConnection, TransportMess
     }
 
     public final ListenableFuture<Message> performRemoteAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
-        return AsyncCall.performRemoteAsyncCall(this.pipeline, this, request, executor);
+        return AsyncCall.performRemoteAsyncCall(this, request, executor);
     }
 }

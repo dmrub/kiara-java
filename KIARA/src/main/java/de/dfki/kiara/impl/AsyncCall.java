@@ -18,13 +18,11 @@
 package de.dfki.kiara.impl;
 
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.Message;
 import de.dfki.kiara.MessageConnection;
-import de.dfki.kiara.util.Pipeline;
 
 /**
  *
@@ -32,29 +30,15 @@ import de.dfki.kiara.util.Pipeline;
  */
 public class AsyncCall {
 
-    public static ListenableFuture<Message> performRemoteAsyncCall(final Pipeline pipeline, final MessageConnection messageConnection, final Message request, ListeningExecutorService executor) {
-        final MessageDispatcher dispatcher = new MessageDispatcher(request.getMessageId());
-        pipeline.addHandler(dispatcher);
-        Futures.addCallback(dispatcher, new FutureCallback<Message>() {
-
-            @Override
-            public void onSuccess(Message result) {
-                pipeline.removeHandler(dispatcher);
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-                pipeline.removeHandler(dispatcher);
-            }
-        });
-
+    public static ListenableFuture<Message> performRemoteAsyncCall(final MessageConnection messageConnection, final Message request, ListeningExecutorService executor) {
+        final ListenableFuture<Message> result = messageConnection.receive(request.getMessageId());
         final ListenableFuture<Void> reqSent = messageConnection.send(request);
 
         AsyncFunction<Void, Message> f = new AsyncFunction<Void, Message>() {
 
             @Override
             public ListenableFuture<Message> apply(Void input) throws Exception {
-                return dispatcher;
+                return result;
             }
         };
         return Futures.transform(reqSent, f);

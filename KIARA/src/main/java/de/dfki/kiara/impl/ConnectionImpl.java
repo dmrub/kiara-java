@@ -75,7 +75,6 @@ public class ConnectionImpl implements Connection {
     private final Transport transport;
     private final TransportConnection transportConnection;
     private final TransportMessageConnection messageConnection;
-    private final Pipeline pipeline;
     private final World world;
     private final Module module;
     private final ServiceMethodBinding serviceMethodBinding;
@@ -201,60 +200,8 @@ public class ConnectionImpl implements Connection {
             throw new ConnectException(ex);
         }
 
-        messageConnection = new TransportMessageConnection(transportConnection, protocol);
-        pipeline = new Pipeline();
+        messageConnection = new TransportMessageConnection(transportConnection, serviceMethodBinding, protocol);
         codegen = protocol.createInterfaceCodeGen(this);
-
-        // FIXME
-        messageConnection.addMessageListener(new MessageListener() {
-
-            @Override
-            public void onMessage(MessageConnection connection, Message message) {
-                if (message == null) {
-                    logger.error("Received null message");
-                    return;
-                }
-
-                try {
-
-                    logger.info("Incoming message: {}", message);
-
-                    if (message.getMessageKind() == Message.Kind.REQUEST) {
-                        // FIXME compare with ServerConnectionHandler.onRequest
-
-                        ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(null, message);
-
-                        Futures.addCallback(fmsg, new FutureCallback<Message>() {
-
-                            @Override
-                            public void onSuccess(Message resultMessage) {
-                                try {
-                                    messageConnection.send(resultMessage);
-                                } catch (Exception ex) {
-                                    logger.error("Error on callback response", ex);
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(Throwable t) {
-                                logger.error("Error on callback response", t);
-                            }
-                        }, Global.executor);
-
-                        return;
-                    }
-
-                    // process via pipeline
-                    Object processResult = pipeline.process(message);
-                    if (processResult != null) {
-                        logger.warn("Unprocessed transport message: {}: {}", processResult.getClass(), processResult);
-                    }
-                } catch (Exception ex) {
-                    logger.error("Pipeline processing failed", ex);
-                }
-
-            }
-        });
     }
 
     private void loadIDL(InputStream stream, String fileName) throws IOException {
@@ -363,7 +310,7 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public ListenableFuture<Message> performRemoteAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
-        return AsyncCall.performRemoteAsyncCall(pipeline, messageConnection, request, executor);
+        return AsyncCall.performRemoteAsyncCall(messageConnection, request, executor);
     }
 
 }

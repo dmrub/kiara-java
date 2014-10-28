@@ -41,9 +41,8 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractMessageConnection.class);
     private final TransportConnection transportConnection;
-    protected final IdentityHashMap<Message, TransportMessage> messageMap;
+    private final IdentityHashMap<Message, TransportMessage> messageMap;
     private final List<Dispatcher> dispatchers;
-    private final Iterable<ServiceMethodBinding> serviceMethodBindings;
 
     private static class Dispatcher extends AbstractFuture<Message> {
 
@@ -67,12 +66,11 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
 
     }
 
-    AbstractMessageConnection(TransportConnection transportConnection, Iterable<ServiceMethodBinding> serviceMethodBindings) {
+    AbstractMessageConnection(TransportConnection transportConnection) {
         this.transportConnection = transportConnection;
         this.transportConnection.addMessageListener(this);
         this.messageMap = new IdentityHashMap<>();
         this.dispatchers = new ArrayList<>();
-        this.serviceMethodBindings = serviceMethodBindings;
     }
 
     @Override
@@ -115,7 +113,7 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
         return transportConnection;
     }
 
-    protected void processMessage(Message message) {
+    protected void processMessage(Message message, InvocationEnvironment env, ServiceMethodBinding serviceMethodBinding) {
         // FIXME compare with TransportMessageConnection
         assert message != null;
 
@@ -125,6 +123,7 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
             switch (message.getMessageKind()) {
                 case RESPONSE:
                 case EXCEPTION:
+
                     // process via pipeline
                     boolean processed = false;
                     synchronized (dispatchers) {
@@ -142,28 +141,25 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
                     break;
                 case REQUEST:
 
-                    for (ServiceMethodBinding serviceMethodBinding : serviceMethodBindings) {
+                    ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(env, message);
 
-                        ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(null, message);
+                    Futures.addCallback(fmsg, new FutureCallback<Message>() {
 
-                        Futures.addCallback(fmsg, new FutureCallback<Message>() {
-
-                            @Override
-                            public void onSuccess(Message resultMessage) {
-                                try {
-                                    send(resultMessage);
-                                } catch (Exception ex) {
-                                    logger.error("Error on callback response", ex);
-                                }
+                        @Override
+                        public void onSuccess(Message resultMessage) {
+                            try {
+                                send(resultMessage);
+                            } catch (Exception ex) {
+                                logger.error("Error on callback response", ex);
                             }
+                        }
 
-                            @Override
-                            public void onFailure(Throwable t) {
-                                logger.error("Error on callback response", t);
-                            }
-                        }, Global.executor);
+                        @Override
+                        public void onFailure(Throwable t) {
+                            logger.error("Could not process message", t);
+                        }
+                    }, Global.executor);
 
-                    }
                     break;
                 default:
                     logger.warn("Unprocessed message: {}: {}", message.getClass(), message);
@@ -172,6 +168,15 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
         } catch (Exception ex) {
             logger.error("Message processing failed", ex);
         }
+    }
+
+    protected void processMessage(Protocol protocol, InvocationEnvironment env, ServiceMethodBinding serviceMethodBinding, TransportMessage trequest) throws Exception {
+        final Message message = protocol.createMessageFromData(trequest.getPayload());
+
+        synchronized (messageMap) {
+            messageMap.put(message, trequest);
+        }
+        processMessage(message, env, serviceMethodBinding);
     }
 
 }

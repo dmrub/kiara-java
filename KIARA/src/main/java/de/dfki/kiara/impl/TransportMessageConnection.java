@@ -17,11 +17,9 @@
  */
 package de.dfki.kiara.impl;
 
-import de.dfki.kiara.Message;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportMessage;
-import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +30,12 @@ public class TransportMessageConnection extends AbstractMessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(TransportMessageConnection.class);
     private final Protocol protocol;
+    private final ServiceMethodBinding serviceMethodBinding;
 
     public TransportMessageConnection(TransportConnection transportConnection, ServiceMethodBinding serviceMethodBinding, Protocol protocol) {
-        super(transportConnection, Collections.singletonList(serviceMethodBinding));
+        super(transportConnection);
         this.protocol = protocol;
+        this.serviceMethodBinding = serviceMethodBinding;
     }
 
     @Override
@@ -46,13 +46,7 @@ public class TransportMessageConnection extends AbstractMessageConnection {
         }
 
         try {
-            Message message = protocol.createMessageFromData(tmessage.getPayload());
-
-            synchronized (messageMap) {
-                messageMap.put(message, tmessage);
-            }
-
-            processMessage(message);
+            processMessage(protocol, null, serviceMethodBinding, tmessage);
         } catch (Exception ex) {
             logger.error("Message processing failed", ex);
         }

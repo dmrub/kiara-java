@@ -17,8 +17,6 @@
  */
 package de.dfki.kiara.impl;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.*;
@@ -47,16 +45,8 @@ public class ServerConnectionHandler extends AbstractMessageConnection {
     private final List<ServerConnectionImpl> serviceHandlers;
     private final List<MessageListener> listeners;
 
-    private static List<ServiceMethodBinding> makeServiceMethodBindings(final List<TransportAddressAndServiceHandler> serviceHandlers) {
-        List<ServiceMethodBinding> l = new ArrayList<>(serviceHandlers.size());
-        for (TransportAddressAndServiceHandler element : serviceHandlers) {
-            l.add(element.serviceHandler.getServiceMethodBinding());
-        }
-        return l;
-    }
-
     public ServerConnectionHandler(ServerImpl server, TransportConnection transportConnection, List<TransportAddressAndServiceHandler> serviceHandlers) {
-        super(transportConnection, makeServiceMethodBindings(serviceHandlers));
+        super(transportConnection);
         this.server = server;
         this.listeners = new ArrayList<>();
 
@@ -123,42 +113,7 @@ public class ServerConnectionHandler extends AbstractMessageConnection {
 
             if (sc != null) {
                 try {
-                    final Protocol protocol = sc.getProtocol();
-                    final Message message = protocol.createMessageFromData(trequest.getPayload());
-
-                    if (message.getMessageKind() == Message.Kind.RESPONSE
-                            || message.getMessageKind() == Message.Kind.EXCEPTION) {
-
-                        synchronized (messageMap) {
-                            messageMap.put(message, trequest);
-                        }
-
-                        processMessage(message);
-                        return;
-                    }
-
-                    ListenableFuture<Message> fmsg = sc.performLocalCall(message);
-
-                    Futures.addCallback(fmsg, new FutureCallback<Message>() {
-
-                        @Override
-                        public void onSuccess(Message result) {
-                            try {
-                                tresponse.setPayload(result.getMessageData());
-                                tresponse.setContentType(protocol.getMimeType());
-                                tconnection.send(tresponse);
-                            } catch (IOException ex) {
-                                logger.error("Could not process message", ex);
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(Throwable t) {
-                            logger.error("Could not process message", t);
-                        }
-
-                    });
-
+                    processMessage(sc.getProtocol(), sc, sc.getServiceMethodBinding(), trequest);
                     return;
                 } catch (Exception ex) {
                     logger.error("Could not process message", ex);

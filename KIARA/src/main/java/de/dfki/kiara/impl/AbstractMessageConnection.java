@@ -114,7 +114,6 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
     }
 
     protected void processMessage(Message message, InvocationEnvironment env, ServiceMethodBinding serviceMethodBinding) {
-        // FIXME compare with TransportMessageConnection
         assert message != null;
 
         try {

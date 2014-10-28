@@ -22,7 +22,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.*;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 /**
  *
@@ -79,10 +78,6 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     @Override
     public ServerConnection getServiceConnection() {
         return this;
-    }
-
-    public ListenableFuture<Message> performLocalCall(final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
-        return getServiceHandler().performLocalCall(this, requestMessage);
     }
 
     @Override

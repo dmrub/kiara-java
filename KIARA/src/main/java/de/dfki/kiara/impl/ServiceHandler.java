@@ -48,11 +48,11 @@ public class ServiceHandler implements Closeable {
     }
 
     public de.dfki.kiara.ServiceMethodExecutor getServiceMethodExecutor() {
-        return service.getMethodBinding();
+        return service.getMethodExecutor();
     }
 
     public ServiceMethodExecutorImpl getServiceMethodBinding() {
-        return service.getMethodBinding();
+        return service.getMethodExecutor();
     }
 
     public ProtocolInfo getProtocolInfo() {
@@ -68,6 +68,6 @@ public class ServiceHandler implements Closeable {
     }
 
     public ListenableFuture<Message> performLocalCall(final InvocationEnvironment env, final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
-        return service.getMethodBinding().performLocalCall(env, requestMessage);
+        return service.getMethodExecutor().performLocalCall(env, requestMessage);
     }
 }

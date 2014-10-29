@@ -45,12 +45,12 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
  */
 public class ServiceImpl implements Service {
 
-    private final ServiceMethodExecutorImpl methodBinding;
+    private final ServiceMethodExecutorImpl methodExecutor;
     private final World world;
     private final Module module;
 
     public ServiceImpl(Context context) {
-        this.methodBinding = new ServiceMethodExecutorImpl();
+        this.methodExecutor = new ServiceMethodExecutorImpl();
         world = new World();
         module = new Module(world, "kiara");
     }
@@ -95,10 +95,10 @@ public class ServiceImpl implements Service {
     public void registerServiceFunction(String idlFunctionName, Object serviceImpl,
             String serviceMethodName) throws MethodAlreadyBoundException,
             NoSuchMethodException, SecurityException {
-        if (methodBinding.getServiceMethodBinder(idlFunctionName) != null) {
+        if (methodExecutor.getServiceMethodBinder(idlFunctionName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        methodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName);
+        methodExecutor.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName);
     }
 
     /**
@@ -113,15 +113,15 @@ public class ServiceImpl implements Service {
     public void registerServiceFunction(String idlFunctionName, Object serviceImpl,
             String serviceMethodName, Class<?>... parameterTypes)
             throws MethodAlreadyBoundException, NoSuchMethodException, SecurityException {
-        if (methodBinding.getServiceMethodBinder(idlFunctionName) != null) {
+        if (methodExecutor.getServiceMethodBinder(idlFunctionName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        methodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName, parameterTypes);
+        methodExecutor.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName, parameterTypes);
     }
 
     @Override
     public void unregisterServiceFunction(String idlFunctionName) throws NoSuchIDLFunctionException {
-        methodBinding.unbindServiceMethod(idlFunctionName);
+        methodExecutor.unbindServiceMethod(idlFunctionName);
     }
 
     private void loadIDL(InputStream stream, String fileName) throws IOException {
@@ -167,7 +167,7 @@ public class ServiceImpl implements Service {
         Message rpcMessage = protocol.createMessageFromData(payload);
         String methodName = rpcMessage.getMethodName();
 
-        ServiceMethodBinder serviceMethod = methodBinding.getServiceMethodBinder(methodName);
+        ServiceMethodBinder serviceMethod = methodExecutor.getServiceMethodBinder(methodName);
 
         try {
             java.lang.reflect.Type[] genericParamTypes = serviceMethod.getBoundMethod().getGenericParameterTypes();
@@ -183,7 +183,7 @@ public class ServiceImpl implements Service {
         }
     }
 
-    public ServiceMethodExecutorImpl getMethodBinding() {
-        return methodBinding;
+    public ServiceMethodExecutorImpl getMethodExecutor() {
+        return methodExecutor;
     }
 }

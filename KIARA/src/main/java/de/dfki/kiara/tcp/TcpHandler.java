@@ -187,7 +187,6 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         logger.debug("Handler: {} / Mode: {} / Channel: {} / Message class {}", this, mode, ctx.channel(), msg.getClass());
 
         if (msg instanceof ByteBuffer) {
-            ByteBuffer message = (ByteBuffer) msg;
             TcpBlockMessage transportMessage = new TcpBlockMessage(this, (ByteBuffer) msg);
 
             if (mode == Mode.SERVER) {

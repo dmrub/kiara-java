@@ -21,12 +21,8 @@ import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import de.dfki.kiara.Message;
-import de.dfki.kiara.MessageConnection;
-import de.dfki.kiara.Protocol;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.TransportMessageListener;
+import de.dfki.kiara.*;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -113,7 +109,7 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
         return transportConnection;
     }
 
-    protected void processMessage(Message message, InvocationEnvironment env, ServiceMethodBinding serviceMethodBinding) {
+    protected void processMessage(Message message, InvocationEnvironment env, ServiceMethodExecutor serviceMethodExecutor) {
         assert message != null;
 
         try {
@@ -140,7 +136,7 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
                     break;
                 case REQUEST:
 
-                    ListenableFuture<Message> fmsg = serviceMethodBinding.performLocalCall(env, message);
+                    ListenableFuture<Message> fmsg = serviceMethodExecutor.performLocalCall(env, message);
 
                     Futures.addCallback(fmsg, new FutureCallback<Message>() {
 
@@ -169,7 +165,7 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
         }
     }
 
-    protected void processMessage(Protocol protocol, InvocationEnvironment env, ServiceMethodBinding serviceMethodBinding, TransportMessage trequest) throws Exception {
+    protected void processMessage(Protocol protocol, InvocationEnvironment env, ServiceMethodExecutor serviceMethodBinding, TransportMessage trequest) throws Exception {
         final Message message = protocol.createMessageFromData(trequest.getPayload());
 
         synchronized (messageMap) {

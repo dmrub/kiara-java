@@ -43,12 +43,10 @@ public class ServerConnectionHandler extends AbstractMessageConnection {
 
     private final ServerImpl server;
     private final List<ServerConnectionImpl> serviceHandlers;
-    private final List<MessageListener> listeners;
 
     public ServerConnectionHandler(ServerImpl server, TransportConnection transportConnection, List<TransportAddressAndServiceHandler> serviceHandlers) {
         super(transportConnection);
         this.server = server;
-        this.listeners = new ArrayList<>();
 
         this.serviceHandlers = new ArrayList<>(serviceHandlers.size());
         for (TransportAddressAndServiceHandler element : serviceHandlers) {
@@ -113,7 +111,7 @@ public class ServerConnectionHandler extends AbstractMessageConnection {
 
             if (sc != null) {
                 try {
-                    processMessage(sc.getProtocol(), sc, sc.getServiceMethodBinding(), trequest);
+                    processMessage(sc.getProtocol(), sc, sc.getServiceMethodExecutor(), trequest);
                     return;
                 } catch (Exception ex) {
                     logger.error("Could not process message", ex);

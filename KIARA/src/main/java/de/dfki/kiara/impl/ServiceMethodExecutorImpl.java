@@ -22,17 +22,12 @@ import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import de.dfki.kiara.GenericRemoteException;
-import de.dfki.kiara.Message;
-import de.dfki.kiara.MethodEntry;
-import de.dfki.kiara.NoSuchIDLFunctionException;
-import de.dfki.kiara.Protocol;
+import de.dfki.kiara.*;
+
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import de.dfki.kiara.ServiceMethodBinder;
-import de.dfki.kiara.ServiceMethodExecutor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -42,11 +37,11 @@ import java.util.concurrent.ExecutionException;
 /**
  * @author shahzad
  */
-public class ServiceMethodBinding implements ServiceMethodExecutor {
+public class ServiceMethodExecutorImpl implements de.dfki.kiara.ServiceMethodExecutor {
 
     private final Map<String, ServiceMethodBinder> internalMapping;
 
-    public ServiceMethodBinding() {
+    public ServiceMethodExecutorImpl() {
         internalMapping = new HashMap<>();
     }
 
@@ -87,6 +82,7 @@ public class ServiceMethodBinding implements ServiceMethodExecutor {
         }
     }
 
+    @Override
     public ListenableFuture<Message> performLocalCall(InvocationEnvironment env, final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException {
         if (requestMessage.getMessageKind() != Message.Kind.REQUEST) {
             throw new IllegalArgumentException("message is not a request");

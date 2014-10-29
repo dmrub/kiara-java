@@ -47,11 +47,11 @@ public class ServiceHandler implements Closeable {
         return service;
     }
 
-    public ServiceMethodExecutor getServiceMethodExecutor() {
+    public de.dfki.kiara.ServiceMethodExecutor getServiceMethodExecutor() {
         return service.getMethodBinding();
     }
 
-    public ServiceMethodBinding getServiceMethodBinding() {
+    public ServiceMethodExecutorImpl getServiceMethodBinding() {
         return service.getMethodBinding();
     }
 

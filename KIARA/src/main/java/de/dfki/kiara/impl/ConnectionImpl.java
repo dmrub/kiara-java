@@ -72,12 +72,12 @@ public class ConnectionImpl implements Connection {
     private final TransportMessageConnection messageConnection;
     private final World world;
     private final Module module;
-    private final ServiceMethodBinding serviceMethodBinding;
+    private final ServiceMethodExecutorImpl serviceMethodExecutor;
     private final InterfaceCodeGen codegen;
 
     @SuppressWarnings("null")
     ConnectionImpl(String configUriStr) throws IOException {
-        serviceMethodBinding = new ServiceMethodBinding();
+        serviceMethodExecutor = new ServiceMethodExecutorImpl();
         world = new World();
         module = new Module(world, "kiara");
 
@@ -195,7 +195,7 @@ public class ConnectionImpl implements Connection {
             throw new ConnectException(ex);
         }
 
-        messageConnection = new TransportMessageConnection(transportConnection, serviceMethodBinding, protocol);
+        messageConnection = new TransportMessageConnection(transportConnection, serviceMethodExecutor, protocol);
         codegen = protocol.createInterfaceCodeGen(this);
     }
 
@@ -247,8 +247,8 @@ public class ConnectionImpl implements Connection {
         return codegen.generateInterfaceImpl(interfaceClass, mapping);
     }
 
-    public ServiceMethodBinding getServiceMethodBinding() {
-        return serviceMethodBinding;
+    public ServiceMethodExecutorImpl getServiceMethodExecutor() {
+        return serviceMethodExecutor;
     }
 
     @Override
@@ -271,10 +271,10 @@ public class ConnectionImpl implements Connection {
             throw new IllegalArgumentException(idlFunctionName + " is not a callback function");
         }
 
-        if (serviceMethodBinding.getServiceMethodBinder(idlFunctionName) != null) {
+        if (serviceMethodExecutor.getServiceMethodBinder(idlFunctionName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        serviceMethodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName);
+        serviceMethodExecutor.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName);
     }
 
     @Override
@@ -292,15 +292,15 @@ public class ConnectionImpl implements Connection {
             throw new IllegalArgumentException(idlFunctionName + " is not a callback function");
         }
 
-        if (serviceMethodBinding.getServiceMethodBinder(idlFunctionName) != null) {
+        if (serviceMethodExecutor.getServiceMethodBinder(idlFunctionName) != null) {
             throw new MethodAlreadyBoundException("Service method already bound");
         }
-        serviceMethodBinding.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName, parameterTypes);
+        serviceMethodExecutor.bindServiceMethod(idlFunctionName, serviceImpl, serviceMethodName, parameterTypes);
     }
 
     @Override
     public void unregisterServiceFunction(String idlFunctionName) throws NoSuchIDLFunctionException {
-        serviceMethodBinding.unbindServiceMethod(idlFunctionName);
+        serviceMethodExecutor.unbindServiceMethod(idlFunctionName);
     }
 
     @Override

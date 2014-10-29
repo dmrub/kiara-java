@@ -33,14 +33,14 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     private final TransportAddress transportAddress;
     private final ServiceHandler serviceHandler;
     private final InterfaceCodeGen codegen;
-    private final ServiceMethodBinding serviceMethodBinding;
+    private final ServiceMethodExecutor serviceMethodExecutor;
 
     public ServerConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddress transportAddress, ServiceHandler serviceHandler) {
         this.serverConnectionHandler = serverConnectionHandler;
         this.transportAddress = transportAddress;
         this.serviceHandler = serviceHandler;
         this.codegen = serviceHandler.getProtocol().createInterfaceCodeGen(this);
-        this.serviceMethodBinding = (ServiceMethodBinding)serviceHandler.getServiceMethodExecutor();
+        this.serviceMethodExecutor = serviceHandler.getServiceMethodExecutor();
     }
 
     public ServerConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddressAndServiceHandler transportAddressAndServiceHandler) {
@@ -48,26 +48,16 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     }
 
     @Override
-    public ServerConnectionHandler getServerConnectionHandler() {
-        return serverConnectionHandler;
-    }
-
-    @Override
     public TransportAddress getTransportAddress() {
         return transportAddress;
-    }
-
-    @Override
-    public ServiceHandler getServiceHandler() {
-        return serviceHandler;
     }
 
     public ServerConnectionHandler getServerConnection() {
         return serverConnectionHandler;
     }
 
-    public ServiceMethodBinding getServiceMethodBinding() {
-        return serviceMethodBinding;
+    public de.dfki.kiara.ServiceMethodExecutor getServiceMethodExecutor() {
+        return serviceMethodExecutor;
     }
 
     @Override

@@ -15,14 +15,17 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package de.dfki.kiara;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
- * @param <T>
  */
-public interface InterfaceGenerator<T> {
-    public T generateClientFunctions(Connection connection);
+public interface InvocationEnvironment {
+
+    public ServerConnection getServiceConnection();
+
+    public TransportAddress getTransportAddress();
+
+    public Protocol getProtocol();
 }

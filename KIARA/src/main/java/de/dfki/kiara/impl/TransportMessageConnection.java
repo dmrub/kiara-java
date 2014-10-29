@@ -30,12 +30,12 @@ public class TransportMessageConnection extends AbstractMessageConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(TransportMessageConnection.class);
     private final Protocol protocol;
-    private final ServiceMethodBinding serviceMethodBinding;
+    private final ServiceMethodExecutorImpl serviceMethodExecutor;
 
-    public TransportMessageConnection(TransportConnection transportConnection, ServiceMethodBinding serviceMethodBinding, Protocol protocol) {
+    public TransportMessageConnection(TransportConnection transportConnection, ServiceMethodExecutorImpl serviceMethodExecutor, Protocol protocol) {
         super(transportConnection);
         this.protocol = protocol;
-        this.serviceMethodBinding = serviceMethodBinding;
+        this.serviceMethodExecutor = serviceMethodExecutor;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class TransportMessageConnection extends AbstractMessageConnection {
         }
 
         try {
-            processMessage(protocol, null, serviceMethodBinding, tmessage);
+            processMessage(protocol, null, serviceMethodExecutor, tmessage);
         } catch (Exception ex) {
             logger.error("Message processing failed", ex);
         }

@@ -17,10 +17,15 @@
  */
 package de.dfki.kiara;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public interface ServiceMethodExecutor {
-
+    public ListenableFuture<Message> performLocalCall(InvocationEnvironment env, final Message requestMessage) throws IOException, IllegalAccessException, IllegalArgumentException, ExecutionException, InterruptedException;
 }

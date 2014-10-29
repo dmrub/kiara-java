@@ -30,6 +30,7 @@ import java.net.Socket;
 public class Benchmark {
 
     public static void main(String[] args) throws Exception {
+        System.setProperty("java.util.logging.config.file", "");
         final int port = 8090;
 
         final Context c1 = Kiara.createContext();

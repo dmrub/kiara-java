@@ -45,12 +45,12 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
  */
 public class ServiceImpl implements Service {
 
-    private final ServiceMethodBinding methodBinding;
+    private final ServiceMethodExecutorImpl methodBinding;
     private final World world;
     private final Module module;
 
     public ServiceImpl(Context context) {
-        this.methodBinding = new ServiceMethodBinding();
+        this.methodBinding = new ServiceMethodExecutorImpl();
         world = new World();
         module = new Module(world, "kiara");
     }
@@ -183,7 +183,7 @@ public class ServiceImpl implements Service {
         }
     }
 
-    public ServiceMethodBinding getMethodBinding() {
+    public ServiceMethodExecutorImpl getMethodBinding() {
         return methodBinding;
     }
 }

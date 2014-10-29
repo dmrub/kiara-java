@@ -113,7 +113,7 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
         assert message != null;
 
         try {
-            logger.info("Incoming message: {}", message);
+            logger.debug("Incoming message: {}", message);
 
             switch (message.getMessageKind()) {
                 case RESPONSE:

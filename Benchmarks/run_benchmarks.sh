@@ -122,10 +122,10 @@ $HOME/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.3.0/jackso
 
     #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPClient"
     #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectServer infinite" "java -cp $CLASSPATH dfki.sb.tcpsocketproject.TCPObjectClient"
-    #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaServer" "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaClient"
-    #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaServer" "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaClient"
+    runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaServer" "java -cp $CLASSPATH dfki.sb.rmijavaproject.RMIJavaClient"
+    runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaServer" "java -cp $CLASSPATH dfki.sb.apachethriftproject.ThriftJavaClient"
     runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaServer" "java -cp $CLASSPATH dfki.sb.zerociceproject.IceJavaClient"
     #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQServer" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQClient"
     #runServerClientBenchmark "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamServer infinite" "java -cp $CLASSPATH dfki.sb.rabbitmqjava.RabbitMQObjectStreamClient"
-    #runServerClientBenchmark "java -cp $CLASSPATH_KIARA de.dfki.kiara.test.BenchmarkServer" "java -cp $CLASSPATH_KIARA de.dfki.kiara.test.BenchmarkClient"
+    runServerClientBenchmark "java -cp $CLASSPATH_KIARA -Djava.util.logging.config.file=/home/rubinste/.kiara/nologging.properties de.dfki.kiara.testapp.BenchmarkServer" "java -cp $CLASSPATH_KIARA -Djava.util.logging.config.file=/home/rubinste/.kiara/nologging.properties de.dfki.kiara.testapp.BenchmarkClient"
 fi

@@ -313,7 +313,7 @@ public class ServerImpl implements Server, TransportConnectionListener {
 
     @Override
     public void onConnectionOpened(TransportConnection connection) {
-        logger.info("Opened connection {}, local address {}, remote address {}",
+        logger.debug("Opened connection {}, local address {}, remote address {}",
                 connection, connection.getLocalAddress(), connection.getRemoteAddress());
         List<TransportAddressAndServiceHandler> serviceHandlers = findAllServiceHandlers(connection.getLocalTransportAddress());
         ServerConnectionHandler handler = new ServerConnectionHandler(this, connection, serviceHandlers);
@@ -325,7 +325,7 @@ public class ServerImpl implements Server, TransportConnectionListener {
 
     @Override
     public void onConnectionClosed(TransportConnection connection) {
-        logger.info("Closed connection {}", connection);
+        logger.debug("Closed connection {}", connection);
         ServerConnectionHandler handler;
         synchronized (connectionHandlers) {
             handler = connectionHandlers.remove(connection);

@@ -69,9 +69,9 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     @Override
     public TransportAddress getLocalTransportAddress() {
         try {
-            if (uri != null)
+            if (uri != null) {
                 return new TcpBlockAddress(transport, uri);
-            else {
+            } else {
                 InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
                 return new TcpBlockAddress(transport, sa.getHostName(), sa.getPort());
             }
@@ -186,29 +186,19 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     protected void channelRead0(final ChannelHandlerContext ctx, Object msg) throws Exception {
         logger.debug("Handler: {} / Mode: {} / Channel: {} / Message class {}", this, mode, ctx.channel(), msg.getClass());
 
-        if (msg instanceof ByteBuffer) {
-            TcpBlockMessage transportMessage = new TcpBlockMessage(this, (ByteBuffer) msg);
+        final TcpBlockMessage transportMessage = new TcpBlockMessage(this, (ByteBuffer) msg);
 
-            if (mode == Mode.SERVER) {
-                if (sessionId == null) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Set session ID to '{}'", Util.bufferToString(transportMessage.getPayload()));
-                    }
-                    sessionId = Util.bufferToString(transportMessage.getPayload(), "UTF-8");
-                } else {
-                    synchronized (listeners) {
-                        if (!listeners.isEmpty()) {
-                            for (TransportMessageListener listener : listeners) {
-                                listener.onMessage(transportMessage);
-                            }
-                        }
-                    }
-                }
-            } else {
-                // CLIENT
-                onResponse(transportMessage);
+        if (logger.isDebugEnabled()) {
+            logger.debug("RECEIVED CONTENT {}", new String(transportMessage.getPayload().array(), transportMessage.getPayload().arrayOffset(), transportMessage.getPayload().remaining()));
+        }
+
+        if (mode == Mode.SERVER && sessionId == null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Set session ID to '{}'", Util.bufferToString(transportMessage.getPayload()));
             }
-
+            sessionId = Util.bufferToString(transportMessage.getPayload(), "UTF-8");
+        } else {
+            notifyListeners(transportMessage);
         }
     }
 
@@ -234,15 +224,11 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         return channel.remoteAddress();
     }
 
-    private void onResponse(TcpBlockMessage response) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("RECEIVED CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
-        }
-
+    private void notifyListeners(final TcpBlockMessage message) {
         synchronized (listeners) {
             if (!listeners.isEmpty()) {
                 for (TransportMessageListener listener : listeners) {
-                    listener.onMessage(response);
+                    listener.onMessage(message);
                 }
             }
         }
@@ -258,23 +244,19 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         if (!(transportMessage instanceof TcpBlockMessage)) {
             throw new IllegalArgumentException("request is not of type TcpBlockMessage");
         }
-        TcpBlockMessage request = (TcpBlockMessage) transportMessage;
 
         return new TcpBlockMessage(this, null);
     }
 
     @Override
     public TransportMessage createTransportMessage(TransportMessage transportMessage) {
-        if (transportMessage instanceof TcpBlockMessage)
-            return createResponse(transportMessage);
-        else
-            return createRequest();
+        return new TcpBlockMessage(this, null);
     }
 
     @Override
     public ListenableFuture<Void> send(TransportMessage message) {
         if (message == null) {
-            throw new NullPointerException("msg");
+            throw new NullPointerException("message");
         }
         if (state != State.CONNECTED || channel == null) {
             throw new IllegalStateException("state=" + state.toString() + " channel=" + channel);

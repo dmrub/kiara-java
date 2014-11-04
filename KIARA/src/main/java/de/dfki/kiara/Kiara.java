@@ -24,6 +24,7 @@ import de.dfki.kiara.impl.TransportServerImpl;
 import de.dfki.kiara.jos.JosProtocol;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
 import de.dfki.kiara.tcp.TcpBlockTransport;
+import de.dfki.kiara.websocket.WebsocketTransport;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +52,9 @@ public class Kiara {
 
         TransportRegistry.registerTransport(new HttpTransport(/*secure = */false));
         TransportRegistry.registerTransport(new HttpTransport(/*secure = */true));
+
+        TransportRegistry.registerTransport(new WebsocketTransport(/*secure = */false));
+        TransportRegistry.registerTransport(new WebsocketTransport(/*secure = */true));
     }
 
     public static void init() {

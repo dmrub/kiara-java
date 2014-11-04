@@ -25,6 +25,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
+import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
@@ -49,10 +50,11 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
             p.addLast(sslCtx.newHandler(ch.alloc()));
         }
         p.addLast("logger", new LoggingHandler(LogLevel.DEBUG));
-        p.addLast(new HttpRequestDecoder());
+        p.addLast(new HttpServerCodec());
+        //p.addLast(new HttpRequestDecoder());
         // Uncomment the following line if you don't want to handle HttpChunks.
         //p.addLast(new HttpObjectAggregator(1048576));
-        p.addLast(new HttpResponseEncoder());
+        //p.addLast(new HttpResponseEncoder());
         // Remove the following line if you don't want automatic content compression.
         //p.addLast(new HttpContentCompressor());
         p.addLast("aggregator", new HttpObjectAggregator(1048576));

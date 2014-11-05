@@ -18,19 +18,26 @@
 package de.dfki.kiara.netty;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
-import java.util.List;
+import java.nio.ByteBuffer;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ByteBufferDecoder extends MessageToMessageDecoder<ByteBuf> {
+public class Util {
+    public static ByteBuffer toByteBuffer(ByteBuf msg) {
+        final byte[] array;
+        final int offset;
+        final int length = msg.readableBytes();
+        if (msg.hasArray()) {
+            array = msg.array();
+            offset = msg.arrayOffset() + msg.readerIndex();
+        } else {
+            array = new byte[length];
+            msg.getBytes(msg.readerIndex(), array, 0, length);
+            offset = 0;
+        }
 
-    @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
-        out.add(Util.toByteBuffer(msg));
+        return ByteBuffer.wrap(array, offset, length);
     }
-
 }

@@ -26,9 +26,14 @@ import de.dfki.kiara.netty.AbstractTransport;
 import de.dfki.kiara.netty.ChannelFutureAndConnection;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
+import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
@@ -37,6 +42,8 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.security.cert.CertificateException;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
 
 /**
@@ -68,7 +75,7 @@ public class WebsocketTransport extends AbstractTransport {
 
     @Override
     public boolean isAddressContainsRequestPath() {
-        return true;
+        return false;
     }
 
     @Override
@@ -115,12 +122,21 @@ public class WebsocketTransport extends AbstractTransport {
         }
 
         // Configure the client.
-        final WebsocketHandler httpClientHandler = new WebsocketHandler(this, uri, HttpMethod.POST);
+        final WebsocketHandler clientHandler = new WebsocketHandler(this, uri,
+                WebSocketClientHandshakerFactory.newHandshaker(
+                        uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()), HttpMethod.POST);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
-                .handler(new WebsocketClientInitializer(sslCtx, httpClientHandler));
-        return new ChannelFutureAndConnection(b.connect(host, port), httpClientHandler);
+                .handler(new WebsocketClientInitializer(sslCtx, clientHandler));
+
+        try {
+            b.connect(host, port).sync();
+            ChannelFuture f = clientHandler.getHandshakeFuture();//.sync();
+            return new ChannelFutureAndConnection(f, clientHandler);
+        } catch (InterruptedException ex) {
+            throw new IOException(ex);
+        }
     }
 
     public ListenableFuture<TransportConnection> openConnection(URI uri, Map<String, Object> settings) throws IOException {

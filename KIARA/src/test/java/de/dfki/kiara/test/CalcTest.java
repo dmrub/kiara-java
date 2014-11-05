@@ -116,6 +116,8 @@ public class CalcTest {
                 server.addService("/rpc/calc", protocol, service);
             else if ("tcp".equals(transport))
                 server.addService("tcp://0.0.0.0:53212", protocol, service);
+            else if ("ws".equals(transport))
+                server.addService("ws://0.0.0.0:9090/websocket", protocol, service);
             else
                 throw new IllegalArgumentException("Unknown transport "+transport);
             return server;
@@ -157,8 +159,10 @@ public class CalcTest {
     @Parameters
     public static Collection configs() {
         Object[][] data = new Object[][] {
-                { "http", "jsonrpc" },
-                { "http", "javaobjectstream" },
+                //{ "http", "jsonrpc" },
+                //{ "http", "javaobjectstream" },
+                { "ws", "jsonrpc" },
+                { "ws", "javaobjectstream" },
                 { "tcp", "jsonrpc" },
                 { "tcp", "javaobjectstream" }
         };

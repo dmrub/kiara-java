@@ -26,6 +26,7 @@ import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
+import de.dfki.kiara.netty.ByteBufferDecoder;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import io.netty.buffer.ByteBuf;
@@ -34,32 +35,42 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponse;
+import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import io.netty.handler.codec.http.HttpVersion;
 import static io.netty.handler.codec.http.HttpVersion.*;
-import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
+import io.netty.handler.codec.http.websocketx.WebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
+import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
+import io.netty.util.CharsetUtil;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +88,9 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
 
     private final WebsocketTransport transport;
     private final URI uri;
+    private final WebSocketClientHandshaker clientHandshaker;
+    private WebSocketServerHandshaker serverHandshaker;
+    private ChannelPromise handshakeFuture;
     private final HttpMethod method;
 
     private volatile Channel channel = null;
@@ -84,29 +98,6 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
     private final TransportConnectionListener connectionListener;
 
     private final List<TransportMessageListener> listeners = new ArrayList<>();
-
-    @Override
-    public TransportAddress getLocalTransportAddress() {
-        try {
-            if (uri != null)
-                return new WebsocketAddress(transport, uri);
-            else {
-                InetSocketAddress sa = ((InetSocketAddress)getLocalAddress());
-                return new WebsocketAddress(transport, sa.getHostName(), sa.getPort(), "");
-            }
-        } catch (InvalidAddressException ex) {
-            throw new IllegalStateException(ex);
-        } catch (UnknownHostException ex) {
-            throw new IllegalStateException(ex);
-        } catch (URISyntaxException ex) {
-            throw new IllegalStateException(ex);
-        }
-    }
-
-    @Override
-    public Transport getTransport() {
-        return transport;
-    }
 
     static enum Mode {
 
@@ -125,18 +116,26 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
     }
     private State state;
 
-    public WebsocketHandler(WebsocketTransport transport, URI uri, HttpMethod method) {
+    /**
+     * Initialize client
+     */
+    public WebsocketHandler(WebsocketTransport transport, URI uri, WebSocketClientHandshaker handshaker, HttpMethod method) {
         if (transport == null) {
             throw new NullPointerException("transport");
         }
         if (uri == null) {
             throw new NullPointerException("uri");
         }
+        if (handshaker == null) {
+            throw new NullPointerException("handshaker");
+        }
         if (method == null) {
             throw new NullPointerException("method");
         }
         this.transport = transport;
         this.uri = uri;
+        this.clientHandshaker = handshaker;
+        this.serverHandshaker = null;
         this.method = method;
         this.connectionListener = null;
         this.state = State.UNINITIALIZED;
@@ -144,6 +143,9 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
+    /**
+     * Initialize server
+     */
     public WebsocketHandler(WebsocketTransport transport, TransportConnectionListener connectionListener) {
         if (transport == null) {
             throw new NullPointerException("transport");
@@ -153,6 +155,8 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         }
         this.transport = transport;
         this.uri = null;
+        this.clientHandshaker = null;
+        this.serverHandshaker = null;
         this.method = null;
         this.connectionListener = connectionListener;
         this.state = State.UNINITIALIZED;
@@ -160,9 +164,44 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         this.bout = null;
     }
 
+    public ChannelPromise getHandshakeFuture() {
+        return handshakeFuture;
+    }
+
+    @Override
+    public TransportAddress getLocalTransportAddress() {
+        try {
+            if (uri != null) {
+                return new WebsocketAddress(transport, uri);
+            } else {
+                InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
+                return new WebsocketAddress(transport, sa.getHostName(), sa.getPort(), "");
+            }
+        } catch (InvalidAddressException ex) {
+            throw new IllegalStateException(ex);
+        } catch (UnknownHostException ex) {
+            throw new IllegalStateException(ex);
+        } catch (URISyntaxException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    @Override
+    public Transport getTransport() {
+        return transport;
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        handshakeFuture = ctx.newPromise();
+    }
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         channel = ctx.channel();
+        if (clientHandshaker != null) {
+            clientHandshaker.handshake(ctx.channel());
+        }
         switch (state) {
             case UNINITIALIZED:
             case WAIT_CONNECT:
@@ -181,7 +220,7 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.debug("Http channel closed {}", ctx);
+        logger.debug("Websocket channel closed {}", ctx);
         state = State.CLOSED;
         channel = null;
         if (connectionListener != null) {
@@ -201,8 +240,74 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
             if (msg instanceof FullHttpRequest) {
                 final FullHttpRequest request = (FullHttpRequest) msg;
 
-                WebsocketRequestMessage transportMessage = new WebsocketRequestMessage(this, request);
-                transportMessage.setPayload(request.content().nioBuffer());
+                // Handle a bad request.
+                if (!request.getDecoderResult().isSuccess()) {
+                    sendHttpResponse(ctx, request, new DefaultFullHttpResponse(HTTP_1_1, BAD_REQUEST));
+                    return;
+                }
+
+                // Allow only GET methods.
+                if (request.getMethod() != GET) {
+                    sendHttpResponse(ctx, request, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
+                    return;
+                }
+
+                // Send the demo page and favicon.ico
+                if ("/".equals(request.getUri())) {
+                    ByteBuf content = Unpooled.copiedBuffer("WEBSOCKET ROOT", CharsetUtil.UTF_8);
+                    FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, content);
+
+                    response.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
+                    HttpHeaders.setContentLength(response, content.readableBytes());
+
+                    sendHttpResponse(ctx, request, response);
+                    return;
+                }
+                if ("/favicon.ico".equals(request.getUri())) {
+                    FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
+                    sendHttpResponse(ctx, request, res);
+                    return;
+                }
+
+                // Handshake
+                WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(
+                        request.getUri()/*headers().get(HOST)*/, null, false);
+                serverHandshaker = wsFactory.newHandshaker(request);
+                if (serverHandshaker == null) {
+                    WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
+                } else {
+                    serverHandshaker.handshake(ctx.channel(), request);
+                }
+                return;
+
+                //boolean keepAlive = HttpHeaders.isKeepAlive(request);
+            }
+            if (msg instanceof WebSocketFrame) {
+                WebSocketFrame frame = (WebSocketFrame) msg;
+                // Check for closing frame
+                if (frame instanceof CloseWebSocketFrame) {
+                    serverHandshaker.close(ctx.channel(), (CloseWebSocketFrame) frame.retain());
+                    return;
+                }
+                if (frame instanceof PingWebSocketFrame) {
+                    ctx.channel().write(new PongWebSocketFrame(frame.content().retain()));
+                    return;
+                }
+                WebsocketMessage transportMessage;
+
+                if (frame instanceof TextWebSocketFrame) {
+                    transportMessage = new WebsocketMessage(this, Util.stringToBuffer(((TextWebSocketFrame) frame).text(), "UTF-8"));
+                } else if (frame instanceof BinaryWebSocketFrame) {
+                    transportMessage = new WebsocketMessage(this, de.dfki.kiara.netty.Util.toByteBuffer(((BinaryWebSocketFrame)frame).content()));
+                } else {
+                    throw new UnsupportedOperationException(String.format("%s frame types not supported", frame.getClass()
+                            .getName()));
+                }
+
+                // Send the uppercase string back.
+                //String request = ((TextWebSocketFrame) frame).text();
+                //System.err.printf("%s received %s%n", ctx.channel(), request);
+                //ctx.channel().write(new TextWebSocketFrame(request.toUpperCase()));
 
                 if (logger.isDebugEnabled()) {
                     logger.debug("RECEIVED REQUEST WITH CONTENT {}", Util.bufferToString(transportMessage.getPayload()));
@@ -215,47 +320,58 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
                         }
                     }
                 }
-
-                boolean keepAlive = HttpHeaders.isKeepAlive(request);
             }
         } else {
             // CLIENT
-            if (msg instanceof HttpResponse) {
-                HttpResponse response = (HttpResponse) msg;
+            Channel ch = ctx.channel();
+            if (!clientHandshaker.isHandshakeComplete()) {
+                final FullHttpResponse response = (FullHttpResponse) msg;
                 headers = response.headers();
-                //if (!response.headers().isEmpty()) {
-                //    contentType = response.headers().get("Content-Type");
-                //}
+                clientHandshaker.finishHandshake(ch, response);
+                logger.debug("WebSocket client connected!");
+                handshakeFuture.setSuccess();
+                return;
             }
-            if (msg instanceof HttpContent) {
-                HttpContent content = (HttpContent) msg;
-                ByteBuf buf = content.content();
-                if (buf.isReadable()) {
-                    if (buf.hasArray()) {
-                        bout.write(buf.array(), buf.readerIndex(), buf.readableBytes());
-                    } else {
-                        byte[] bytes = new byte[buf.readableBytes()];
-                        buf.getBytes(buf.readerIndex(), bytes);
-                        bout.write(bytes);
-                    }
+
+            if (msg instanceof FullHttpResponse) {
+                FullHttpResponse response = (FullHttpResponse) msg;
+                throw new IllegalStateException(
+                        "Unexpected FullHttpResponse (getStatus=" + response.getStatus()
+                        + ", content=" + response.content().toString(CharsetUtil.UTF_8) + ')');
+            }
+
+            WebSocketFrame frame = (WebSocketFrame) msg;
+            if (frame instanceof TextWebSocketFrame) {
+                TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
+                if (logger.isDebugEnabled()) {
+                    logger.debug("WebSocket Client received message: {}", textFrame.text());
                 }
-                if (content instanceof LastHttpContent) {
-                    //ctx.close();
-                    bout.flush();
-                    WebsocketResponseMessage response = new WebsocketResponseMessage(this, headers);
-                    response.setPayload(ByteBuffer.wrap(bout.toByteArray(), 0, bout.size()));
-                    onResponse(response);
-                    bout.reset();
+                WebsocketResponseMessage response = new WebsocketResponseMessage(this, headers);
+                response.setPayload(Util.stringToBuffer(textFrame.text(), "UTF-8"));
+                onResponse(response);
+            } else if (frame instanceof BinaryWebSocketFrame) {
+                BinaryWebSocketFrame binaryFrame = (BinaryWebSocketFrame) frame;
+                if (logger.isDebugEnabled()) {
+                    logger.debug("WebSocket Client received message: {}", binaryFrame.content().toString(CharsetUtil.UTF_8));
                 }
+                WebsocketMessage response = new WebsocketMessage(this, de.dfki.kiara.netty.Util.toByteBuffer(binaryFrame.content()));
+                onResponse(response);
+            } else if (frame instanceof PongWebSocketFrame) {
+                logger.debug("WebSocket Client received pong");
+            } else if (frame instanceof CloseWebSocketFrame) {
+                logger.debug("WebSocket Client received closing");
+                ch.close();
             }
         }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        logger.error("Websocket error", cause);
+        if (!handshakeFuture.isDone()) {
+            handshakeFuture.setFailure(cause);
+        }
         ctx.close();
-
-        logger.error("Http error", cause);
     }
 
     @Override
@@ -274,7 +390,7 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         return channel.remoteAddress();
     }
 
-    private void onResponse(WebsocketResponseMessage response) {
+    private void onResponse(TransportMessage response) {
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED RESPONSE WITH CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
@@ -290,65 +406,54 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
 
     @Override
     public TransportMessage createRequest() {
-        if (mode == Mode.SERVER) {
-            throw new IllegalStateException("Requests from server are not supported");
+        WebsocketMessage msg = new WebsocketMessage(this, null);
+        if (uri != null) {
+            msg.set("websocket-uri", uri);
         }
-        // Prepare the HTTP request.
-        String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
-        FullHttpRequest request = new DefaultFullHttpRequest(
-                HttpVersion.HTTP_1_1, method, uri.getRawPath());
-
-        request.headers().set(HttpHeaders.Names.HOST, host);
-        request.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-        request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
-
-        return new WebsocketRequestMessage(this, request);
+        return msg;
     }
 
     @Override
     public TransportMessage createTransportMessage(TransportMessage transportMessage) {
-        if (transportMessage instanceof WebsocketRequestMessage)
+        if (transportMessage instanceof WebsocketRequestMessage) {
             return createResponse(transportMessage);
-        else
+        } else {
             return createRequest();
+        }
     }
 
     @Override
     public TransportMessage createResponse(TransportMessage transportMessage) {
-        if (!(transportMessage instanceof WebsocketRequestMessage)) {
-            throw new IllegalArgumentException("request is not of type HttpRequestMessage");
-        }
-        WebsocketRequestMessage request = (WebsocketRequestMessage) transportMessage;
+        return new WebsocketMessage(this, null);
+    }
 
-        // Decide whether to close the connection or not.
-        boolean keepAlive = HttpHeaders.isKeepAlive(request.getRequest());
-        // Build the response object.
-        FullHttpResponse response = new DefaultFullHttpResponse(
-                HTTP_1_1, request.getRequest().getDecoderResult().isSuccess() ? OK : BAD_REQUEST);
-
-        response.headers().set(CONTENT_TYPE, "text/plain; charset=UTF-8");
-
-        if (keepAlive) {
-            // Add 'Content-Length' header only for a keep-alive connection.
-            response.headers().set(CONTENT_LENGTH, response.content().readableBytes());
-            // Add keep alive header as per:
-            // - http://www.w3.org/Protocols/HTTP/1.1/draft-ietf-http-v11-spec-01.html#Connection
-            response.headers().set(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+    private static void sendHttpResponse(
+            ChannelHandlerContext ctx, FullHttpRequest req, FullHttpResponse res) {
+        // Generate an error page if response getStatus code is not OK (200).
+        if (res.getStatus().code() != 200) {
+            ByteBuf buf = Unpooled.copiedBuffer(res.getStatus().toString(), CharsetUtil.UTF_8);
+            res.content().writeBytes(buf);
+            buf.release();
+            HttpHeaders.setContentLength(res, res.content().readableBytes());
         }
 
-        return new WebsocketResponseMessage(this, response);
+        // Send the response and close the connection if necessary.
+        ChannelFuture f = ctx.channel().writeAndFlush(res);
+        if (!HttpHeaders.isKeepAlive(req) || res.getStatus().code() != 200) {
+            f.addListener(ChannelFutureListener.CLOSE);
+        }
     }
 
     @Override
     public ListenableFuture<Void> send(TransportMessage message) {
         if (message == null) {
-            throw new NullPointerException("msg");
+            throw new NullPointerException("message");
         }
         if (state != State.CONNECTED || channel == null) {
             throw new IllegalStateException("state=" + state.toString() + " channel=" + channel);
         }
 
-        HttpMessage httpMsg;
+        HttpMessage httpMsg = null;
 
         boolean keepAlive = true;
 
@@ -370,6 +475,12 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
             if (logger.isDebugEnabled()) {
                 logger.debug("SEND CONTENT: {}", msg.getContent().content().toString(StandardCharsets.UTF_8));
             }
+        } else if (message instanceof WebsocketMessage) {
+                //ctx.channel().write(new TextWebSocketFrame(request.toUpperCase()));
+                // new TextWebSocketFrame(Util.bufferToString(message.getPayload(), "UTF-8"));
+                WebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.wrappedBuffer(message.getPayload()));
+                ChannelFuture result = channel.writeAndFlush(frame);
+                return new ListenableConstantFutureAdapter<>(result, null);
         } else {
             throw new IllegalArgumentException("msg is neither of type HttpRequestMessage nor HttpResponseMessage");
         }

@@ -23,6 +23,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContentDecompressor;
+import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
@@ -51,8 +52,8 @@ class WebsocketClientInitializer extends ChannelInitializer<SocketChannel> {
         p.addLast(new HttpClientCodec());
         // Remove the following line if you don't want automatic content decompression.
         p.addLast(new HttpContentDecompressor());
-        // Uncomment the following line if you don't want to handle HttpContents.
-        //p.addLast(new HttpObjectAggregator(1048576));
+        // Remove the following line if you want to handle HttpContents.
+        p.addLast(new HttpObjectAggregator(1048576));
         p.addLast(handler);
     }
 

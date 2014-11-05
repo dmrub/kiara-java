@@ -235,6 +235,8 @@ public class AosTest {
                 server.addService("/rpc/aostest", protocol, service);
             else if ("tcp".equals(transport))
                 server.addService("tcp://0.0.0.0:53212", protocol, service);
+            else if ("ws".equals(transport))
+                server.addService("ws://0.0.0.0:9090/websocket", protocol, service);
             else
                 throw new IllegalArgumentException("Unknown transport "+transport);
             return server;
@@ -275,7 +277,9 @@ public class AosTest {
                 { "http", "jsonrpc" },
                 { "http", "javaobjectstream" },
                 { "tcp", "jsonrpc" },
-                { "tcp", "javaobjectstream" }
+                { "tcp", "javaobjectstream" },
+                { "ws", "jsonrpc" },
+                { "ws", "javaobjectstream" }
         };
         return Arrays.asList(data);
     }

@@ -233,7 +233,9 @@ public class ServerImpl implements Server, TransportConnectionListener {
                 }
             }
         }
-        services.remove(service);
+        synchronized (services) {
+            services.remove(service);
+        }
         return removed;
     }
 

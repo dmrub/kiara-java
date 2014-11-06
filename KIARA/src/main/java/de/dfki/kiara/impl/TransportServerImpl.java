@@ -50,13 +50,15 @@ public class TransportServerImpl implements TransportServer, RunningService {
 
         public final String address;
         public final String port;
+        public final String path;
         public final AbstractTransport transport;
         public final TransportConnectionListener listener;
         public Channel channel;
 
-        public ServerEntry(String address, String port, AbstractTransport transport, TransportConnectionListener listener) {
+        public ServerEntry(String address, String port, String path, AbstractTransport transport, TransportConnectionListener listener) {
             this.address = address;
             this.port = port;
+            this.path = path;
             this.transport = transport;
             this.listener = listener;
             this.channel = null;
@@ -77,11 +79,11 @@ public class TransportServerImpl implements TransportServer, RunningService {
     }
 
     @Override
-    public void listen(String address, String port, Transport transport, TransportConnectionListener listener) {
+    public void listen(String address, String port, String path, Transport transport, TransportConnectionListener listener) {
         if (!(transport instanceof AbstractTransport))
             throw new IllegalArgumentException("transport is not an instance of " + AbstractTransport.class.getName() + " class");
         synchronized (serverEntries) {
-            serverEntries.add(new ServerEntry(address, port, (AbstractTransport) transport, listener));
+            serverEntries.add(new ServerEntry(address, port, path, (AbstractTransport) transport, listener));
         }
     }
 
@@ -97,7 +99,7 @@ public class TransportServerImpl implements TransportServer, RunningService {
                     b.group(bossGroup, workerGroup)
                             .channel(NioServerSocketChannel.class)
                             .handler(new LoggingHandler(LogLevel.INFO))
-                            .childHandler(serverEntry.transport.createServerChildHandler(serverEntry.listener));
+                            .childHandler(serverEntry.transport.createServerChildHandler(serverEntry.path, serverEntry.listener));
 
                     serverEntry.channel = b.bind(serverEntry.address, port).sync().channel();
                     ++numServers;

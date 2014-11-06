@@ -143,9 +143,9 @@ public class TcpBlockTransport extends AbstractTransport {
     }
 
     @Override
-    public ChannelHandler createServerChildHandler(TransportConnectionListener connectionHandler) {
+    public ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionHandler) {
         try {
-            return new TcpServerInitializer(this, createServerSslContext(), connectionHandler);
+            return new TcpServerInitializer(this, createServerSslContext(), path, connectionHandler);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

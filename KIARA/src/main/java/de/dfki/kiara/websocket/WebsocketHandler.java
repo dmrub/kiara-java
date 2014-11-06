@@ -146,7 +146,7 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
     /**
      * Initialize server
      */
-    public WebsocketHandler(WebsocketTransport transport, TransportConnectionListener connectionListener) {
+    public WebsocketHandler(WebsocketTransport transport, String path, TransportConnectionListener connectionListener) {
         if (transport == null) {
             throw new NullPointerException("transport");
         }

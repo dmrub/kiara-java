@@ -129,9 +129,9 @@ public class HttpTransport extends AbstractTransport {
     }
 
     @Override
-    public ChannelHandler createServerChildHandler(TransportConnectionListener connectionListener) {
+    public ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionListener) {
         try {
-            return new HttpServerInitializer(this, createServerSslContext(), connectionListener);
+            return new HttpServerInitializer(this, createServerSslContext(), path, connectionListener);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

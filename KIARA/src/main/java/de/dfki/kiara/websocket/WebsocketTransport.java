@@ -26,7 +26,6 @@ import de.dfki.kiara.netty.AbstractTransport;
 import de.dfki.kiara.netty.ChannelFutureAndConnection;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -42,8 +41,6 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.security.cert.CertificateException;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
 
 /**
@@ -145,9 +142,9 @@ public class WebsocketTransport extends AbstractTransport {
     }
 
     @Override
-    public ChannelHandler createServerChildHandler(TransportConnectionListener connectionListener) {
+    public ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionListener) {
         try {
-            return new WebsocketServerInitializer(this, createServerSslContext(), connectionListener);
+            return new WebsocketServerInitializer(this, createServerSslContext(), path, connectionListener);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

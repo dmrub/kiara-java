@@ -125,7 +125,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public TcpHandler(TcpBlockTransport transport, TransportConnectionListener connectionListener) {
+    public TcpHandler(TcpBlockTransport transport, String path, TransportConnectionListener connectionListener) {
         if (transport == null) {
             throw new NullPointerException("transport");
         }

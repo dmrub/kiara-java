@@ -144,7 +144,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public HttpHandler(HttpTransport transport, TransportConnectionListener connectionListener) {
+    public HttpHandler(HttpTransport transport, String path, TransportConnectionListener connectionListener) {
         if (transport == null) {
             throw new NullPointerException("transport");
         }

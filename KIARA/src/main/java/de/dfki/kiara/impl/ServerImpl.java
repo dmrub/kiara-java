@@ -132,14 +132,14 @@ public class ServerImpl implements Server, TransportConnectionListener {
         this.connectionHandlers = new IdentityHashMap<>();
         this.eventListeners = new ArrayList<>();
         // listen for negotiation connection
-        addPortListener(configHost, configPort, "http");
+        addPortListener(configHost, configPort, this.configUri.getPath(), "http");
     }
 
     public URI getConfigUri() {
         return configUri;
     }
 
-    private void addPortListener(String host, int port, String transportName) throws IOException {
+    private void addPortListener(String host, int port, String path, String transportName) throws IOException {
         logger.debug("addPortListener: {} : {} {}", host, port, transportName);
 
         HostAndPort hostAndPort = new HostAndPort(host, port);
@@ -154,7 +154,7 @@ public class ServerImpl implements Server, TransportConnectionListener {
         final Transport transport = TransportRegistry.getTransportByName(transportName);
         transportEntries.put(hostAndPort, new TransportEntry(transport));
 
-        transportServer.listen(host, Integer.toString(port), transport, this);
+        transportServer.listen(host, Integer.toString(port), path, transport, this);
     }
 
     @Override
@@ -181,7 +181,7 @@ public class ServerImpl implements Server, TransportConnectionListener {
         }
 
         // FIXME this will fail when transport changes for a given host/port combination
-        addPortListener(uri.getHost(), uri.getPort(), uri.getScheme());
+        addPortListener(uri.getHost(), uri.getPort(), uri.getPath(), uri.getScheme());
 
         TransportAddress address;
         try {

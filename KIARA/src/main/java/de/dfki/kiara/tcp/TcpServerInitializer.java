@@ -37,10 +37,12 @@ public class TcpServerInitializer extends ChannelInitializer<SocketChannel> {
     private final TcpBlockTransport transport;
     private final SslContext sslCtx;
     private final TransportConnectionListener connectionListener;
+    private final String path;
 
-    public TcpServerInitializer(TcpBlockTransport transport, SslContext sslCtx, TransportConnectionListener connectionListener) {
+    public TcpServerInitializer(TcpBlockTransport transport, SslContext sslCtx, String path, TransportConnectionListener connectionListener) {
         this.transport = transport;
         this.sslCtx = sslCtx;
+        this.path = path;
         this.connectionListener = connectionListener;
     }
 
@@ -64,6 +66,6 @@ public class TcpServerInitializer extends ChannelInitializer<SocketChannel> {
             }
         });
         p.addLast(new ByteBufferEncoder());
-        p.addLast(new TcpHandler(transport, connectionListener));
+        p.addLast(new TcpHandler(transport, path, connectionListener));
     }
 }

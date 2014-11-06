@@ -33,11 +33,13 @@ public class WebsocketServerInitializer extends ChannelInitializer<SocketChannel
     private final SslContext sslCtx;
     private final TransportConnectionListener connectionListener;
     private final WebsocketTransport transport;
+    private final String path;
 
-    public WebsocketServerInitializer(WebsocketTransport transport, SslContext sslCtx, TransportConnectionListener connectionListener) {
+    public WebsocketServerInitializer(WebsocketTransport transport, SslContext sslCtx, String path, TransportConnectionListener connectionListener) {
         this.sslCtx = sslCtx;
         this.connectionListener = connectionListener;
         this.transport = transport;
+        this.path = path;
     }
 
     @Override
@@ -56,6 +58,6 @@ public class WebsocketServerInitializer extends ChannelInitializer<SocketChannel
         // Remove the following line if you don't want automatic content compression.
         //p.addLast(new HttpContentCompressor());
         p.addLast("aggregator", new HttpObjectAggregator(1048576));
-        p.addLast(new WebsocketHandler(transport, connectionListener));
+        p.addLast(new WebsocketHandler(transport, path, connectionListener));
     }
 }

@@ -59,6 +59,6 @@ public abstract class AbstractTransport implements Transport {
         }
     }
 
-    public abstract ChannelHandler createServerChildHandler(TransportConnectionListener connectionListener);
+    public abstract ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionListener);
 
 }

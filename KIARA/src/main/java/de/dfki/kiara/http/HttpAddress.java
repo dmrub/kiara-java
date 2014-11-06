@@ -50,7 +50,7 @@ public class HttpAddress implements TransportAddress {
         uri = uri.normalize();
 
         if (!"http".equals(uri.getScheme()) && !"https".equals(uri.getScheme())) {
-            throw new InvalidAddressException("only http and https scheme is allowed");
+            throw new InvalidAddressException("only http and https scheme is allowed: used scheme: "+uri.getScheme());
         }
         this.transport = transport;
         this.hostName = uri.getHost();

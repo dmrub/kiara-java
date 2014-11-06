@@ -50,7 +50,7 @@ public class WebsocketAddress implements TransportAddress {
         uri = uri.normalize();
 
         if (!"ws".equals(uri.getScheme()) && !"wss".equals(uri.getScheme())) {
-            throw new InvalidAddressException("only ws and wss scheme is allowed");
+            throw new InvalidAddressException("only ws and wss scheme is allowed: used scheme: "+uri.getScheme());
         }
         this.transport = transport;
         this.hostName = uri.getHost();

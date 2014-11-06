@@ -27,6 +27,7 @@ import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
+import de.dfki.kiara.util.Glob;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -65,6 +66,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -248,6 +250,19 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
                     return;
                 }
 
+                if (uri.getPath().equals(request.getUri()) || Pattern.matches(Glob.convertGlobToRegex(uri.getPath()), request.getUri())) {
+                    // Handshake
+                    WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(
+                            request.getUri()/*headers().get(HOST)*/, null, false);
+                    serverHandshaker = wsFactory.newHandshaker(request);
+                    if (serverHandshaker == null) {
+                        WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
+                    } else {
+                        serverHandshaker.handshake(ctx.channel(), request);
+                    }
+                    return;
+                }
+
                 // Send the demo page and favicon.ico
                 if ("/".equals(request.getUri())) {
                     ByteBuf content = Unpooled.copiedBuffer("WEBSOCKET ROOT", CharsetUtil.UTF_8);
@@ -265,15 +280,8 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
                     return;
                 }
 
-                // Handshake
-                WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(
-                        request.getUri()/*headers().get(HOST)*/, null, false);
-                serverHandshaker = wsFactory.newHandshaker(request);
-                if (serverHandshaker == null) {
-                    WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
-                } else {
-                    serverHandshaker.handshake(ctx.channel(), request);
-                }
+                FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
+                sendHttpResponse(ctx, request, res);
                 return;
 
                 //boolean keepAlive = HttpHeaders.isKeepAlive(request);

@@ -26,9 +26,7 @@ import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
-import de.dfki.kiara.netty.ByteBufferDecoder;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
-import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -37,7 +35,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
@@ -48,7 +45,6 @@ import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpMethod;
 import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
-import io.netty.handler.codec.http.HttpVersion;
 import static io.netty.handler.codec.http.HttpVersion.*;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
@@ -61,7 +57,6 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 import io.netty.util.CharsetUtil;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -70,7 +65,6 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +78,6 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
     private static final Logger logger = LoggerFactory.getLogger(WebsocketHandler.class);
 
     private HttpHeaders headers = null;
-    private final NoCopyByteArrayOutputStream bout;
 
     private final WebsocketTransport transport;
     private final URI uri;
@@ -140,7 +133,6 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         this.connectionListener = null;
         this.state = State.UNINITIALIZED;
         this.mode = Mode.CLIENT;
-        this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
     /**
@@ -154,14 +146,18 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
             throw new NullPointerException("connectionListener");
         }
         this.transport = transport;
-        this.uri = null;
+        URI tmp = null;
+        try {
+            tmp = path != null ? new URI(path) : null;
+        } catch (URISyntaxException ex) {
+        }
+        this.uri = tmp;
         this.clientHandshaker = null;
         this.serverHandshaker = null;
         this.method = null;
         this.connectionListener = connectionListener;
         this.state = State.UNINITIALIZED;
         this.mode = Mode.SERVER;
-        this.bout = null;
     }
 
     public ChannelPromise getHandshakeFuture() {
@@ -171,7 +167,7 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
     @Override
     public TransportAddress getLocalTransportAddress() {
         try {
-            if (uri != null) {
+            if (uri != null && uri.isAbsolute()) {
                 return new WebsocketAddress(transport, uri);
             } else {
                 InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());

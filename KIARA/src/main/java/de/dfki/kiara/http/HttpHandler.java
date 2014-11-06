@@ -88,7 +88,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     @Override
     public TransportAddress getLocalTransportAddress() {
         try {
-            if (uri != null)
+            if (uri != null && uri.isAbsolute())
                 return new HttpAddress(transport, uri);
             else {
                 InetSocketAddress sa = ((InetSocketAddress)getLocalAddress());
@@ -152,7 +152,12 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
             throw new NullPointerException("connectionListener");
         }
         this.transport = transport;
-        this.uri = null;
+        URI tmp = null;
+        try {
+            tmp = path != null ? new URI(path) : null;
+        } catch (URISyntaxException ex) {
+        }
+        this.uri = tmp;
         this.method = null;
         this.connectionListener = connectionListener;
         this.state = State.UNINITIALIZED;

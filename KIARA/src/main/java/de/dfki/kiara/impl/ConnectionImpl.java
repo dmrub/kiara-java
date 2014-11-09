@@ -50,6 +50,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -74,6 +76,7 @@ public class ConnectionImpl implements Connection {
     private final Module module;
     private final ServiceMethodExecutorImpl serviceMethodExecutor;
     private final InterfaceCodeGen codegen;
+    private final Map<Class<?>, Object> instanceCache;
 
     @SuppressWarnings("null")
     ConnectionImpl(String configUriStr) throws IOException {
@@ -197,6 +200,7 @@ public class ConnectionImpl implements Connection {
 
         messageConnection = new TransportMessageConnection(transportConnection, serviceMethodExecutor, protocol);
         codegen = protocol.createInterfaceCodeGen(this);
+        instanceCache = new HashMap<>();
     }
 
     private void loadIDL(InputStream stream, String fileName) throws IOException {
@@ -241,10 +245,26 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public <T> T getServiceInterface(MethodBinding<T> methodBinding) {
-        InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinding);
-        Class<T> interfaceClass = mapping.getInterfaceClass();
+        final InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinding);
+        final Class<T> interfaceClass = mapping.getInterfaceClass();
 
-        return codegen.generateInterfaceImpl(interfaceClass, mapping);
+        final T result = codegen.generateInterfaceImpl(interfaceClass, mapping);
+
+        synchronized (instanceCache) {
+            instanceCache.put(interfaceClass, result);
+        }
+
+        return result;
+    }
+
+    @Override
+    public <T> T getServiceInterface(Class<T> interfaceClass) {
+        synchronized (instanceCache) {
+            Object instance = instanceCache.get(interfaceClass);
+            if (instance == null)
+                return null;
+            return (T)instance;
+        }
     }
 
     public ServiceMethodExecutorImpl getServiceMethodExecutor() {

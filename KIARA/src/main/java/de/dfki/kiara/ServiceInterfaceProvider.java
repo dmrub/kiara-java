@@ -23,4 +23,5 @@ package de.dfki.kiara;
  */
 public interface ServiceInterfaceProvider {
     public <T> T getServiceInterface(MethodBinding<T> methodBinding);
+    public <T> T getServiceInterface(Class<T> interfaceClass);
 }

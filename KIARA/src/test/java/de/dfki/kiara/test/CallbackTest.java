@@ -51,11 +51,8 @@ public class CallbackTest {
         public String add(ServerConnection connection, int a, int b) throws Exception {
             System.out.println("add("+a+","+b+") via connection="+connection);
 
-            MethodBinding<CallbackClient> binder
-                    = new MethodBinding<>(CallbackClient.class)
-                    .bind("cb.addResult", "addResult");
+            CallbackClient cc = connection.getServiceInterface(CallbackClient.class);
 
-            CallbackClient cc = connection.getServiceInterface(binder);
             String c = cc.addResult(a, b, a + b);
 
             return "cb.add: "+c;
@@ -126,7 +123,8 @@ public class CallbackTest {
                     try {
                         MethodBinding<CallbackClient> binder
                                 = new MethodBinding<>(CallbackClient.class)
-                                .bind("cb.clientMsg", "clientMsg");
+                                .bind("cb.clientMsg", "clientMsg")
+                                .bind("cb.addResult", "addResult");
 
                         CallbackClient cc = connection.getServiceInterface(binder);
                         assertEquals("cb.clientMsg: MSG1", cc.clientMsg("MSG1"));

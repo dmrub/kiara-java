@@ -22,6 +22,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import de.dfki.kiara.*;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -34,6 +36,7 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     private final ServiceHandler serviceHandler;
     private final InterfaceCodeGen codegen;
     private final ServiceMethodExecutor serviceMethodExecutor;
+    private final Map<Class<?>, Object> instanceCache;
 
     public ServerConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddress transportAddress, ServiceHandler serviceHandler) {
         this.serverConnectionHandler = serverConnectionHandler;
@@ -41,6 +44,7 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
         this.serviceHandler = serviceHandler;
         this.codegen = serviceHandler.getProtocol().createInterfaceCodeGen(this);
         this.serviceMethodExecutor = serviceHandler.getServiceMethodExecutor();
+        this.instanceCache = new HashMap<>();
     }
 
     public ServerConnectionImpl(ServerConnectionHandler serverConnectionHandler, TransportAddressAndServiceHandler transportAddressAndServiceHandler) {
@@ -73,10 +77,27 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     @Override
     public <T> T getServiceInterface(MethodBinding<T> methodBinding) {
         // FIXME compare with ConnectionImpl.getServiceInterface()
-        InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinding);
-        Class<T> interfaceClass = mapping.getInterfaceClass();
+        final InterfaceMapping<T> mapping = new InterfaceMapping<>(methodBinding);
+        final Class<T> interfaceClass = mapping.getInterfaceClass();
 
-        return codegen.generateInterfaceImpl(interfaceClass, mapping);
+        final T result = codegen.generateInterfaceImpl(interfaceClass, mapping);
+
+        synchronized (instanceCache) {
+            instanceCache.put(interfaceClass, result);
+        }
+
+        return result;
+    }
+
+    @Override
+    public <T> T getServiceInterface(Class<T> interfaceClass) {
+        synchronized (instanceCache) {
+            Object instance = instanceCache.get(interfaceClass);
+            if (instance == null) {
+                return null;
+            }
+            return (T) instance;
+        }
     }
 
     @Override
@@ -93,4 +114,5 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     public ListenableFuture<Message> performRemoteAsyncCall(Message request, ListeningExecutorService executor) throws IOException {
         return serverConnectionHandler.performRemoteAsyncCall(request, executor);
     }
+
 }

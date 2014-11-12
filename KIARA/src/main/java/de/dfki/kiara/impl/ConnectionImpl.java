@@ -286,7 +286,7 @@ public class ConnectionImpl implements Connection {
 
         FunctionType funcTy = (FunctionType) object;
 
-        Annotation annotation = Annotation.getFirstAnnotationOfType(funcTy, module.getWorld().getCallbackAnnotation());
+        Annotation annotation = Annotation.getFirstAnnotationOfType(funcTy, module.getWorld().getServerPushAnnotation());
         if (annotation == null) {
             throw new IllegalArgumentException(idlFunctionName + " is not a callback function");
         }
@@ -307,7 +307,7 @@ public class ConnectionImpl implements Connection {
 
         FunctionType funcTy = (FunctionType) object;
 
-        Annotation annotation = Annotation.getFirstAnnotationOfType(funcTy, module.getWorld().getCallbackAnnotation());
+        Annotation annotation = Annotation.getFirstAnnotationOfType(funcTy, module.getWorld().getServerPushAnnotation());
         if (annotation == null) {
             throw new IllegalArgumentException(idlFunctionName + " is not a callback function");
         }

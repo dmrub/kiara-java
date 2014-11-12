@@ -91,7 +91,7 @@ public class Module extends KTDObject {
 
         this.namespace.bindType("Oneway", world.getOnewayAnnotation());
 
-        this.namespace.bindType("Callback", world.getCallbackAnnotation());
+        this.namespace.bindType("ServerPush", world.getServerPushAnnotation());
     }
 
     public final Namespace getNamespace() {

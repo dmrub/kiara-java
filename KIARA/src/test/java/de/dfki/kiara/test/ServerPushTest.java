@@ -41,25 +41,25 @@ import org.junit.runners.Parameterized;
  * Created by Dmitri Rubinstein on 02/10/14.
  */
 @RunWith(Parameterized.class)
-public class CallbackTest {
+public class ServerPushTest {
 
     static {
         System.setProperty("java.util.logging.config.file", "/home/rubinste/.kiara/logging.properties");
     }
 
-    public static class CallbackImpl {
+    public static class ServerPushImpl {
         public String add(ServerConnection connection, int a, int b) throws Exception {
             System.out.println("add("+a+","+b+") via connection="+connection);
 
-            CallbackClient cc = connection.getServiceInterface(CallbackClient.class);
+            ServerPushClient cc = connection.getServiceInterface(ServerPushClient.class);
 
             String c = cc.addResult(a, b, a + b);
 
-            return "cb.add: "+c;
+            return "sp.add: "+c;
         }
     }
 
-    public static class CallbackClientImpl {
+    public static class ServerPushClientImpl {
         public String addResult(int a, int b, int result) {
             System.out.println("addResult: "+a+" + "+b+" = "+result);
             Assert.assertEquals(a+b, result);
@@ -67,25 +67,25 @@ public class CallbackTest {
         }
 
         public String clientMsg(String msg) {
-            System.out.println("cb.clientMsg: " + msg);
-            return "cb.clientMsg: "+msg;
+            System.out.println("sp.clientMsg: " + msg);
+            return "sp.clientMsg: "+msg;
         }
     }
 
-    public static interface Callback {
+    public static interface ServerPush {
         public String add(int a, int b) throws Exception;
     }
 
-    public static interface CallbackClient {
+    public static interface ServerPushClient {
         public String addResult(int a, int b, int result);
         public String clientMsg(String msg) throws RemoteException;
     }
 
-    public static class CallbackSetup extends TestSetup<Callback> {
+    public static class ServerPushSetup extends TestSetup<ServerPush> {
 
-        public CallbackClientImpl callbackClientImpl = null;
+        public ServerPushClientImpl callbackClientImpl = null;
 
-        public CallbackSetup(int port, String transport, String protocol, String configPath) {
+        public ServerPushSetup(int port, String transport, String protocol, String configPath) {
             super(port, transport, protocol, configPath);
         }
 
@@ -93,17 +93,17 @@ public class CallbackTest {
         protected Server createServer(Context context, int port, String transport, String protocol, String configPath) throws Exception {
             Service service = context.newService();
             service.loadServiceIDLFromString("KIARA",
-                    "namespace * cb "
-                            + "service cb { "
+                    "namespace * sp "
+                            + "service sp { "
                             + "    void add(i32 a, i32 b) "
-                            + "    [Callback] string addResult(i32 a, i32 b, i32 result) "
-                            + "    [Callback] string clientMsg(string msg) "
+                            + "    [ServerPush] string addResult(i32 a, i32 b, i32 result) "
+                            + "    [ServerPush] string clientMsg(string msg) "
                             + "} "
             );
 
             System.out.printf("Register server functions ....%n");
-            CallbackImpl impl = new CallbackImpl();
-            service.registerServiceFunction("cb.add", impl, "add");
+            ServerPushImpl impl = new ServerPushImpl();
+            service.registerServiceFunction("sp.add", impl, "add");
             System.out.printf("Starting server...%n");
 
             Server server = context.newServer("0.0.0.0", port, "/service");
@@ -121,13 +121,13 @@ public class CallbackTest {
                 @Override
                 public void onConnectionOpened(ServerConnection connection) {
                     try {
-                        MethodBinding<CallbackClient> binder
-                                = new MethodBinding<>(CallbackClient.class)
-                                .bind("cb.clientMsg", "clientMsg")
-                                .bind("cb.addResult", "addResult");
+                        MethodBinding<ServerPushClient> binder
+                                = new MethodBinding<>(ServerPushClient.class)
+                                .bind("sp.clientMsg", "clientMsg")
+                                .bind("sp.addResult", "addResult");
 
-                        CallbackClient cc = connection.getServiceInterface(binder);
-                        assertEquals("cb.clientMsg: MSG1", cc.clientMsg("MSG1"));
+                        ServerPushClient cc = connection.getServiceInterface(binder);
+                        assertEquals("sp.clientMsg: MSG1", cc.clientMsg("MSG1"));
                     } catch (RemoteException ex) {
                         System.err.printf("MSG1 Exception: %s%n", ex);
                         ex.printStackTrace();
@@ -150,31 +150,31 @@ public class CallbackTest {
         }
 
         @Override
-        protected Callback createClient(Connection connection) throws Exception {
-            callbackClientImpl = new CallbackClientImpl();
+        protected ServerPush createClient(Connection connection) throws Exception {
+            callbackClientImpl = new ServerPushClientImpl();
 
-            connection.registerServiceFunction("cb.addResult", callbackClientImpl, "addResult");
-            connection.registerServiceFunction("cb.clientMsg", callbackClientImpl, "clientMsg");
+            connection.registerServiceFunction("sp.addResult", callbackClientImpl, "addResult");
+            connection.registerServiceFunction("sp.clientMsg", callbackClientImpl, "clientMsg");
 
-            MethodBinding<Callback> binder
-                    = new MethodBinding<>(Callback.class)
-                    .bind("cb.add", "add");
+            MethodBinding<ServerPush> binder
+                    = new MethodBinding<>(ServerPush.class)
+                    .bind("sp.add", "add");
 
             return connection.getServiceInterface(binder);
         }
     }
 
-    private final CallbackSetup cbSetup;
-    private Callback cb = null;
+    private final ServerPushSetup spSetup;
+    private ServerPush sp = null;
 
     @Before
     public void setUp() throws Exception {
-        cb = cbSetup.start(100);
+        sp = spSetup.start(100);
     }
 
     @After
     public void tearDown() throws Exception {
-        cbSetup.shutdown();
+        spSetup.shutdown();
     }
 
     @AfterClass
@@ -198,14 +198,14 @@ public class CallbackTest {
 
     final int PORT = 8080;
 
-    public CallbackTest(String transport, String protocol) {
-        cbSetup =  new CallbackSetup(PORT, transport, protocol, "/service");
+    public ServerPushTest(String transport, String protocol) {
+        spSetup =  new ServerPushSetup(PORT, transport, protocol, "/service");
     }
 
     @Test
-    public void testCallback() throws Exception {
-        assertEquals("cb.add: result is 15", cb.add(5, 10));
-        assertEquals("cb.add: result is 0", cb.add(-2, 2));
+    public void testServerPush() throws Exception {
+        assertEquals("sp.add: result is 15", sp.add(5, 10));
+        assertEquals("sp.add: result is 0", sp.add(-2, 2));
     }
 
 }

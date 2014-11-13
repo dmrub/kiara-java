@@ -150,7 +150,7 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         this.transport = transport;
         URI tmp = null;
         try {
-            tmp = path != null ? new URI(path) : null;
+            tmp = path != null ? new URI(path.isEmpty() ? "/" : path).normalize() : null;
         } catch (URISyntaxException ex) {
         }
         this.uri = tmp;

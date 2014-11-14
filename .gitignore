@@ -15,3 +15,5 @@
 /Benchmarks/RabbitMQJava/target/
 /KIARA/target
 /BACKUP
+/KIARA/build
+/KIARA/.gradle

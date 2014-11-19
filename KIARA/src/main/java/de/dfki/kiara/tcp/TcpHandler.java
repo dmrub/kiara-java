@@ -225,11 +225,15 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
     }
 
     private void notifyListeners(final TcpBlockMessage message) {
+        TransportMessageListener currentListeners[] = null;
         synchronized (listeners) {
             if (!listeners.isEmpty()) {
-                for (TransportMessageListener listener : listeners) {
-                    listener.onMessage(message);
-                }
+                currentListeners = listeners.toArray(new TransportMessageListener[listeners.size()]);
+            }
+        }
+        if (currentListeners != null) {
+            for (TransportMessageListener listener : currentListeners) {
+                listener.onMessage(message);
             }
         }
     }

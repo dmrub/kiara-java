@@ -56,7 +56,7 @@ public class TcpBlockTransport extends AbstractTransport {
 
     @Override
     public String getName() {
-        return secure ? "tcp" : "tcps";
+        return secure ? "tcps" : "tcp";
     }
 
     @Override
@@ -112,9 +112,9 @@ public class TcpBlockTransport extends AbstractTransport {
         final String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         int port = uri.getPort();
         if (port == -1) {
-            if ("http".equalsIgnoreCase(scheme)) {
+            if ("tcp".equalsIgnoreCase(scheme)) {
                 port = DEFAULT_TCP_PORT;
-            } else if ("https".equalsIgnoreCase(scheme)) {
+            } else if ("tcps".equalsIgnoreCase(scheme)) {
                 port = DEFAULT_TCPS_PORT;
             }
         }

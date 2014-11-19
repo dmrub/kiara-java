@@ -88,10 +88,10 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
     @Override
     public TransportAddress getLocalTransportAddress() {
         try {
-            if (uri != null && uri.isAbsolute())
+            if (uri != null && uri.isAbsolute()) {
                 return new HttpAddress(transport, uri);
-            else {
-                InetSocketAddress sa = ((InetSocketAddress)getLocalAddress());
+            } else {
+                InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
                 return new HttpAddress(transport, sa.getHostName(), sa.getPort(), "");
             }
         } catch (InvalidAddressException ex) {
@@ -213,13 +213,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
                     logger.debug("RECEIVED REQUEST WITH CONTENT {}", Util.bufferToString(transportMessage.getPayload()));
                 }
 
-                synchronized (listeners) {
-                    if (!listeners.isEmpty()) {
-                        for (TransportMessageListener listener : listeners) {
-                            listener.onMessage(transportMessage);
-                        }
-                    }
-                }
+                notifyListeners(transportMessage);
 
                 boolean keepAlive = HttpHeaders.isKeepAlive(request);
             }
@@ -284,11 +278,19 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
             logger.debug("RECEIVED RESPONSE WITH CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
 
+        notifyListeners(response);
+    }
+
+    private void notifyListeners(final TransportMessage message) {
+        TransportMessageListener currentListeners[] = null;
         synchronized (listeners) {
             if (!listeners.isEmpty()) {
-                for (TransportMessageListener listener : listeners) {
-                    listener.onMessage(response);
-                }
+                currentListeners = listeners.toArray(new TransportMessageListener[listeners.size()]);
+            }
+        }
+        if (currentListeners != null) {
+            for (TransportMessageListener listener : currentListeners) {
+                listener.onMessage(message);
             }
         }
     }
@@ -312,10 +314,11 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
 
     @Override
     public TransportMessage createTransportMessage(TransportMessage transportMessage) {
-        if (transportMessage instanceof HttpRequestMessage)
+        if (transportMessage instanceof HttpRequestMessage) {
             return createResponse(transportMessage);
-        else
+        } else {
             return createRequest();
+        }
     }
 
     @Override

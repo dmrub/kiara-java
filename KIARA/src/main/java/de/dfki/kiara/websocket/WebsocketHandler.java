@@ -317,13 +317,7 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
                     logger.debug("RECEIVED REQUEST WITH CONTENT {}", Util.bufferToString(transportMessage.getPayload()));
                 }
 
-                synchronized (listeners) {
-                    if (!listeners.isEmpty()) {
-                        for (TransportMessageListener listener : listeners) {
-                            listener.onMessage(transportMessage);
-                        }
-                    }
-                }
+                notifyListeners(transportMessage);
             }
         } else {
             // CLIENT
@@ -394,18 +388,27 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         return channel.remoteAddress();
     }
 
+    private void notifyListeners(final TransportMessage message) {
+        TransportMessageListener currentListeners[] = null;
+        synchronized (listeners) {
+            if (!listeners.isEmpty()) {
+                currentListeners = listeners.toArray(new TransportMessageListener[listeners.size()]);
+            }
+        }
+        if (currentListeners != null) {
+            for (TransportMessageListener listener : currentListeners) {
+                listener.onMessage(message);
+            }
+        }
+    }
+
+
     private void onResponse(TransportMessage response) {
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED RESPONSE WITH CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
 
-        synchronized (listeners) {
-            if (!listeners.isEmpty()) {
-                for (TransportMessageListener listener : listeners) {
-                    listener.onMessage(response);
-                }
-            }
-        }
+        notifyListeners(response);
     }
 
     @Override

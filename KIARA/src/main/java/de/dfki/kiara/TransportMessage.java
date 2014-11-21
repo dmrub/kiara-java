@@ -33,23 +33,23 @@ public abstract class TransportMessage {
         public static final String HTTP_METHOD = "http-method";
     }
 
-    private final TransportConnection connection;
+    private final Transport connection;
     private ByteBuffer payload;
 
-    protected TransportMessage(TransportConnection connection, ByteBuffer payload) {
+    protected TransportMessage(Transport connection, ByteBuffer payload) {
         if (connection == null)
             throw new NullPointerException("connection");
         this.connection = connection;
         this.payload = payload;
     }
 
-    protected TransportMessage(TransportConnection connection) {
+    protected TransportMessage(Transport connection) {
         this(connection, null);
     }
 
     public abstract TransportAddress getLocalTransportAddress();
 
-    public TransportConnection getConnection() {
+    public Transport getConnection() {
         return connection;
     }
 

@@ -18,7 +18,7 @@
 package de.dfki.kiara.impl;
 
 import de.dfki.kiara.Protocol;
-import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ public class TransportMessageConnection extends AbstractMessageConnection {
     private final Protocol protocol;
     private final ServiceMethodExecutorImpl serviceMethodExecutor;
 
-    public TransportMessageConnection(TransportConnection transportConnection, ServiceMethodExecutorImpl serviceMethodExecutor, Protocol protocol) {
+    public TransportMessageConnection(Transport transportConnection, ServiceMethodExecutorImpl serviceMethodExecutor, Protocol protocol) {
         super(transportConnection);
         this.protocol = protocol;
         this.serviceMethodExecutor = serviceMethodExecutor;

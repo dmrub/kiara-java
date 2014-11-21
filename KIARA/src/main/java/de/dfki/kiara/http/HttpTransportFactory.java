@@ -15,24 +15,20 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara.websocket;
+package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportConnectionListener;
-import de.dfki.kiara.netty.AbstractTransport;
+import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.netty.AbstractTransportFactory;
 import de.dfki.kiara.netty.ChannelFutureAndConnection;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
-import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
@@ -47,17 +43,17 @@ import javax.net.ssl.SSLException;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class WebsocketTransport extends AbstractTransport {
+public class HttpTransportFactory extends AbstractTransportFactory {
 
     private final boolean secure;
 
-    public WebsocketTransport(boolean secure) {
+    public HttpTransportFactory(boolean secure) {
         this.secure = secure;
     }
 
     @Override
     public String getName() {
-        return secure ? "wss" : "ws";
+        return secure ? "https" : "http";
     }
 
     @Override
@@ -72,20 +68,20 @@ public class WebsocketTransport extends AbstractTransport {
 
     @Override
     public boolean isAddressContainsRequestPath() {
-        return false;
+        return true;
     }
 
     @Override
     public TransportAddress createAddress(String uriStr) throws InvalidAddressException, UnknownHostException {
         try {
-            return new WebsocketAddress(this, new URI(uriStr));
+            return new HttpAddress(this, new URI(uriStr));
         } catch (URISyntaxException ex) {
             throw new InvalidAddressException(ex);
         }
     }
 
     @Override
-    public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws IOException, InvalidAddressException {
+    public ListenableFuture<Transport> openConnection(String uri, Map<String, Object> settings) throws IOException, InvalidAddressException {
         try {
             return openConnection(new URI(uri), settings);
         } catch (URISyntaxException ex) {
@@ -94,23 +90,23 @@ public class WebsocketTransport extends AbstractTransport {
     }
 
     public ChannelFutureAndConnection connect(URI uri, Map<String, Object> settings) throws IOException {
-        String scheme = uri.getScheme() == null ? "ws" : uri.getScheme();
+        String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
         String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         int port = uri.getPort();
         if (port == -1) {
-            if ("ws".equalsIgnoreCase(scheme)) {
+            if ("http".equalsIgnoreCase(scheme)) {
                 port = 80;
-            } else if ("wss".equalsIgnoreCase(scheme)) {
+            } else if ("https".equalsIgnoreCase(scheme)) {
                 port = 443;
             }
         }
 
-        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme)) {
-            throw new IOException("Only WS(S) is supported.");
+        if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+            throw new IOException("Only HTTP(S) is supported.");
         }
 
         // Configure SSL context if necessary.
-        final boolean ssl = "wss".equalsIgnoreCase(scheme);
+        final boolean ssl = "https".equalsIgnoreCase(scheme);
         final SslContext sslCtx;
         if (ssl) {
             sslCtx = SslContext.newClientContext(InsecureTrustManagerFactory.INSTANCE);
@@ -119,32 +115,23 @@ public class WebsocketTransport extends AbstractTransport {
         }
 
         // Configure the client.
-        final WebsocketHandler clientHandler = new WebsocketHandler(this, uri,
-                WebSocketClientHandshakerFactory.newHandshaker(
-                        uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()), HttpMethod.POST);
+        final HttpHandler httpClientHandler = new HttpHandler(this, uri, HttpMethod.POST);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
-                .handler(new WebsocketClientInitializer(sslCtx, clientHandler));
-
-        try {
-            b.connect(host, port).sync();
-            ChannelFuture f = clientHandler.getHandshakeFuture();//.sync();
-            return new ChannelFutureAndConnection(f, clientHandler);
-        } catch (InterruptedException ex) {
-            throw new IOException(ex);
-        }
+                .handler(new HttpClientInitializer(sslCtx, httpClientHandler));
+        return new ChannelFutureAndConnection(b.connect(host, port), httpClientHandler);
     }
 
-    public ListenableFuture<TransportConnection> openConnection(URI uri, Map<String, Object> settings) throws IOException {
+    public ListenableFuture<Transport> openConnection(URI uri, Map<String, Object> settings) throws IOException {
         final ChannelFutureAndConnection cfc = connect(uri, settings);
         return new ListenableConstantFutureAdapter<>(cfc.future, cfc.connection);
     }
 
     @Override
-    public ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionListener) {
+    public ChannelHandler createServerChildHandler(String path, TransportListener connectionListener) {
         try {
-            return new WebsocketServerInitializer(this, createServerSslContext(), path, connectionListener);
+            return new HttpServerInitializer(this, createServerSslContext(), path, connectionListener);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

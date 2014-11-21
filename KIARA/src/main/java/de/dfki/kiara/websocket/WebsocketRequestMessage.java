@@ -19,7 +19,7 @@ package de.dfki.kiara.websocket;
 
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -45,7 +45,7 @@ public class WebsocketRequestMessage extends TransportMessage {
      * @param connection
      * @param request
      */
-    public WebsocketRequestMessage(TransportConnection connection, FullHttpRequest request) {
+    public WebsocketRequestMessage(Transport connection, FullHttpRequest request) {
         super(connection);
         if (request == null) {
             throw new NullPointerException("request");
@@ -54,7 +54,7 @@ public class WebsocketRequestMessage extends TransportMessage {
         this.content = request;
     }
 
-    public WebsocketRequestMessage(TransportConnection connection, HttpRequest request, HttpContent content) {
+    public WebsocketRequestMessage(Transport connection, HttpRequest request, HttpContent content) {
         super(connection);
         if (request == null)
             throw new NullPointerException("request");
@@ -112,8 +112,8 @@ public class WebsocketRequestMessage extends TransportMessage {
     @Override
     public TransportAddress getLocalTransportAddress() {
         try {
-            final TransportConnection connection = getConnection();
-            final WebsocketTransport transport = (WebsocketTransport)connection.getTransport();
+            final Transport connection = getConnection();
+            final WebsocketTransportFactory transport = (WebsocketTransportFactory)connection.getTransportFactory();
             final InetSocketAddress sa = ((InetSocketAddress)connection.getLocalAddress());
             return new WebsocketAddress(transport, sa.getHostName(), sa.getPort(), request.getUri());
         } catch (UnknownHostException ex) {

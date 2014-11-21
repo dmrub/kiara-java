@@ -27,50 +27,50 @@ import java.util.Map;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public final class TransportRegistry {
+public final class TransportFactoryRegistry {
 
-    private TransportRegistry() {
+    private TransportFactoryRegistry() {
     }
 
-    private static final Map<String, Transport> transports = new HashMap<>();
+    private static final Map<String, TransportFactory> transports = new HashMap<>();
 
-    public static synchronized Transport getTransportByName(String transportName) {
+    public static synchronized TransportFactory getTransportFactoryByName(String transportName) {
         return transports.get(transportName);
     }
 
-    public static synchronized Transport getTransportByURI(String uri) throws URISyntaxException {
-        return getTransportByURI(new URI(uri));
+    public static synchronized TransportFactory getTransportFactoryByURI(String uri) throws URISyntaxException {
+        return getTransportFactoryByURI(new URI(uri));
     }
 
-    public static synchronized Transport getTransportByURI(URI uri) {
+    public static synchronized TransportFactory getTransportFactoryByURI(URI uri) {
         String scheme = uri.getScheme();
         if (scheme == null) {
             return null;
         }
-        return getTransportByName(scheme);
+        return getTransportFactoryByName(scheme);
     }
 
     public static TransportAddress createTransportAddressFromURI(String uri) throws URISyntaxException, InvalidAddressException, UnknownHostException {
-        Transport transport = getTransportByURI(uri);
+        TransportFactory transport = TransportFactoryRegistry.getTransportFactoryByURI(uri);
         return transport.createAddress(uri);
     }
 
     public static TransportAddress createTransportAddressFromURI(URI uri) throws URISyntaxException, InvalidAddressException, UnknownHostException {
-        Transport transport = getTransportByURI(uri);
+        TransportFactory transport = getTransportFactoryByURI(uri);
         return transport.createAddress(uri.toString());
     }
 
-    public static synchronized void registerTransport(String transportName, Transport transport) {
-        if (transport == null) {
-            throw new NullPointerException("transport");
+    public static synchronized void registerTransportFactory(String transportName, TransportFactory transportFactory) {
+        if (transportFactory == null) {
+            throw new NullPointerException("transportFactory");
         }
         if (transportName == null) {
             throw new NullPointerException("transportName");
         }
-        transports.put(transportName, transport);
+        transports.put(transportName, transportFactory);
     }
 
-    public static synchronized void registerTransport(Transport transport) {
+    public static synchronized void registerTransportFactory(TransportFactory transport) {
         if (transport == null) {
             throw new NullPointerException("transport");
         }

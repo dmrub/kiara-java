@@ -18,7 +18,7 @@
 package de.dfki.kiara.tcp;
 
 import de.dfki.kiara.InvalidAddressException;
-import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.TransportAddress;
 import java.net.InetAddress;
 import java.net.URI;
@@ -30,12 +30,12 @@ import java.net.UnknownHostException;
  */
 public class TcpBlockAddress implements TransportAddress {
 
-    private final TcpBlockTransport transport;
+    private final TcpBlockTransportFactory transport;
     private final String hostName;
     private final int port;
     private final InetAddress address;
 
-    public TcpBlockAddress(TcpBlockTransport transport, URI uri) throws InvalidAddressException, UnknownHostException {
+    public TcpBlockAddress(TcpBlockTransportFactory transport, URI uri) throws InvalidAddressException, UnknownHostException {
         if (transport == null) {
             throw new NullPointerException("transport");
         }
@@ -52,7 +52,7 @@ public class TcpBlockAddress implements TransportAddress {
         this.address = InetAddress.getByName(this.hostName);
     }
 
-    public TcpBlockAddress(TcpBlockTransport transport, String hostName, int port) throws UnknownHostException {
+    public TcpBlockAddress(TcpBlockTransportFactory transport, String hostName, int port) throws UnknownHostException {
         if (transport == null) {
             throw new NullPointerException("transport");
         }
@@ -67,7 +67,7 @@ public class TcpBlockAddress implements TransportAddress {
     }
 
     @Override
-    public Transport getTransport() {
+    public TransportFactory getTransportFactory() {
         return transport;
     }
 
@@ -125,7 +125,7 @@ public class TcpBlockAddress implements TransportAddress {
         TcpBlockAddress other = (TcpBlockAddress) obj;
 
         // FIXME is following always correct ?
-        if (other.getTransport() != getTransport()) {
+        if (other.getTransportFactory() != getTransportFactory()) {
             return false;
         }
 
@@ -135,6 +135,6 @@ public class TcpBlockAddress implements TransportAddress {
     @Override
     public String toString() {
         // FIXME what to do with different flavors of tcp (tcp, tcps) ?
-        return getTransport().getName() + "://" + hostName + ":" + port;
+        return getTransportFactory().getName() + "://" + hostName + ":" + port;
     }
 }

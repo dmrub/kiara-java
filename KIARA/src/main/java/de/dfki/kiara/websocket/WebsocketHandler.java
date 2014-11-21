@@ -17,12 +17,11 @@
  */
 package de.dfki.kiara.websocket;
 
+import de.dfki.kiara.netty.BaseHandler;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.InvalidAddressException;
-import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportConnectionListener;
+import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
@@ -35,7 +34,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
@@ -64,8 +62,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -75,48 +71,25 @@ import org.slf4j.LoggerFactory;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implements TransportConnection {
+public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFactory> {
 
     private static final Logger logger = LoggerFactory.getLogger(WebsocketHandler.class);
 
     private HttpHeaders headers = null;
 
-    private final WebsocketTransport transport;
     private final URI uri;
     private final WebSocketClientHandshaker clientHandshaker;
     private WebSocketServerHandshaker serverHandshaker;
     private ChannelPromise handshakeFuture;
     private final HttpMethod method;
 
-    private volatile Channel channel = null;
-
-    private final TransportConnectionListener connectionListener;
-
-    private final List<TransportMessageListener> listeners = new ArrayList<>();
-
-    static enum Mode {
-
-        CLIENT,
-        SERVER
-    }
-    private final Mode mode;
-
-    static enum State {
-
-        UNINITIALIZED,
-        WAIT_CONNECT,
-        CONNECTED,
-        WAIT_CLOSE,
-        CLOSED
-    }
-    private State state;
-
     /**
      * Initialize client
      */
-    public WebsocketHandler(WebsocketTransport transport, URI uri, WebSocketClientHandshaker handshaker, HttpMethod method) {
-        if (transport == null) {
-            throw new NullPointerException("transport");
+    public WebsocketHandler(WebsocketTransportFactory transportFactory, URI uri, WebSocketClientHandshaker handshaker, HttpMethod method) {
+        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null);
+        if (transportFactory == null) {
+            throw new NullPointerException("transportFactory");
         }
         if (uri == null) {
             throw new NullPointerException("uri");
@@ -127,27 +100,23 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         if (method == null) {
             throw new NullPointerException("method");
         }
-        this.transport = transport;
         this.uri = uri;
         this.clientHandshaker = handshaker;
         this.serverHandshaker = null;
         this.method = method;
-        this.connectionListener = null;
-        this.state = State.UNINITIALIZED;
-        this.mode = Mode.CLIENT;
     }
 
     /**
      * Initialize server
      */
-    public WebsocketHandler(WebsocketTransport transport, String path, TransportConnectionListener connectionListener) {
-        if (transport == null) {
-            throw new NullPointerException("transport");
+    public WebsocketHandler(WebsocketTransportFactory transportFactory, String path, TransportListener connectionListener) {
+        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
+        if (transportFactory == null) {
+            throw new NullPointerException("transportFactory");
         }
         if (connectionListener == null) {
             throw new NullPointerException("connectionListener");
         }
-        this.transport = transport;
         URI tmp = null;
         try {
             tmp = path != null ? new URI(path.isEmpty() ? "/" : path).normalize() : null;
@@ -157,9 +126,6 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         this.clientHandshaker = null;
         this.serverHandshaker = null;
         this.method = null;
-        this.connectionListener = connectionListener;
-        this.state = State.UNINITIALIZED;
-        this.mode = Mode.SERVER;
     }
 
     public ChannelPromise getHandshakeFuture() {
@@ -170,10 +136,10 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
     public TransportAddress getLocalTransportAddress() {
         try {
             if (uri != null && uri.isAbsolute()) {
-                return new WebsocketAddress(transport, uri);
+                return new WebsocketAddress(transportFactory, uri);
             } else {
                 InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
-                return new WebsocketAddress(transport, sa.getHostName(), sa.getPort(), "");
+                return new WebsocketAddress(transportFactory, sa.getHostName(), sa.getPort(), "");
             }
         } catch (InvalidAddressException ex) {
             throw new IllegalStateException(ex);
@@ -182,11 +148,6 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         } catch (URISyntaxException ex) {
             throw new IllegalStateException(ex);
         }
-    }
-
-    @Override
-    public Transport getTransport() {
-        return transport;
     }
 
     @Override
@@ -411,8 +372,7 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         notifyListeners(response);
     }
 
-    @Override
-    public TransportMessage createRequest() {
+    private TransportMessage createRequest() {
         WebsocketMessage msg = new WebsocketMessage(this, null);
         if (uri != null) {
             msg.set("websocket-uri", uri);
@@ -429,8 +389,7 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         }
     }
 
-    @Override
-    public TransportMessage createResponse(TransportMessage transportMessage) {
+    private TransportMessage createResponse(TransportMessage transportMessage) {
         return new WebsocketMessage(this, null);
     }
 
@@ -502,15 +461,6 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<Object> implem
         return new ListenableConstantFutureAdapter<>(result, null);
     }
 
-    @Override
-    public void addMessageListener(TransportMessageListener listener) {
-        if (listener == null) {
-            throw new NullPointerException("listener");
-        }
-        synchronized (listeners) {
-            listeners.add(listener);
-        }
-    }
 
     @Override
     public boolean removeMessageListener(TransportMessageListener listener) {

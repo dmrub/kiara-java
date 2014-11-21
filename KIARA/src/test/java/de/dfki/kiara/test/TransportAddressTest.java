@@ -18,7 +18,7 @@ package de.dfki.kiara.test;
 
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportRegistry;
+import de.dfki.kiara.TransportFactoryRegistry;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -58,12 +58,12 @@ public class TransportAddressTest {
         String addrUri1 = "http://localhost:8080/foo/bar";
         String addrUri2 = "http://localhost:8080/moo/tar";
 
-        TransportAddress patternAddr = TransportRegistry.createTransportAddressFromURI(patternUri);
-        TransportAddress addr = TransportRegistry.createTransportAddressFromURI(addrUri1);
+        TransportAddress patternAddr = TransportFactoryRegistry.createTransportAddressFromURI(patternUri);
+        TransportAddress addr = TransportFactoryRegistry.createTransportAddressFromURI(addrUri1);
 
         assertTrue(patternAddr.acceptsConnection(addr));
 
-        addr = TransportRegistry.createTransportAddressFromURI(addrUri2);
+        addr = TransportFactoryRegistry.createTransportAddressFromURI(addrUri2);
 
         assertFalse(patternAddr.acceptsConnection(addr));
     }

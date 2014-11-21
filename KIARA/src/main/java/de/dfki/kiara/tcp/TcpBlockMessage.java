@@ -18,7 +18,7 @@
 package de.dfki.kiara.tcp;
 
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +41,7 @@ public class TcpBlockMessage extends TransportMessage {
      * @param connection
      * @param payload
      */
-    public TcpBlockMessage(TransportConnection connection, ByteBuffer payload) {
+    public TcpBlockMessage(Transport connection, ByteBuffer payload) {
         super(connection, payload);
     }
 
@@ -59,8 +59,8 @@ public class TcpBlockMessage extends TransportMessage {
     @Override
     public TransportAddress getLocalTransportAddress() {
         try {
-            final TransportConnection connection = getConnection();
-            final TcpBlockTransport transport = (TcpBlockTransport) connection.getTransport();
+            final Transport connection = getConnection();
+            final TcpBlockTransportFactory transport = (TcpBlockTransportFactory) connection.getTransportFactory();
             final InetSocketAddress sa = ((InetSocketAddress) connection.getLocalAddress());
             return new TcpBlockAddress(transport, sa.getHostName(), sa.getPort());
         } catch (UnknownHostException ex) {

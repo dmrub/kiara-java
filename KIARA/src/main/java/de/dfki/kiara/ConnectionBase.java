@@ -27,6 +27,6 @@ import java.io.IOException;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public interface ConnectionBase extends Closeable {
-    public TransportConnection getTransportConnection();
+    public Transport getTransport();
     public ListenableFuture<Message> performRemoteAsyncCall(final Message request, ListeningExecutorService executor) throws IOException;
 }

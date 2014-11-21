@@ -30,13 +30,13 @@ import java.util.concurrent.LinkedBlockingDeque;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class TransportConnectionReceiver implements TransportMessageListener, TransportConnection {
+public class TransportConnectionReceiver implements TransportMessageListener, Transport {
 
-    private final TransportConnection connection;
+    private final Transport connection;
     private final BlockingQueue<Object> queue = new LinkedBlockingDeque<>();
     private static final ListeningExecutorService sameThreadExecutor = MoreExecutors.sameThreadExecutor();
 
-    public TransportConnectionReceiver(TransportConnection connection) {
+    public TransportConnectionReceiver(Transport connection) {
         if (connection == null) {
             throw new NullPointerException("connection");
         }
@@ -48,7 +48,7 @@ public class TransportConnectionReceiver implements TransportMessageListener, Tr
         this.connection.removeMessageListener(this);
     }
 
-    public TransportConnection getConnection() {
+    public Transport getConnection() {
         return connection;
     }
 
@@ -60,11 +60,6 @@ public class TransportConnectionReceiver implements TransportMessageListener, Tr
     @Override
     public SocketAddress getRemoteAddress() {
         return connection.getRemoteAddress();
-    }
-
-    @Override
-    public TransportMessage createRequest() {
-        return connection.createRequest();
     }
 
     @Override
@@ -108,18 +103,13 @@ public class TransportConnectionReceiver implements TransportMessageListener, Tr
     }
 
     @Override
-    public TransportMessage createResponse(TransportMessage request) {
-        return connection.createResponse(request);
-    }
-
-    @Override
     public TransportAddress getLocalTransportAddress() {
         return connection.getLocalTransportAddress();
     }
 
     @Override
-    public Transport getTransport() {
-        return connection.getTransport();
+    public TransportFactory getTransportFactory() {
+        return connection.getTransportFactory();
     }
 
     @Override

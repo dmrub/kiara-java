@@ -18,7 +18,7 @@
 
 package de.dfki.kiara.websocket;
 
-import de.dfki.kiara.TransportConnectionListener;
+import de.dfki.kiara.TransportListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -31,11 +31,11 @@ import io.netty.handler.ssl.SslContext;
 public class WebsocketServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
-    private final TransportConnectionListener connectionListener;
-    private final WebsocketTransport transport;
+    private final TransportListener connectionListener;
+    private final WebsocketTransportFactory transport;
     private final String path;
 
-    public WebsocketServerInitializer(WebsocketTransport transport, SslContext sslCtx, String path, TransportConnectionListener connectionListener) {
+    public WebsocketServerInitializer(WebsocketTransportFactory transport, SslContext sslCtx, String path, TransportListener connectionListener) {
         this.sslCtx = sslCtx;
         this.connectionListener = connectionListener;
         this.transport = transport;

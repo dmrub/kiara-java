@@ -15,20 +15,19 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara.http;
+package de.dfki.kiara.tcp;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportConnectionListener;
-import de.dfki.kiara.netty.AbstractTransport;
+import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.netty.AbstractTransportFactory;
 import de.dfki.kiara.netty.ChannelFutureAndConnection;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
@@ -43,22 +42,25 @@ import javax.net.ssl.SSLException;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class HttpTransport extends AbstractTransport {
+public class TcpBlockTransportFactory extends AbstractTransportFactory {
+
+    public static final int DEFAULT_TCP_PORT = 1111;
+    public static final int DEFAULT_TCPS_PORT = 1112;
 
     private final boolean secure;
 
-    public HttpTransport(boolean secure) {
+    public TcpBlockTransportFactory(boolean secure) {
         this.secure = secure;
     }
 
     @Override
     public String getName() {
-        return secure ? "https" : "http";
+        return secure ? "tcps" : "tcp";
     }
 
     @Override
     public int getPriority() {
-        return secure ? 19 : 20;
+        return secure ? 9 : 10;
     }
 
     @Override
@@ -72,16 +74,22 @@ public class HttpTransport extends AbstractTransport {
     }
 
     @Override
-    public TransportAddress createAddress(String uriStr) throws InvalidAddressException, UnknownHostException {
+    public TransportAddress createAddress(String uri) throws InvalidAddressException, UnknownHostException {
+        if (uri == null) {
+            throw new NullPointerException("uri");
+        }
         try {
-            return new HttpAddress(this, new URI(uriStr));
+            return new TcpBlockAddress(this, new URI(uri));
         } catch (URISyntaxException ex) {
             throw new InvalidAddressException(ex);
         }
     }
 
     @Override
-    public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws IOException, InvalidAddressException {
+    public ListenableFuture<Transport> openConnection(String uri, Map<String, Object> settings) throws InvalidAddressException, IOException {
+        if (uri == null) {
+            throw new NullPointerException("uri");
+        }
         try {
             return openConnection(new URI(uri), settings);
         } catch (URISyntaxException ex) {
@@ -90,23 +98,28 @@ public class HttpTransport extends AbstractTransport {
     }
 
     public ChannelFutureAndConnection connect(URI uri, Map<String, Object> settings) throws IOException {
-        String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
-        String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
+        if (uri == null) {
+            throw new NullPointerException("uri");
+        }
+
+        final String scheme = uri.getScheme();
+
+        if (!"tcp".equalsIgnoreCase(scheme) && !"tcps".equalsIgnoreCase(scheme)) {
+            throw new IllegalArgumentException("URI has neither tcp nor tcps scheme");
+        }
+
+        final String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         int port = uri.getPort();
         if (port == -1) {
-            if ("http".equalsIgnoreCase(scheme)) {
-                port = 80;
-            } else if ("https".equalsIgnoreCase(scheme)) {
-                port = 443;
+            if ("tcp".equalsIgnoreCase(scheme)) {
+                port = DEFAULT_TCP_PORT;
+            } else if ("tcps".equalsIgnoreCase(scheme)) {
+                port = DEFAULT_TCPS_PORT;
             }
         }
 
-        if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
-            throw new IOException("Only HTTP(S) is supported.");
-        }
-
         // Configure SSL context if necessary.
-        final boolean ssl = "https".equalsIgnoreCase(scheme);
+        final boolean ssl = "tcps".equalsIgnoreCase(scheme);
         final SslContext sslCtx;
         if (ssl) {
             sslCtx = SslContext.newClientContext(InsecureTrustManagerFactory.INSTANCE);
@@ -115,23 +128,23 @@ public class HttpTransport extends AbstractTransport {
         }
 
         // Configure the client.
-        final HttpHandler httpClientHandler = new HttpHandler(this, uri, HttpMethod.POST);
+        final TcpHandler tcpClientHandler = new TcpHandler(this, uri);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
-                .handler(new HttpClientInitializer(sslCtx, httpClientHandler));
-        return new ChannelFutureAndConnection(b.connect(host, port), httpClientHandler);
+                .handler(new TcpClientInitializer(sslCtx, tcpClientHandler));
+        return new ChannelFutureAndConnection(b.connect(host, port), tcpClientHandler);
     }
 
-    public ListenableFuture<TransportConnection> openConnection(URI uri, Map<String, Object> settings) throws IOException {
+    public ListenableFuture<Transport> openConnection(URI uri, Map<String, Object> settings) throws IOException {
         final ChannelFutureAndConnection cfc = connect(uri, settings);
         return new ListenableConstantFutureAdapter<>(cfc.future, cfc.connection);
     }
 
     @Override
-    public ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionListener) {
+    public ChannelHandler createServerChildHandler(String path, TransportListener connectionHandler) {
         try {
-            return new HttpServerInitializer(this, createServerSslContext(), path, connectionListener);
+            return new TcpServerInitializer(this, createServerSslContext(), path, connectionHandler);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

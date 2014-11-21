@@ -19,10 +19,10 @@ package de.dfki.kiara.impl;
 
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.RunningService;
-import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportConnectionListener;
+import de.dfki.kiara.TransportFactory;
+import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportServer;
-import de.dfki.kiara.netty.AbstractTransport;
+import de.dfki.kiara.netty.AbstractTransportFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -51,15 +51,15 @@ public class TransportServerImpl implements TransportServer, RunningService {
         public final String address;
         public final String port;
         public final String path;
-        public final AbstractTransport transport;
-        public final TransportConnectionListener listener;
+        public final AbstractTransportFactory transportFactory;
+        public final TransportListener listener;
         public Channel channel;
 
-        public ServerEntry(String address, String port, String path, AbstractTransport transport, TransportConnectionListener listener) {
+        public ServerEntry(String address, String port, String path, AbstractTransportFactory transportFactory, TransportListener listener) {
             this.address = address;
             this.port = port;
             this.path = path;
-            this.transport = transport;
+            this.transportFactory = transportFactory;
             this.listener = listener;
             this.channel = null;
         }
@@ -79,11 +79,11 @@ public class TransportServerImpl implements TransportServer, RunningService {
     }
 
     @Override
-    public void listen(String address, String port, String path, Transport transport, TransportConnectionListener listener) {
-        if (!(transport instanceof AbstractTransport))
-            throw new IllegalArgumentException("transport is not an instance of " + AbstractTransport.class.getName() + " class");
+    public void listen(String address, String port, String path, TransportFactory transport, TransportListener listener) {
+        if (!(transport instanceof AbstractTransportFactory))
+            throw new IllegalArgumentException("transport is not an instance of " + AbstractTransportFactory.class.getName() + " class");
         synchronized (serverEntries) {
-            serverEntries.add(new ServerEntry(address, port, path, (AbstractTransport) transport, listener));
+            serverEntries.add(new ServerEntry(address, port, path, (AbstractTransportFactory) transport, listener));
         }
     }
 
@@ -99,7 +99,7 @@ public class TransportServerImpl implements TransportServer, RunningService {
                     b.group(bossGroup, workerGroup)
                             .channel(NioServerSocketChannel.class)
                             .handler(new LoggingHandler(LogLevel.INFO))
-                            .childHandler(serverEntry.transport.createServerChildHandler(serverEntry.path, serverEntry.listener));
+                            .childHandler(serverEntry.transportFactory.createServerChildHandler(serverEntry.path, serverEntry.listener));
 
                     serverEntry.channel = b.bind(serverEntry.address, port).sync().channel();
                     ++numServers;

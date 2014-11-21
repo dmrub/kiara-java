@@ -17,14 +17,14 @@
  */
 package de.dfki.kiara;
 
-import de.dfki.kiara.http.HttpTransport;
+import de.dfki.kiara.http.HttpTransportFactory;
 import de.dfki.kiara.impl.ContextImpl;
 import de.dfki.kiara.impl.ServiceImpl;
 import de.dfki.kiara.impl.TransportServerImpl;
 import de.dfki.kiara.jos.JosProtocol;
 import de.dfki.kiara.jsonrpc.JsonRpcProtocol;
-import de.dfki.kiara.tcp.TcpBlockTransport;
-import de.dfki.kiara.websocket.WebsocketTransport;
+import de.dfki.kiara.tcp.TcpBlockTransportFactory;
+import de.dfki.kiara.websocket.WebsocketTransportFactory;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,14 +47,14 @@ public class Kiara {
         ProtocolRegistry.registerProtocol("javaobjectstream", JosProtocol.class);
 
         // initialize transports
-        TransportRegistry.registerTransport(new TcpBlockTransport(/*secure = */false));
-        TransportRegistry.registerTransport(new TcpBlockTransport(/*secure = */true));
+        TransportFactoryRegistry.registerTransportFactory(new TcpBlockTransportFactory(/*secure = */false));
+        TransportFactoryRegistry.registerTransportFactory(new TcpBlockTransportFactory(/*secure = */true));
 
-        TransportRegistry.registerTransport(new HttpTransport(/*secure = */false));
-        TransportRegistry.registerTransport(new HttpTransport(/*secure = */true));
+        TransportFactoryRegistry.registerTransportFactory(new HttpTransportFactory(/*secure = */false));
+        TransportFactoryRegistry.registerTransportFactory(new HttpTransportFactory(/*secure = */true));
 
-        TransportRegistry.registerTransport(new WebsocketTransport(/*secure = */false));
-        TransportRegistry.registerTransport(new WebsocketTransport(/*secure = */true));
+        TransportFactoryRegistry.registerTransportFactory(new WebsocketTransportFactory(/*secure = */false));
+        TransportFactoryRegistry.registerTransportFactory(new WebsocketTransportFactory(/*secure = */true));
     }
 
     public static void init() {

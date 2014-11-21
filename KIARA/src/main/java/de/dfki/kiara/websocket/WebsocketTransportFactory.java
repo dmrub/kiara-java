@@ -15,20 +15,24 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-package de.dfki.kiara.tcp;
+package de.dfki.kiara.websocket;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportConnectionListener;
-import de.dfki.kiara.netty.AbstractTransport;
+import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.netty.AbstractTransportFactory;
 import de.dfki.kiara.netty.ChannelFutureAndConnection;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
+import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
@@ -43,25 +47,22 @@ import javax.net.ssl.SSLException;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class TcpBlockTransport extends AbstractTransport {
-
-    public static final int DEFAULT_TCP_PORT = 1111;
-    public static final int DEFAULT_TCPS_PORT = 1112;
+public class WebsocketTransportFactory extends AbstractTransportFactory {
 
     private final boolean secure;
 
-    public TcpBlockTransport(boolean secure) {
+    public WebsocketTransportFactory(boolean secure) {
         this.secure = secure;
     }
 
     @Override
     public String getName() {
-        return secure ? "tcps" : "tcp";
+        return secure ? "wss" : "ws";
     }
 
     @Override
     public int getPriority() {
-        return secure ? 9 : 10;
+        return secure ? 19 : 20;
     }
 
     @Override
@@ -71,26 +72,20 @@ public class TcpBlockTransport extends AbstractTransport {
 
     @Override
     public boolean isAddressContainsRequestPath() {
-        return true;
+        return false;
     }
 
     @Override
-    public TransportAddress createAddress(String uri) throws InvalidAddressException, UnknownHostException {
-        if (uri == null) {
-            throw new NullPointerException("uri");
-        }
+    public TransportAddress createAddress(String uriStr) throws InvalidAddressException, UnknownHostException {
         try {
-            return new TcpBlockAddress(this, new URI(uri));
+            return new WebsocketAddress(this, new URI(uriStr));
         } catch (URISyntaxException ex) {
             throw new InvalidAddressException(ex);
         }
     }
 
     @Override
-    public ListenableFuture<TransportConnection> openConnection(String uri, Map<String, Object> settings) throws InvalidAddressException, IOException {
-        if (uri == null) {
-            throw new NullPointerException("uri");
-        }
+    public ListenableFuture<Transport> openConnection(String uri, Map<String, Object> settings) throws IOException, InvalidAddressException {
         try {
             return openConnection(new URI(uri), settings);
         } catch (URISyntaxException ex) {
@@ -99,28 +94,23 @@ public class TcpBlockTransport extends AbstractTransport {
     }
 
     public ChannelFutureAndConnection connect(URI uri, Map<String, Object> settings) throws IOException {
-        if (uri == null) {
-            throw new NullPointerException("uri");
-        }
-
-        final String scheme = uri.getScheme();
-
-        if (!"tcp".equalsIgnoreCase(scheme) && !"tcps".equalsIgnoreCase(scheme)) {
-            throw new IllegalArgumentException("URI has neither tcp nor tcps scheme");
-        }
-
-        final String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
+        String scheme = uri.getScheme() == null ? "ws" : uri.getScheme();
+        String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         int port = uri.getPort();
         if (port == -1) {
-            if ("tcp".equalsIgnoreCase(scheme)) {
-                port = DEFAULT_TCP_PORT;
-            } else if ("tcps".equalsIgnoreCase(scheme)) {
-                port = DEFAULT_TCPS_PORT;
+            if ("ws".equalsIgnoreCase(scheme)) {
+                port = 80;
+            } else if ("wss".equalsIgnoreCase(scheme)) {
+                port = 443;
             }
         }
 
+        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme)) {
+            throw new IOException("Only WS(S) is supported.");
+        }
+
         // Configure SSL context if necessary.
-        final boolean ssl = "tcps".equalsIgnoreCase(scheme);
+        final boolean ssl = "wss".equalsIgnoreCase(scheme);
         final SslContext sslCtx;
         if (ssl) {
             sslCtx = SslContext.newClientContext(InsecureTrustManagerFactory.INSTANCE);
@@ -129,23 +119,32 @@ public class TcpBlockTransport extends AbstractTransport {
         }
 
         // Configure the client.
-        final TcpHandler tcpClientHandler = new TcpHandler(this, uri, HttpMethod.POST);
+        final WebsocketHandler clientHandler = new WebsocketHandler(this, uri,
+                WebSocketClientHandshakerFactory.newHandshaker(
+                        uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()), HttpMethod.POST);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
-                .handler(new TcpClientInitializer(sslCtx, tcpClientHandler));
-        return new ChannelFutureAndConnection(b.connect(host, port), tcpClientHandler);
+                .handler(new WebsocketClientInitializer(sslCtx, clientHandler));
+
+        try {
+            b.connect(host, port).sync();
+            ChannelFuture f = clientHandler.getHandshakeFuture();//.sync();
+            return new ChannelFutureAndConnection(f, clientHandler);
+        } catch (InterruptedException ex) {
+            throw new IOException(ex);
+        }
     }
 
-    public ListenableFuture<TransportConnection> openConnection(URI uri, Map<String, Object> settings) throws IOException {
+    public ListenableFuture<Transport> openConnection(URI uri, Map<String, Object> settings) throws IOException {
         final ChannelFutureAndConnection cfc = connect(uri, settings);
         return new ListenableConstantFutureAdapter<>(cfc.future, cfc.connection);
     }
 
     @Override
-    public ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionHandler) {
+    public ChannelHandler createServerChildHandler(String path, TransportListener connectionListener) {
         try {
-            return new TcpServerInitializer(this, createServerSslContext(), path, connectionHandler);
+            return new WebsocketServerInitializer(this, createServerSslContext(), path, connectionListener);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

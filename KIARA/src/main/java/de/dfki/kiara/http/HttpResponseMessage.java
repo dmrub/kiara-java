@@ -18,7 +18,7 @@
 package de.dfki.kiara.http;
 
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -38,7 +38,7 @@ public class HttpResponseMessage extends TransportMessage {
     private final HttpResponse response;
     private final HttpContent content;
 
-    HttpResponseMessage(TransportConnection connection, HttpHeaders headers) {
+    HttpResponseMessage(Transport connection, HttpHeaders headers) {
         super(connection);
         if (headers == null) {
             throw new NullPointerException("headers");
@@ -49,7 +49,7 @@ public class HttpResponseMessage extends TransportMessage {
         this.content = null;
     }
 
-    HttpResponseMessage(TransportConnection connection, HttpResponse response, HttpContent content) {
+    HttpResponseMessage(Transport connection, HttpResponse response, HttpContent content) {
         super(connection);
         if (response == null) {
             throw new NullPointerException("response");
@@ -63,7 +63,7 @@ public class HttpResponseMessage extends TransportMessage {
         this.content = content;
     }
 
-    HttpResponseMessage(TransportConnection connection, FullHttpResponse response) {
+    HttpResponseMessage(Transport connection, FullHttpResponse response) {
         super(connection);
         if (response == null) {
             throw new NullPointerException("response");

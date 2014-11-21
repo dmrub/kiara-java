@@ -18,7 +18,7 @@
 package de.dfki.kiara.websocket;
 
 import de.dfki.kiara.InvalidAddressException;
-import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.util.Glob;
 import java.net.InetAddress;
@@ -33,13 +33,13 @@ import java.util.regex.Pattern;
  */
 public class WebsocketAddress implements TransportAddress {
 
-    private final WebsocketTransport transport;
+    private final WebsocketTransportFactory transport;
     private final String hostName;
     private final int port;
     private final String path;
     private final InetAddress address;
 
-    public WebsocketAddress(WebsocketTransport transport, URI uri) throws InvalidAddressException, UnknownHostException {
+    public WebsocketAddress(WebsocketTransportFactory transport, URI uri) throws InvalidAddressException, UnknownHostException {
         if (transport == null) {
             throw new NullPointerException("transport");
         }
@@ -59,12 +59,12 @@ public class WebsocketAddress implements TransportAddress {
         this.address = InetAddress.getByName(this.hostName);
     }
 
-    public WebsocketAddress(WebsocketTransport transport, String hostName, int port, String path) throws InvalidAddressException, UnknownHostException, URISyntaxException  {
+    public WebsocketAddress(WebsocketTransportFactory transport, String hostName, int port, String path) throws InvalidAddressException, UnknownHostException, URISyntaxException  {
         this(transport, new URI(transport.getName(), null, hostName, port, path, null, null));
     }
 
     @Override
-    public Transport getTransport() {
+    public TransportFactory getTransportFactory() {
         return transport;
     }
 
@@ -142,7 +142,7 @@ public class WebsocketAddress implements TransportAddress {
         WebsocketAddress other = (WebsocketAddress) obj;
 
         // FIXME is following always correct ?
-        if (other.getTransport() != getTransport()) {
+        if (other.getTransportFactory() != getTransportFactory()) {
             return false;
         }
 
@@ -151,7 +151,7 @@ public class WebsocketAddress implements TransportAddress {
 
     @Override
     public String toString() {
-        return getTransport().getName() + "://" + hostName + ":" + port + path;
+        return getTransportFactory().getName() + "://" + hostName + ":" + port + path;
     }
 
 }

@@ -18,7 +18,7 @@
 package de.dfki.kiara.websocket;
 
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.tcp.TcpBlockMessage;
 import java.net.InetSocketAddress;
@@ -41,7 +41,7 @@ public class WebsocketMessage extends TransportMessage {
      * @param connection
      * @param payload
      */
-    public WebsocketMessage(TransportConnection connection, ByteBuffer payload) {
+    public WebsocketMessage(Transport connection, ByteBuffer payload) {
         super(connection, payload);
     }
 
@@ -59,8 +59,8 @@ public class WebsocketMessage extends TransportMessage {
     @Override
     public TransportAddress getLocalTransportAddress() {
         try {
-            final TransportConnection connection = getConnection();
-            final WebsocketTransport transport = (WebsocketTransport) connection.getTransport();
+            final Transport connection = getConnection();
+            final WebsocketTransportFactory transport = (WebsocketTransportFactory) connection.getTransportFactory();
             final InetSocketAddress sa = ((InetSocketAddress) connection.getLocalAddress());
             return new WebsocketAddress(transport, sa.getHostName(), sa.getPort(), "");
         } catch (Exception ex) {

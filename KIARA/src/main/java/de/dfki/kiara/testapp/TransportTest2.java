@@ -20,11 +20,11 @@ package de.dfki.kiara.testapp;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import de.dfki.kiara.Kiara;
+import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportConnection;
 import de.dfki.kiara.TransportConnectionReceiver;
 import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.TransportRegistry;
+import de.dfki.kiara.TransportFactoryRegistry;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -60,13 +60,13 @@ public class TransportTest2 {
         System.out.println(System.getProperty("java.util.logging.config.file"));
 
         Kiara.init();
-        Transport http = TransportRegistry.getTransportByName("http");
+        TransportFactory http = TransportFactoryRegistry.getTransportFactoryByName("http");
         // GET http://localhost:8080/service
         // POST http://localhost:8080/rpc/calc
-        final TransportConnection tc = http.openConnection("http://localhost:8080/rpc/calc", null).get();
+        final Transport tc = http.openConnection("http://localhost:8080/rpc/calc", null).get();
         final TransportConnectionReceiver rc = new TransportConnectionReceiver(tc);
 
-        TransportMessage msg = rc.createRequest();
+        TransportMessage msg = rc.createTransportMessage(null);
         String request = "{\"jsonrpc\":\"2.0\",\"method\":\"calc.add\",\"params\":[1,2],\"id\":1}";
         msg.setPayload(ByteBuffer.wrap(request.getBytes("UTF-8")));
         msg.setContentType("application/json");
@@ -79,7 +79,7 @@ public class TransportTest2 {
         System.err.println("Message #1 received");
         printMessage(response);
 
-        msg = rc.createRequest();
+        msg = rc.createTransportMessage(null);
         request = "{\"jsonrpc\":\"2.0\",\"method\":\"calc.add\",\"params\":[3,4],\"id\":2}";
         try {
             msg.setPayload(ByteBuffer.wrap(request.getBytes("UTF-8")));

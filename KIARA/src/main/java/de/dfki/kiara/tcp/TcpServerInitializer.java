@@ -17,7 +17,7 @@
  */
 package de.dfki.kiara.tcp;
 
-import de.dfki.kiara.TransportConnectionListener;
+import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.netty.ByteBufferDecoder;
 import de.dfki.kiara.netty.ByteBufferEncoder;
 import io.netty.buffer.ByteBuf;
@@ -34,12 +34,12 @@ import java.nio.ByteOrder;
 
 public class TcpServerInitializer extends ChannelInitializer<SocketChannel> {
 
-    private final TcpBlockTransport transport;
+    private final TcpBlockTransportFactory transport;
     private final SslContext sslCtx;
-    private final TransportConnectionListener connectionListener;
+    private final TransportListener connectionListener;
     private final String path;
 
-    public TcpServerInitializer(TcpBlockTransport transport, SslContext sslCtx, String path, TransportConnectionListener connectionListener) {
+    public TcpServerInitializer(TcpBlockTransportFactory transport, SslContext sslCtx, String path, TransportListener connectionListener) {
         this.transport = transport;
         this.sslCtx = sslCtx;
         this.path = path;

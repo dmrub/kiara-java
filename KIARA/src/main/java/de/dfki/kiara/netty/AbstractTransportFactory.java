@@ -18,8 +18,8 @@
 
 package de.dfki.kiara.netty;
 
-import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportConnectionListener;
+import de.dfki.kiara.TransportFactory;
+import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.impl.Global;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
@@ -34,7 +34,7 @@ import javax.net.ssl.SSLException;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public abstract class AbstractTransport implements Transport {
+public abstract class AbstractTransportFactory implements TransportFactory {
 
     private static final boolean SSL = System.getProperty("ssl") != null;
 
@@ -43,7 +43,7 @@ public abstract class AbstractTransport implements Transport {
         InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
     }
 
-    public AbstractTransport() {
+    public AbstractTransportFactory() {
     }
 
     protected final EventLoopGroup getEventLoopGroup() {
@@ -59,6 +59,6 @@ public abstract class AbstractTransport implements Transport {
         }
     }
 
-    public abstract ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionListener);
+    public abstract ChannelHandler createServerChildHandler(String path, TransportListener connectionListener);
 
 }

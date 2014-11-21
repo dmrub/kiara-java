@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractMessageConnection implements MessageConnection, TransportMessageListener {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractMessageConnection.class);
-    private final TransportConnection transportConnection;
+    private final Transport transportConnection;
     private final IdentityHashMap<Message, TransportMessage> messageMap;
     private final List<Dispatcher> dispatchers;
 
@@ -62,7 +62,7 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
 
     }
 
-    AbstractMessageConnection(TransportConnection transportConnection) {
+    AbstractMessageConnection(Transport transportConnection) {
         this.transportConnection = transportConnection;
         this.transportConnection.addMessageListener(this);
         this.messageMap = new IdentityHashMap<>();
@@ -105,7 +105,7 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
         transportConnection.close();
     }
 
-    public TransportConnection getTransportConnection() {
+    public Transport getTransportConnection() {
         return transportConnection;
     }
 

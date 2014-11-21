@@ -18,12 +18,12 @@
 package de.dfki.kiara.testapp;
 
 import de.dfki.kiara.Kiara;
+import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportConnectionListener;
+import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
-import de.dfki.kiara.TransportRegistry;
+import de.dfki.kiara.TransportFactoryRegistry;
 import de.dfki.kiara.TransportServer;
 import de.dfki.kiara.config.ServerConfiguration;
 import de.dfki.kiara.config.ServerInfo;
@@ -65,10 +65,10 @@ public class TransportServerTest {
         config.servers.add(si);
     }
 
-    private static class ServerHandler implements TransportConnectionListener, TransportMessageListener {
+    private static class ServerHandler implements TransportListener, TransportMessageListener {
 
         @Override
-        public void onConnectionOpened(TransportConnection connection) {
+        public void onConnectionOpened(Transport connection) {
             System.out.printf("Opened connection %s, local address %s, remote address %s%n",
                     connection, connection.getLocalAddress(), connection.getRemoteAddress());
 
@@ -77,7 +77,7 @@ public class TransportServerTest {
         }
 
         @Override
-        public void onConnectionClosed(TransportConnection connection) {
+        public void onConnectionClosed(Transport connection) {
             System.out.printf("Closed connection %s%n", connection);
             connection.removeMessageListener(this);
         }
@@ -104,7 +104,7 @@ public class TransportServerTest {
                     message.getRequestUri(),
                     message.getContentType(),
                     arrayLength == 0 ? "empty" : HexDump.dumpHexString(array, arrayOffset, arrayLength));
-            final TransportConnection tc = message.getConnection();
+            final Transport tc = message.getConnection();
             final TransportMessage response = tc.createTransportMessage(message);
 
             String responseText;
@@ -147,8 +147,8 @@ public class TransportServerTest {
 
         Kiara.init();
         try {
-            Transport http = TransportRegistry.getTransportByName("http");
-            Transport tcp = TransportRegistry.getTransportByName("tcp");
+            TransportFactory http = TransportFactoryRegistry.getTransportFactoryByName("http");
+            TransportFactory tcp = TransportFactoryRegistry.getTransportFactoryByName("tcp");
 
             TransportServer server = Kiara.createTransportServer();
 

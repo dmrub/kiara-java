@@ -115,10 +115,10 @@ public class AosTestServer {
                 public void onConnectionOpened(ServerConnection connection) {
                     System.err.printf("New server connection %s opened: transport %s, local address %s, remote address %s, local transport address %s%n",
                             connection,
-                            connection.getTransportConnection().getLocalTransportAddress().getTransport().getName(),
-                            connection.getTransportConnection().getLocalAddress(),
-                            connection.getTransportConnection().getRemoteAddress(),
-                            connection.getTransportConnection().getLocalTransportAddress());
+                            connection.getTransport().getLocalTransportAddress().getTransportFactory().getName(),
+                            connection.getTransport().getLocalAddress(),
+                            connection.getTransport().getRemoteAddress(),
+                            connection.getTransport().getLocalTransportAddress());
                 }
 
                 @Override

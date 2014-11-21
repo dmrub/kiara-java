@@ -18,7 +18,7 @@
 package de.dfki.kiara.http;
 
 import de.dfki.kiara.InvalidAddressException;
-import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.util.Glob;
 import java.net.InetAddress;
@@ -33,13 +33,13 @@ import java.util.regex.Pattern;
  */
 public class HttpAddress implements TransportAddress {
 
-    private final HttpTransport transport;
+    private final HttpTransportFactory transport;
     private final String hostName;
     private final int port;
     private final String path;
     private final InetAddress address;
 
-    public HttpAddress(HttpTransport transport, URI uri) throws InvalidAddressException, UnknownHostException {
+    public HttpAddress(HttpTransportFactory transport, URI uri) throws InvalidAddressException, UnknownHostException {
         if (transport == null) {
             throw new NullPointerException("transport");
         }
@@ -59,12 +59,12 @@ public class HttpAddress implements TransportAddress {
         this.address = InetAddress.getByName(this.hostName);
     }
 
-    public HttpAddress(HttpTransport transport, String hostName, int port, String path) throws InvalidAddressException, UnknownHostException, URISyntaxException  {
+    public HttpAddress(HttpTransportFactory transport, String hostName, int port, String path) throws InvalidAddressException, UnknownHostException, URISyntaxException  {
         this(transport, new URI(transport.getName(), null, hostName, port, path, null, null));
     }
 
     @Override
-    public Transport getTransport() {
+    public TransportFactory getTransportFactory() {
         return transport;
     }
 
@@ -141,7 +141,7 @@ public class HttpAddress implements TransportAddress {
         HttpAddress other = (HttpAddress) obj;
 
         // FIXME is following always correct ?
-        if (other.getTransport() != getTransport()) {
+        if (other.getTransportFactory() != getTransportFactory()) {
             return false;
         }
 
@@ -150,7 +150,7 @@ public class HttpAddress implements TransportAddress {
 
     @Override
     public String toString() {
-        return getTransport().getName() + "://" + hostName + ":" + port + path;
+        return getTransportFactory().getName() + "://" + hostName + ":" + port + path;
     }
 
 }

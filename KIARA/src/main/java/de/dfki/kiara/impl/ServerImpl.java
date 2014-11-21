@@ -23,11 +23,11 @@ import de.dfki.kiara.Kiara;
 import de.dfki.kiara.Server;
 import de.dfki.kiara.ServerConnectionListener;
 import de.dfki.kiara.Service;
-import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportConnectionListener;
-import de.dfki.kiara.TransportRegistry;
+import de.dfki.kiara.Transport;
+import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportFactoryRegistry;
 import de.dfki.kiara.TransportServer;
 import de.dfki.kiara.config.ServerConfiguration;
 import de.dfki.kiara.config.ServerInfo;
@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author shahzad, Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServerImpl implements Server, TransportConnectionListener {
+public class ServerImpl implements Server, TransportListener {
 
     private final String configHost;
     private final int configPort;
@@ -59,7 +59,7 @@ public class ServerImpl implements Server, TransportConnectionListener {
     private final List<TransportAddressAndServiceHandler> serviceHandlers;
     private final Map<HostAndPort, TransportEntry> transportEntries;
     private final TransportServer transportServer;
-    private final IdentityHashMap<TransportConnection, ServerConnectionHandler> connectionHandlers;
+    private final IdentityHashMap<Transport, ServerConnectionHandler> connectionHandlers;
     private final List<ServerConnectionListener> eventListeners;
 
     private static class HostAndPort implements Comparable<HostAndPort> {
@@ -104,15 +104,15 @@ public class ServerImpl implements Server, TransportConnectionListener {
 
     private static class TransportEntry {
 
-        public final Transport transport;
+        public final TransportFactory transport;
         public int numServices;
 
-        public TransportEntry(Transport transport, int numServices) {
+        public TransportEntry(TransportFactory transport, int numServices) {
             this.transport = transport;
             this.numServices = numServices;
         }
 
-        public TransportEntry(Transport transport) {
+        public TransportEntry(TransportFactory transport) {
             this(transport, 0);
         }
 
@@ -151,7 +151,7 @@ public class ServerImpl implements Server, TransportConnectionListener {
             return;
         }
 
-        final Transport transport = TransportRegistry.getTransportByName(transportName);
+        final TransportFactory transport = TransportFactoryRegistry.getTransportFactoryByName(transportName);
         transportEntries.put(hostAndPort, new TransportEntry(transport));
 
         transportServer.listen(host, Integer.toString(port), path, transport, this);
@@ -165,7 +165,7 @@ public class ServerImpl implements Server, TransportConnectionListener {
 
         logger.debug("Server::addService: {}", uri);
 
-        Transport transport = TransportRegistry.getTransportByName(uri.getScheme());
+        TransportFactory transport = TransportFactoryRegistry.getTransportFactoryByName(uri.getScheme());
 
         if (transport == null) {
             throw new IOException("Unsupported transport: " + uri.getScheme());
@@ -288,7 +288,7 @@ public class ServerImpl implements Server, TransportConnectionListener {
                 ServerInfo serverInfo = new ServerInfo();
                 serverInfo.protocol = element.serviceHandler.getProtocolInfo();
                 serverInfo.services.add("*");
-                serverInfo.transport.name = element.transportAddress.getTransport().getName();
+                serverInfo.transport.name = element.transportAddress.getTransportFactory().getName();
                 try {
                     URI uri = new URI(element.transportAddress.toString());
                     if ("0.0.0.0".equals(uri.getHost())) {
@@ -314,7 +314,7 @@ public class ServerImpl implements Server, TransportConnectionListener {
     }
 
     @Override
-    public void onConnectionOpened(TransportConnection connection) {
+    public void onConnectionOpened(Transport connection) {
         logger.debug("Opened connection {}, local address {}, remote address {}",
                 connection, connection.getLocalAddress(), connection.getRemoteAddress());
         List<TransportAddressAndServiceHandler> serviceHandlers = findAllServiceHandlers(connection.getLocalTransportAddress());
@@ -326,7 +326,7 @@ public class ServerImpl implements Server, TransportConnectionListener {
     }
 
     @Override
-    public void onConnectionClosed(TransportConnection connection) {
+    public void onConnectionClosed(Transport connection) {
         logger.debug("Closed connection {}", connection);
         ServerConnectionHandler handler;
         synchronized (connectionHandlers) {

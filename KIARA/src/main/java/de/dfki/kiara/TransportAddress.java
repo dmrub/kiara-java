@@ -23,7 +23,7 @@ package de.dfki.kiara;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public interface TransportAddress {
-    public Transport getTransport();
+    public TransportFactory getTransportFactory();
     public int getPort();
     public String getHostName();
     public boolean acceptsConnection(TransportAddress address);

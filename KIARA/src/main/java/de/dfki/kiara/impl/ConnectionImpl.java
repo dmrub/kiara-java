@@ -30,9 +30,9 @@ import de.dfki.kiara.MethodBinding;
 import de.dfki.kiara.NoSuchIDLFunctionException;
 import de.dfki.kiara.Protocol;
 import de.dfki.kiara.ProtocolRegistry;
+import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportRegistry;
+import de.dfki.kiara.TransportFactoryRegistry;
 import de.dfki.kiara.config.ServerConfiguration;
 import de.dfki.kiara.config.ServerInfo;
 import de.dfki.kiara.idl.IDLWriter;
@@ -69,8 +69,8 @@ public class ConnectionImpl implements Connection {
     private static final Logger logger = LoggerFactory.getLogger(ConnectionImpl.class);
 
     private final Protocol protocol;
-    private final Transport transport;
-    private final TransportConnection transportConnection;
+    private final TransportFactory transport;
+    private final Transport transportConnection;
     private final TransportMessageConnection messageConnection;
     private final World world;
     private final Module module;
@@ -142,10 +142,10 @@ public class ConnectionImpl implements Connection {
         // 2. perform negotation
         // find matching endpoint
         ServerInfo serverInfo = null;
-        Transport selectedTransport = null;
+        TransportFactory selectedTransport = null;
 
         for (ServerInfo si : serverConfig.servers) {
-            Transport t = TransportRegistry.getTransportByName(si.transport.name);
+            TransportFactory t = TransportFactoryRegistry.getTransportFactoryByName(si.transport.name);
             if (t != null) {
                 // we change selected endpoint only if priority is higher
                 // i.e. when priority value is less than current one
@@ -272,7 +272,7 @@ public class ConnectionImpl implements Connection {
     }
 
     @Override
-    public TransportConnection getTransportConnection() {
+    public Transport getTransport() {
         return transportConnection;
     }
 

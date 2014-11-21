@@ -101,7 +101,7 @@ public class ServerConnectionImpl implements ServerConnection, InvocationEnviron
     }
 
     @Override
-    public TransportConnection getTransportConnection() {
+    public Transport getTransport() {
         return serverConnectionHandler.getTransportConnection();
     }
 

@@ -44,7 +44,7 @@ public class ServerConnectionHandler extends AbstractMessageConnection {
     private final ServerImpl server;
     private final List<ServerConnectionImpl> serviceHandlers;
 
-    public ServerConnectionHandler(ServerImpl server, TransportConnection transportConnection, List<TransportAddressAndServiceHandler> serviceHandlers) {
+    public ServerConnectionHandler(ServerImpl server, Transport transportConnection, List<TransportAddressAndServiceHandler> serviceHandlers) {
         super(transportConnection);
         this.server = server;
 
@@ -60,9 +60,9 @@ public class ServerConnectionHandler extends AbstractMessageConnection {
 
     @Override
     public void onMessage(TransportMessage trequest) {
-        final TransportConnection tconnection = trequest.getConnection();
-        final TransportMessage tresponse = tconnection.createResponse(trequest);
-        final Transport transport = tconnection.getTransport();
+        final Transport tconnection = trequest.getConnection();
+        final TransportMessage tresponse = tconnection.createTransportMessage(trequest);
+        final TransportFactory transport = tconnection.getTransportFactory();
         final String transportName = transport.getName();
 
         String responseText = null;

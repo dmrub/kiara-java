@@ -17,7 +17,7 @@
  */
 package de.dfki.kiara.netty;
 
-import de.dfki.kiara.TransportConnection;
+import de.dfki.kiara.Transport;
 import io.netty.channel.ChannelFuture;
 
 /**
@@ -27,9 +27,9 @@ import io.netty.channel.ChannelFuture;
 public final class ChannelFutureAndConnection {
 
     public final ChannelFuture future;
-    public final TransportConnection connection;
+    public final Transport connection;
 
-    public ChannelFutureAndConnection(ChannelFuture future, TransportConnection connection) {
+    public ChannelFutureAndConnection(ChannelFuture future, Transport connection) {
         this.future = future;
         this.connection = connection;
     }

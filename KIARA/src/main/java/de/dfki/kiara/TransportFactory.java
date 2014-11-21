@@ -15,43 +15,30 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package de.dfki.kiara;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import java.io.Closeable;
-import java.net.SocketAddress;
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.Map;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface TransportConnection extends Closeable {
+public interface TransportFactory {
 
-    public Transport getTransport();
+    public String getName();
 
-    public SocketAddress getLocalAddress();
+    public int getPriority();
 
-    public SocketAddress getRemoteAddress();
+    public boolean isSecureTransport();
 
-    public TransportAddress getLocalTransportAddress();
+    public boolean isAddressContainsRequestPath();
 
-    public TransportMessage createRequest();
+    public TransportAddress createAddress(String uri) throws InvalidAddressException, UnknownHostException;
 
-    public TransportMessage createResponse(TransportMessage request);
-
-    /**
-     * Create response message when passed message is request message, and
-     * request message otherwise.
-     *
-     * @param message
-     * @return
-     */
-    public TransportMessage createTransportMessage(TransportMessage message);
-
-    public ListenableFuture<Void> send(TransportMessage message);
-
-    public void addMessageListener(TransportMessageListener listener);
-
-    public boolean removeMessageListener(TransportMessageListener listener);
+    public ListenableFuture<Transport> openConnection(String uri, Map<String, Object> settings) throws InvalidAddressException, IOException;
 
 }

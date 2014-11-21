@@ -19,22 +19,19 @@ package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.InvalidAddressException;
-import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportConnectionListener;
+import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
+import de.dfki.kiara.netty.BaseHandler;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -58,8 +55,6 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,31 +63,24 @@ import org.slf4j.LoggerFactory;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class HttpHandler extends SimpleChannelInboundHandler<Object> implements TransportConnection {
+public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpHandler.class);
 
     private HttpHeaders headers = null;
     private final NoCopyByteArrayOutputStream bout;
 
-    private final HttpTransport transport;
     private final URI uri;
     private final HttpMethod method;
-
-    private volatile Channel channel = null;
-
-    private final TransportConnectionListener connectionListener;
-
-    private final List<TransportMessageListener> listeners = new ArrayList<>();
 
     @Override
     public TransportAddress getLocalTransportAddress() {
         try {
             if (uri != null && uri.isAbsolute()) {
-                return new HttpAddress(transport, uri);
+                return new HttpAddress(transportFactory, uri);
             } else {
                 InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
-                return new HttpAddress(transport, sa.getHostName(), sa.getPort(), "");
+                return new HttpAddress(transportFactory, sa.getHostName(), sa.getPort(), "");
             }
         } catch (InvalidAddressException ex) {
             throw new IllegalStateException(ex);
@@ -103,31 +91,10 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         }
     }
 
-    @Override
-    public Transport getTransport() {
-        return transport;
-    }
-
-    static enum Mode {
-
-        CLIENT,
-        SERVER
-    }
-    private final Mode mode;
-
-    static enum State {
-
-        UNINITIALIZED,
-        WAIT_CONNECT,
-        CONNECTED,
-        WAIT_CLOSE,
-        CLOSED
-    }
-    private State state;
-
-    public HttpHandler(HttpTransport transport, URI uri, HttpMethod method) {
-        if (transport == null) {
-            throw new NullPointerException("transport");
+    public HttpHandler(HttpTransportFactory transportFactory, URI uri, HttpMethod method) {
+        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null);
+        if (transportFactory == null) {
+            throw new NullPointerException("transportFactory");
         }
         if (uri == null) {
             throw new NullPointerException("uri");
@@ -135,23 +102,19 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         if (method == null) {
             throw new NullPointerException("method");
         }
-        this.transport = transport;
         this.uri = uri;
         this.method = method;
-        this.connectionListener = null;
-        this.state = State.UNINITIALIZED;
-        this.mode = Mode.CLIENT;
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public HttpHandler(HttpTransport transport, String path, TransportConnectionListener connectionListener) {
-        if (transport == null) {
-            throw new NullPointerException("transport");
+    public HttpHandler(HttpTransportFactory transportFactory, String path, TransportListener connectionListener) {
+        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
+        if (transportFactory == null) {
+            throw new NullPointerException("transportFactory");
         }
         if (connectionListener == null) {
             throw new NullPointerException("connectionListener");
         }
-        this.transport = transport;
         URI tmp = null;
         try {
             tmp = path != null ? new URI(path) : null;
@@ -159,9 +122,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         }
         this.uri = tmp;
         this.method = null;
-        this.connectionListener = connectionListener;
-        this.state = State.UNINITIALIZED;
-        this.mode = Mode.SERVER;
         this.bout = null;
     }
 
@@ -295,8 +255,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         }
     }
 
-    @Override
-    public TransportMessage createRequest() {
+    private final TransportMessage createRequest() {
         if (mode == Mode.SERVER) {
             throw new IllegalStateException("Requests from server are not supported");
         }
@@ -321,8 +280,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> implements 
         }
     }
 
-    @Override
-    public TransportMessage createResponse(TransportMessage transportMessage) {
+    private TransportMessage createResponse(TransportMessage transportMessage) {
         if (!(transportMessage instanceof HttpRequestMessage)) {
             throw new IllegalArgumentException("request is not of type HttpRequestMessage");
         }

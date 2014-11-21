@@ -19,20 +19,17 @@ package de.dfki.kiara.tcp;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.InvalidAddressException;
-import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportConnection;
-import de.dfki.kiara.TransportConnectionListener;
+import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
-import io.netty.channel.Channel;
+import de.dfki.kiara.netty.BaseHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.HttpMethod;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -40,8 +37,6 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,31 +44,23 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class TcpHandler extends SimpleChannelInboundHandler<Object> implements TransportConnection {
+public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory>  {
 
     private static final Logger logger = LoggerFactory.getLogger(TcpHandler.class);
 
     private final NoCopyByteArrayOutputStream bout;
-
-    private final TcpBlockTransport transport;
     private final URI uri;
-    private final HttpMethod method;
-
-    private volatile Channel channel = null;
     private volatile String sessionId = null;
-
-    private final TransportConnectionListener connectionListener;
-
-    private final List<TransportMessageListener> listeners = new ArrayList<>();
+    private final boolean SEND_SESSION_ID = true;
 
     @Override
     public TransportAddress getLocalTransportAddress() {
         try {
             if (uri != null) {
-                return new TcpBlockAddress(transport, uri);
+                return new TcpBlockAddress(transportFactory, uri);
             } else {
                 InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
-                return new TcpBlockAddress(transport, sa.getHostName(), sa.getPort());
+                return new TcpBlockAddress(transportFactory, sa.getHostName(), sa.getPort());
             }
         } catch (InvalidAddressException ex) {
             throw new IllegalStateException(ex);
@@ -82,62 +69,27 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         }
     }
 
-    @Override
-    public Transport getTransport() {
-        return transport;
-    }
-
-    static enum Mode {
-
-        CLIENT,
-        SERVER
-    }
-
-    private final Mode mode;
-
-    static enum State {
-
-        UNINITIALIZED,
-        WAIT_CONNECT,
-        CONNECTED,
-        WAIT_CLOSE,
-        CLOSED
-    }
-
-    private State state;
-
-    public TcpHandler(TcpBlockTransport transport, URI uri, HttpMethod method) {
-        if (transport == null) {
-            throw new NullPointerException("transport");
+    public TcpHandler(TcpBlockTransportFactory transportFactory, URI uri) {
+        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null);
+        if (transportFactory == null) {
+            throw new NullPointerException("transportFactory");
         }
         if (uri == null) {
             throw new NullPointerException("uri");
         }
-        if (method == null) {
-            throw new NullPointerException("method");
-        }
-        this.transport = transport;
         this.uri = uri;
-        this.method = method;
-        this.connectionListener = null;
-        this.state = State.UNINITIALIZED;
-        this.mode = Mode.CLIENT;
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public TcpHandler(TcpBlockTransport transport, String path, TransportConnectionListener connectionListener) {
-        if (transport == null) {
-            throw new NullPointerException("transport");
+    public TcpHandler(TcpBlockTransportFactory transportFactory, String path, TransportListener connectionListener) {
+        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
+        if (transportFactory == null) {
+            throw new NullPointerException("transportFactory");
         }
         if (connectionListener == null) {
             throw new NullPointerException("connectionListener");
         }
-        this.transport = transport;
         this.uri = null;
-        this.method = null;
-        this.connectionListener = connectionListener;
-        this.state = State.UNINITIALIZED;
-        this.mode = Mode.SERVER;
         this.bout = null;
     }
 
@@ -151,7 +103,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
             case UNINITIALIZED:
             case WAIT_CONNECT:
                 state = State.CONNECTED;
-                if (mode == Mode.CLIENT) {
+                if (mode == Mode.CLIENT && SEND_SESSION_ID) {
                     // FIXME send sessionID
                     ctx.writeAndFlush(EMPTY_BUFFER);
                 }
@@ -192,7 +144,7 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
             logger.debug("RECEIVED CONTENT {}", new String(transportMessage.getPayload().array(), transportMessage.getPayload().arrayOffset(), transportMessage.getPayload().remaining()));
         }
 
-        if (mode == Mode.SERVER && sessionId == null) {
+        if (mode == Mode.SERVER && sessionId == null && SEND_SESSION_ID) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Set session ID to '{}'", Util.bufferToString(transportMessage.getPayload()));
             }
@@ -238,13 +190,11 @@ public class TcpHandler extends SimpleChannelInboundHandler<Object> implements T
         }
     }
 
-    @Override
-    public TransportMessage createRequest() {
+    private TransportMessage createRequest() {
         return new TcpBlockMessage(this, null);
     }
 
-    @Override
-    public TransportMessage createResponse(TransportMessage transportMessage) {
+    private TransportMessage createResponse(TransportMessage transportMessage) {
         if (!(transportMessage instanceof TcpBlockMessage)) {
             throw new IllegalArgumentException("request is not of type TcpBlockMessage");
         }

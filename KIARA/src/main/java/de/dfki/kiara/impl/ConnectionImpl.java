@@ -190,6 +190,9 @@ public class ConnectionImpl implements Connection {
 
         try {
             transportConnection = transport.openConnection(transportUri.toString(), null).get();
+            if (!transportConnection.isOpen()) {
+                throw new IllegalStateException("Connection is not opened");
+            }
         } catch (InvalidAddressException ex) {
             throw new ConnectException(ex);
         } catch (InterruptedException ex) {

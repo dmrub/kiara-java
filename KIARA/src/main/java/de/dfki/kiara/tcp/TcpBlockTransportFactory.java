@@ -18,13 +18,12 @@
 package de.dfki.kiara.tcp;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.netty.AbstractTransportFactory;
-import de.dfki.kiara.netty.ChannelFutureAndConnection;
-import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -97,7 +96,7 @@ public class TcpBlockTransportFactory extends AbstractTransportFactory {
         }
     }
 
-    public ChannelFutureAndConnection connect(URI uri, Map<String, Object> settings) throws IOException {
+    private ListenableFuture<Transport> openConnection(URI uri, Map<String, Object> settings) throws IOException {
         if (uri == null) {
             throw new NullPointerException("uri");
         }
@@ -128,23 +127,21 @@ public class TcpBlockTransportFactory extends AbstractTransportFactory {
         }
 
         // Configure the client.
-        final TcpHandler tcpClientHandler = new TcpHandler(this, uri);
+        final SettableFuture<Transport> onConnectionActive = SettableFuture.create();
+        final TcpHandler tcpClientHandler = new TcpHandler(this, uri, onConnectionActive);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
                 .handler(new TcpClientInitializer(sslCtx, tcpClientHandler));
-        return new ChannelFutureAndConnection(b.connect(host, port), tcpClientHandler);
-    }
+        b.connect(host, port);
 
-    public ListenableFuture<Transport> openConnection(URI uri, Map<String, Object> settings) throws IOException {
-        final ChannelFutureAndConnection cfc = connect(uri, settings);
-        return new ListenableConstantFutureAdapter<>(cfc.future, cfc.connection);
+        return onConnectionActive;
     }
 
     @Override
     public ChannelHandler createServerChildHandler(String path, TransportListener connectionHandler) {
         try {
-            return new TcpServerInitializer(this, createServerSslContext(), path, connectionHandler);
+            return new TcpServerInitializer(this, createServerSslContext(), path, connectionHandler, null);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

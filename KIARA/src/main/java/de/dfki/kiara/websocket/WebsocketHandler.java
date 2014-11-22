@@ -19,7 +19,9 @@ package de.dfki.kiara.websocket;
 
 import de.dfki.kiara.netty.BaseHandler;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.InvalidAddressException;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportMessage;
@@ -88,8 +90,8 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
      * @param handshaker
      * @param method
      */
-    public WebsocketHandler(WebsocketTransportFactory transportFactory, URI uri, WebSocketClientHandshaker handshaker, HttpMethod method) {
-        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null);
+    public WebsocketHandler(WebsocketTransportFactory transportFactory, URI uri, WebSocketClientHandshaker handshaker, HttpMethod method, SettableFuture<Transport> onConnectionActive) {
+        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null, onConnectionActive);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
         }
@@ -114,8 +116,8 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
      * @param path
      * @param connectionListener
      */
-    public WebsocketHandler(WebsocketTransportFactory transportFactory, String path, TransportListener connectionListener) {
-        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
+    public WebsocketHandler(WebsocketTransportFactory transportFactory, String path, TransportListener connectionListener, SettableFuture<Transport> onConnectionActive) {
+        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener, onConnectionActive);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
         }
@@ -162,39 +164,10 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        channel = ctx.channel();
         if (clientHandshaker != null) {
             clientHandshaker.handshake(ctx.channel());
         }
-        switch (state) {
-            case UNINITIALIZED:
-            case WAIT_CONNECT:
-                state = State.CONNECTED;
-                if (connectionListener != null) {
-                    connectionListener.onConnectionOpened(this);
-                }
-                break;
-            case WAIT_CLOSE:
-                closeChannel();
-                break;
-            default:
-                throw new IllegalStateException();
-        }
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.debug("Websocket channel closed {}", ctx);
-        state = State.CLOSED;
-        channel = null;
-        if (connectionListener != null) {
-            connectionListener.onConnectionClosed(this);
-        }
-    }
-
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        ctx.flush();
+        super.channelActive(ctx);
     }
 
     @Override

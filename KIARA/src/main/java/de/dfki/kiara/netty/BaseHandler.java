@@ -17,6 +17,7 @@
  */
 package de.dfki.kiara.netty;
 
+import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.TransportListener;
@@ -25,11 +26,14 @@ import de.dfki.kiara.TransportMessageListener;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -39,9 +43,12 @@ import java.util.List;
  */
 public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleChannelInboundHandler<I> implements Transport {
 
+    private static final Logger logger = LoggerFactory.getLogger(BaseHandler.class);
+
     protected final T transportFactory;
     protected volatile Channel channel = null;
     protected final TransportListener connectionListener;
+    protected final SettableFuture<Transport> onConnectionActive;
     protected final List<TransportMessageListener> listeners = new ArrayList<>();
 
     public static enum Mode {
@@ -61,10 +68,11 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
     }
     protected State state;
 
-    protected BaseHandler(Mode mode, State state, T transportFactory, TransportListener connectionListener) {
+    protected BaseHandler(Mode mode, State state, T transportFactory, TransportListener connectionListener, SettableFuture<Transport> onConnectionActive) {
         this.mode = mode;
         this.state = state;
         this.connectionListener = connectionListener;
+        this.onConnectionActive = onConnectionActive;
         this.transportFactory = transportFactory;
     }
 
@@ -89,9 +97,8 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
             return false;
         }
         synchronized (listeners) {
-            listeners.remove(listener);
+            return listeners.remove(listener);
         }
-        return false;
     }
 
     protected final void notifyListeners(final TransportMessage message) {
@@ -124,6 +131,45 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
         return channel.remoteAddress();
     }
 
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        channel = ctx.channel();
+        switch (state) {
+            case UNINITIALIZED:
+            case WAIT_CONNECT:
+                state = State.CONNECTED;
+                if (onConnectionActive != null) {
+                    onConnectionActive.set(this);
+                }
+                if (connectionListener != null) {
+                    connectionListener.onConnectionOpened(this);
+                }
+                break;
+            case WAIT_CLOSE:
+                closeChannel();
+                break;
+            default:
+                throw new IllegalStateException();
+        }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Class: "+getClass().getName()+", channel closed {}", ctx);
+        }
+        state = State.CLOSED;
+        channel = null;
+        if (connectionListener != null) {
+            connectionListener.onConnectionClosed(this);
+        }
+    }
+
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        ctx.flush();
+    }
+
     protected final void closeChannel() {
         if (channel != null) {
             channel.closeFuture().addListener(new ChannelFutureListener() {
@@ -147,6 +193,11 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
 
         state = State.WAIT_CLOSE;
         closeChannel();
+    }
+
+    @Override
+    public boolean isOpen() {
+        return state == State.CONNECTED && channel != null;
     }
 
 }

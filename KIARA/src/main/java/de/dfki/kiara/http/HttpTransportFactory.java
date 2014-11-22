@@ -18,13 +18,12 @@
 package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.netty.AbstractTransportFactory;
-import de.dfki.kiara.netty.ChannelFutureAndConnection;
-import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -89,7 +88,7 @@ public class HttpTransportFactory extends AbstractTransportFactory {
         }
     }
 
-    public ChannelFutureAndConnection connect(URI uri, Map<String, Object> settings) throws IOException {
+    private ListenableFuture<Transport> openConnection(URI uri, Map<String, Object> settings) throws IOException {
         String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
         String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         int port = uri.getPort();
@@ -115,23 +114,22 @@ public class HttpTransportFactory extends AbstractTransportFactory {
         }
 
         // Configure the client.
-        final HttpHandler httpClientHandler = new HttpHandler(this, uri, HttpMethod.POST);
+        final SettableFuture<Transport> onConnectionActive = SettableFuture.create();
+        final HttpHandler httpClientHandler = new HttpHandler(this, uri, HttpMethod.POST, onConnectionActive);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
                 .handler(new HttpClientInitializer(sslCtx, httpClientHandler));
-        return new ChannelFutureAndConnection(b.connect(host, port), httpClientHandler);
-    }
+        b.connect(host, port);
 
-    public ListenableFuture<Transport> openConnection(URI uri, Map<String, Object> settings) throws IOException {
-        final ChannelFutureAndConnection cfc = connect(uri, settings);
-        return new ListenableConstantFutureAdapter<>(cfc.future, cfc.connection);
+        return onConnectionActive;
     }
 
     @Override
     public ChannelHandler createServerChildHandler(String path, TransportListener connectionListener) {
         try {
-            return new HttpServerInitializer(this, createServerSslContext(), path, connectionListener);
+            SettableFuture<Transport> onConnectionActive = null;
+            return new HttpServerInitializer(this, createServerSslContext(), path, connectionListener, onConnectionActive);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

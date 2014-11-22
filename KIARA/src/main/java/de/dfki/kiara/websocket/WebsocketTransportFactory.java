@@ -18,6 +18,7 @@
 package de.dfki.kiara.websocket;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.Transport;
@@ -93,7 +94,7 @@ public class WebsocketTransportFactory extends AbstractTransportFactory {
         }
     }
 
-    public ChannelFutureAndConnection connect(URI uri, Map<String, Object> settings) throws IOException {
+    private ListenableFuture<Transport> openConnection(URI uri, Map<String, Object> settings) throws IOException {
         String scheme = uri.getScheme() == null ? "ws" : uri.getScheme();
         String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         int port = uri.getPort();
@@ -119,9 +120,10 @@ public class WebsocketTransportFactory extends AbstractTransportFactory {
         }
 
         // Configure the client.
+        final SettableFuture<Transport> onConnectionActive = SettableFuture.create();
         final WebsocketHandler clientHandler = new WebsocketHandler(this, uri,
                 WebSocketClientHandshakerFactory.newHandshaker(
-                        uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()), HttpMethod.POST);
+                        uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()), HttpMethod.POST, onConnectionActive);
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
@@ -129,22 +131,18 @@ public class WebsocketTransportFactory extends AbstractTransportFactory {
 
         try {
             b.connect(host, port).sync();
-            ChannelFuture f = clientHandler.getHandshakeFuture();//.sync();
-            return new ChannelFutureAndConnection(f, clientHandler);
+            ChannelFuture f = clientHandler.getHandshakeFuture().sync();
+            return onConnectionActive;
         } catch (InterruptedException ex) {
             throw new IOException(ex);
         }
     }
 
-    public ListenableFuture<Transport> openConnection(URI uri, Map<String, Object> settings) throws IOException {
-        final ChannelFutureAndConnection cfc = connect(uri, settings);
-        return new ListenableConstantFutureAdapter<>(cfc.future, cfc.connection);
-    }
-
     @Override
     public ChannelHandler createServerChildHandler(String path, TransportListener connectionListener) {
         try {
-            return new WebsocketServerInitializer(this, createServerSslContext(), path, connectionListener);
+            SettableFuture<Transport> onConnectionActive = null;
+            return new WebsocketServerInitializer(this, createServerSslContext(), path, connectionListener, onConnectionActive);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

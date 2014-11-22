@@ -50,4 +50,6 @@ public interface Transport extends Closeable {
 
     public boolean removeMessageListener(TransportMessageListener listener);
 
+    public boolean isOpen();
+
 }

@@ -131,4 +131,9 @@ public class TransportConnectionReceiver implements TransportMessageListener, Tr
     public void onMessage(TransportMessage message) {
         queue.add(message);
     }
+
+    @Override
+    public boolean isOpen() {
+        return connection.isOpen();
+    }
 }

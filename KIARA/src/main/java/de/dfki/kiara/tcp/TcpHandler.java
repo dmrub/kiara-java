@@ -18,19 +18,18 @@
 package de.dfki.kiara.tcp;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.InvalidAddressException;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import de.dfki.kiara.netty.BaseHandler;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -42,7 +41,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory>  {
+public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory> {
 
     private static final Logger logger = LoggerFactory.getLogger(TcpHandler.class);
 
@@ -51,8 +50,8 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory>  {
     private volatile String sessionId = null;
     private final boolean SEND_SESSION_ID = true;
 
-    public TcpHandler(TcpBlockTransportFactory transportFactory, URI uri) {
-        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null);
+    public TcpHandler(TcpBlockTransportFactory transportFactory, URI uri, SettableFuture<Transport> onConnectionActive) {
+        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null, onConnectionActive);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
         }
@@ -63,8 +62,8 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory>  {
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public TcpHandler(TcpBlockTransportFactory transportFactory, String path, TransportListener connectionListener) {
-        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
+    public TcpHandler(TcpBlockTransportFactory transportFactory, String path, TransportListener connectionListener, SettableFuture<Transport> onConnectionActive) {
+        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener, onConnectionActive);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
         }
@@ -96,35 +95,11 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory>  {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        channel = ctx.channel();
-        switch (state) {
-            case UNINITIALIZED:
-            case WAIT_CONNECT:
-                state = State.CONNECTED;
-                if (mode == Mode.CLIENT && SEND_SESSION_ID) {
-                    // FIXME send sessionID
-                    ctx.writeAndFlush(EMPTY_BUFFER);
-                }
-                if (connectionListener != null) {
-                    connectionListener.onConnectionOpened(this);
-                }
-                break;
-            case WAIT_CLOSE:
-                closeChannel();
-                break;
-            default:
-                throw new IllegalStateException();
+        if ((state == State.UNINITIALIZED || state == State.WAIT_CONNECT) && mode == Mode.CLIENT && SEND_SESSION_ID) {
+            // FIXME send sessionID
+            ctx.writeAndFlush(EMPTY_BUFFER);
         }
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.debug("Tcp channel closed {}", ctx);
-        state = State.CLOSED;
-        channel = null;
-        if (connectionListener != null) {
-            connectionListener.onConnectionClosed(this);
-        }
+        super.channelActive(ctx);
     }
 
     @Override
@@ -156,18 +131,6 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory>  {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         ctx.close();
         logger.error("Tcp Error", cause);
-    }
-
-    private TransportMessage createRequest() {
-        return new TcpBlockMessage(this, null);
-    }
-
-    private TransportMessage createResponse(TransportMessage transportMessage) {
-        if (!(transportMessage instanceof TcpBlockMessage)) {
-            throw new IllegalArgumentException("request is not of type TcpBlockMessage");
-        }
-
-        return new TcpBlockMessage(this, null);
     }
 
     @Override

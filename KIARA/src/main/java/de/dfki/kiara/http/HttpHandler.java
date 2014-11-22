@@ -18,7 +18,9 @@
 package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.InvalidAddressException;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportMessage;
@@ -70,8 +72,8 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
     private final URI uri;
     private final HttpMethod method;
 
-    public HttpHandler(HttpTransportFactory transportFactory, URI uri, HttpMethod method) {
-        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null);
+    public HttpHandler(HttpTransportFactory transportFactory, URI uri, HttpMethod method, SettableFuture<Transport> onConnectionActive) {
+        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null, onConnectionActive);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
         }
@@ -86,8 +88,8 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public HttpHandler(HttpTransportFactory transportFactory, String path, TransportListener connectionListener) {
-        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
+    public HttpHandler(HttpTransportFactory transportFactory, String path, TransportListener connectionListener, SettableFuture<Transport> onConnectionActive) {
+        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener, onConnectionActive);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
         }
@@ -119,35 +121,6 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
             throw new IllegalStateException(ex);
         } catch (URISyntaxException ex) {
             throw new IllegalStateException(ex);
-        }
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        channel = ctx.channel();
-        switch (state) {
-            case UNINITIALIZED:
-            case WAIT_CONNECT:
-                state = State.CONNECTED;
-                if (connectionListener != null) {
-                    connectionListener.onConnectionOpened(this);
-                }
-                break;
-            case WAIT_CLOSE:
-                closeChannel();
-                break;
-            default:
-                throw new IllegalStateException();
-        }
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.debug("Http channel closed {}", ctx);
-        state = State.CLOSED;
-        channel = null;
-        if (connectionListener != null) {
-            connectionListener.onConnectionClosed(this);
         }
     }
 

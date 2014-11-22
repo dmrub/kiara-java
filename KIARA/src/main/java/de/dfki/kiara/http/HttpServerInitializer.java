@@ -18,13 +18,13 @@
 
 package de.dfki.kiara.http;
 
+import com.google.common.util.concurrent.SettableFuture;
+import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpRequestDecoder;
-import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
@@ -34,12 +34,14 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
     private final TransportListener connectionListener;
+    private final SettableFuture<Transport> onConnectionActive;
     private final HttpTransportFactory transport;
     private final String path;
 
-    public HttpServerInitializer(HttpTransportFactory transport, SslContext sslCtx, String path, TransportListener connectionListener) {
+    public HttpServerInitializer(HttpTransportFactory transport, SslContext sslCtx, String path, TransportListener connectionListener, SettableFuture<Transport> onConnectionActive) {
         this.sslCtx = sslCtx;
         this.connectionListener = connectionListener;
+        this.onConnectionActive = onConnectionActive;
         this.transport = transport;
         this.path = path;
     }
@@ -60,6 +62,6 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         // Remove the following line if you don't want automatic content compression.
         //p.addLast(new HttpContentCompressor());
         p.addLast("aggregator", new HttpObjectAggregator(1048576));
-        p.addLast(new HttpHandler(transport, path, connectionListener));
+        p.addLast(new HttpHandler(transport, path, connectionListener, onConnectionActive));
     }
 }

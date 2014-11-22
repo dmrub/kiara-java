@@ -30,10 +30,8 @@ import de.dfki.kiara.netty.BaseHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpMethod;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -52,22 +50,6 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory>  {
     private final URI uri;
     private volatile String sessionId = null;
     private final boolean SEND_SESSION_ID = true;
-
-    @Override
-    public TransportAddress getLocalTransportAddress() {
-        try {
-            if (uri != null) {
-                return new TcpBlockAddress(transportFactory, uri);
-            } else {
-                InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
-                return new TcpBlockAddress(transportFactory, sa.getHostName(), sa.getPort());
-            }
-        } catch (InvalidAddressException ex) {
-            throw new IllegalStateException(ex);
-        } catch (UnknownHostException ex) {
-            throw new IllegalStateException(ex);
-        }
-    }
 
     public TcpHandler(TcpBlockTransportFactory transportFactory, URI uri) {
         super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null);
@@ -91,6 +73,22 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory>  {
         }
         this.uri = null;
         this.bout = null;
+    }
+
+    @Override
+    public TransportAddress getLocalTransportAddress() {
+        try {
+            if (uri != null) {
+                return new TcpBlockAddress(transportFactory, uri);
+            } else {
+                InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
+                return new TcpBlockAddress(transportFactory, sa.getHostName(), sa.getPort());
+            }
+        } catch (InvalidAddressException ex) {
+            throw new IllegalStateException(ex);
+        } catch (UnknownHostException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
     private static final byte[] EMPTY_ARRAY = new byte[0];
@@ -160,36 +158,6 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory>  {
         logger.error("Tcp Error", cause);
     }
 
-    @Override
-    public SocketAddress getLocalAddress() {
-        if (channel == null) {
-            throw new IllegalStateException();
-        }
-        return channel.localAddress();
-    }
-
-    @Override
-    public SocketAddress getRemoteAddress() {
-        if (channel == null) {
-            throw new IllegalStateException();
-        }
-        return channel.remoteAddress();
-    }
-
-    private void notifyListeners(final TcpBlockMessage message) {
-        TransportMessageListener currentListeners[] = null;
-        synchronized (listeners) {
-            if (!listeners.isEmpty()) {
-                currentListeners = listeners.toArray(new TransportMessageListener[listeners.size()]);
-            }
-        }
-        if (currentListeners != null) {
-            for (TransportMessageListener listener : currentListeners) {
-                listener.onMessage(message);
-            }
-        }
-    }
-
     private TransportMessage createRequest() {
         return new TcpBlockMessage(this, null);
     }
@@ -222,54 +190,6 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory>  {
 
         ChannelFuture result = channel.writeAndFlush(message.getPayload());
         return new ListenableConstantFutureAdapter<>(result, null);
-    }
-
-    @Override
-    public void addMessageListener(TransportMessageListener listener) {
-        if (listener == null) {
-            throw new NullPointerException("listener");
-        }
-        synchronized (listeners) {
-            listeners.add(listener);
-        }
-    }
-
-    @Override
-    public boolean removeMessageListener(TransportMessageListener listener) {
-        if (listener == null) {
-            return false;
-        }
-        synchronized (listeners) {
-            listeners.remove(listener);
-        }
-        return false;
-    }
-
-    public void closeChannel() {
-        if (channel != null) {
-            channel.closeFuture().addListener(new ChannelFutureListener() {
-
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    future.removeListener(this);
-                    state = State.CLOSED;
-                    channel = null;
-                }
-
-            });
-        }
-    }
-
-    @Override
-    public void close() throws IOException {
-        if (state == State.WAIT_CLOSE || state == State.CLOSED) {
-            return;
-        }
-
-        logger.debug("Closing transport connection state={} channel={}", state, channel);
-
-        state = State.WAIT_CLOSE;
-        closeChannel();
     }
 
 }

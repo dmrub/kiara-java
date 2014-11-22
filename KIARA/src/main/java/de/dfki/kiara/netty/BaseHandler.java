@@ -20,15 +20,22 @@ package de.dfki.kiara.netty;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.SimpleChannelInboundHandler;
+import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
+ * @param <I>
+ * @param <T>
  */
 public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleChannelInboundHandler<I> implements Transport {
 
@@ -74,6 +81,72 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
         synchronized (listeners) {
             listeners.add(listener);
         }
+    }
+
+    @Override
+    public boolean removeMessageListener(TransportMessageListener listener) {
+        if (listener == null) {
+            return false;
+        }
+        synchronized (listeners) {
+            listeners.remove(listener);
+        }
+        return false;
+    }
+
+    protected final void notifyListeners(final TransportMessage message) {
+        TransportMessageListener currentListeners[] = null;
+        synchronized (listeners) {
+            if (!listeners.isEmpty()) {
+                currentListeners = listeners.toArray(new TransportMessageListener[listeners.size()]);
+            }
+        }
+        if (currentListeners != null) {
+            for (TransportMessageListener listener : currentListeners) {
+                listener.onMessage(message);
+            }
+        }
+    }
+
+    @Override
+    public SocketAddress getLocalAddress() {
+        if (channel == null) {
+            throw new IllegalStateException();
+        }
+        return channel.localAddress();
+    }
+
+    @Override
+    public SocketAddress getRemoteAddress() {
+        if (channel == null) {
+            throw new IllegalStateException();
+        }
+        return channel.remoteAddress();
+    }
+
+    protected final void closeChannel() {
+        if (channel != null) {
+            channel.closeFuture().addListener(new ChannelFutureListener() {
+
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    future.removeListener(this);
+                    state = State.CLOSED;
+                    channel = null;
+                }
+
+            });
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (state == State.WAIT_CLOSE || state == State.CLOSED) {
+            return;
+        }
+
+        state = State.WAIT_CLOSE;
+        closeChannel();
     }
 
 }

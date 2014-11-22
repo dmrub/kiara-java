@@ -23,7 +23,6 @@ import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.Glob;
@@ -55,7 +54,6 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 import io.netty.util.CharsetUtil;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -85,6 +83,10 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
 
     /**
      * Initialize client
+     * @param transportFactory
+     * @param uri
+     * @param handshaker
+     * @param method
      */
     public WebsocketHandler(WebsocketTransportFactory transportFactory, URI uri, WebSocketClientHandshaker handshaker, HttpMethod method) {
         super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null);
@@ -108,6 +110,9 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
 
     /**
      * Initialize server
+     * @param transportFactory
+     * @param path
+     * @param connectionListener
      */
     public WebsocketHandler(WebsocketTransportFactory transportFactory, String path, TransportListener connectionListener) {
         super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
@@ -349,21 +354,6 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
         return channel.remoteAddress();
     }
 
-    private void notifyListeners(final TransportMessage message) {
-        TransportMessageListener currentListeners[] = null;
-        synchronized (listeners) {
-            if (!listeners.isEmpty()) {
-                currentListeners = listeners.toArray(new TransportMessageListener[listeners.size()]);
-            }
-        }
-        if (currentListeners != null) {
-            for (TransportMessageListener listener : currentListeners) {
-                listener.onMessage(message);
-            }
-        }
-    }
-
-
     private void onResponse(TransportMessage response) {
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED RESPONSE WITH CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
@@ -459,45 +449,6 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
         }
 
         return new ListenableConstantFutureAdapter<>(result, null);
-    }
-
-
-    @Override
-    public boolean removeMessageListener(TransportMessageListener listener) {
-        if (listener == null) {
-            return false;
-        }
-        synchronized (listeners) {
-            listeners.remove(listener);
-        }
-        return false;
-    }
-
-    public void closeChannel() {
-        if (channel != null) {
-            channel.closeFuture().addListener(new ChannelFutureListener() {
-
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    future.removeListener(this);
-                    state = State.CLOSED;
-                    channel = null;
-                }
-
-            });
-        }
-    }
-
-    @Override
-    public void close() throws IOException {
-        if (state == State.WAIT_CLOSE || state == State.CLOSED) {
-            return;
-        }
-
-        logger.debug("Closing transport connection state={} channel={}", state, channel);
-
-        state = State.WAIT_CLOSE;
-        closeChannel();
     }
 
 }

@@ -22,7 +22,6 @@ import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.BaseHandler;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -47,9 +46,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import io.netty.handler.codec.http.HttpVersion;
 import static io.netty.handler.codec.http.HttpVersion.*;
 import io.netty.handler.codec.http.LastHttpContent;
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -72,24 +69,6 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
 
     private final URI uri;
     private final HttpMethod method;
-
-    @Override
-    public TransportAddress getLocalTransportAddress() {
-        try {
-            if (uri != null && uri.isAbsolute()) {
-                return new HttpAddress(transportFactory, uri);
-            } else {
-                InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
-                return new HttpAddress(transportFactory, sa.getHostName(), sa.getPort(), "");
-            }
-        } catch (InvalidAddressException ex) {
-            throw new IllegalStateException(ex);
-        } catch (UnknownHostException ex) {
-            throw new IllegalStateException(ex);
-        } catch (URISyntaxException ex) {
-            throw new IllegalStateException(ex);
-        }
-    }
 
     public HttpHandler(HttpTransportFactory transportFactory, URI uri, HttpMethod method) {
         super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null);
@@ -123,6 +102,24 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
         this.uri = tmp;
         this.method = null;
         this.bout = null;
+    }
+
+    @Override
+    public TransportAddress getLocalTransportAddress() {
+        try {
+            if (uri != null && uri.isAbsolute()) {
+                return new HttpAddress(transportFactory, uri);
+            } else {
+                InetSocketAddress sa = ((InetSocketAddress) getLocalAddress());
+                return new HttpAddress(transportFactory, sa.getHostName(), sa.getPort(), "");
+            }
+        } catch (InvalidAddressException ex) {
+            throw new IllegalStateException(ex);
+        } catch (UnknownHostException ex) {
+            throw new IllegalStateException(ex);
+        } catch (URISyntaxException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
     @Override
@@ -217,22 +214,6 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
         logger.error("Http error", cause);
     }
 
-    @Override
-    public SocketAddress getLocalAddress() {
-        if (channel == null) {
-            throw new IllegalStateException();
-        }
-        return channel.localAddress();
-    }
-
-    @Override
-    public SocketAddress getRemoteAddress() {
-        if (channel == null) {
-            throw new IllegalStateException();
-        }
-        return channel.remoteAddress();
-    }
-
     private void onResponse(HttpResponseMessage response) {
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED RESPONSE WITH CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
@@ -241,21 +222,7 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
         notifyListeners(response);
     }
 
-    private void notifyListeners(final TransportMessage message) {
-        TransportMessageListener currentListeners[] = null;
-        synchronized (listeners) {
-            if (!listeners.isEmpty()) {
-                currentListeners = listeners.toArray(new TransportMessageListener[listeners.size()]);
-            }
-        }
-        if (currentListeners != null) {
-            for (TransportMessageListener listener : currentListeners) {
-                listener.onMessage(message);
-            }
-        }
-    }
-
-    private final TransportMessage createRequest() {
+    private TransportMessage createRequest() {
         if (mode == Mode.SERVER) {
             throw new IllegalStateException("Requests from server are not supported");
         }
@@ -350,52 +317,5 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
         return new ListenableConstantFutureAdapter<>(result, null);
     }
 
-    @Override
-    public void addMessageListener(TransportMessageListener listener) {
-        if (listener == null) {
-            throw new NullPointerException("listener");
-        }
-        synchronized (listeners) {
-            listeners.add(listener);
-        }
-    }
-
-    @Override
-    public boolean removeMessageListener(TransportMessageListener listener) {
-        if (listener == null) {
-            return false;
-        }
-        synchronized (listeners) {
-            listeners.remove(listener);
-        }
-        return false;
-    }
-
-    public void closeChannel() {
-        if (channel != null) {
-            channel.closeFuture().addListener(new ChannelFutureListener() {
-
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    future.removeListener(this);
-                    state = State.CLOSED;
-                    channel = null;
-                }
-
-            });
-        }
-    }
-
-    @Override
-    public void close() throws IOException {
-        if (state == State.WAIT_CLOSE || state == State.CLOSED) {
-            return;
-        }
-
-        logger.debug("Closing transport connection state={} channel={}", state, channel);
-
-        state = State.WAIT_CLOSE;
-        closeChannel();
-    }
 
 }

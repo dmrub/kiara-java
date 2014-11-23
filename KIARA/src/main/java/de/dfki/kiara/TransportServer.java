@@ -26,6 +26,6 @@ import java.io.IOException;
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
 public interface TransportServer extends Closeable {
-    public void listen(String address, String port, String path, TransportFactory transportFactory, TransportListener listener);
+    public void listen(String address, String port, String path, TransportFactory transportFactory, TransportConnectionListener listener);
     public void run() throws IOException;
 }

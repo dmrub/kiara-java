@@ -20,7 +20,7 @@ package de.dfki.kiara.testapp;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import de.dfki.kiara.TransportFactoryRegistry;
@@ -65,7 +65,7 @@ public class TransportServerTest {
         config.servers.add(si);
     }
 
-    private static class ServerHandler implements TransportListener, TransportMessageListener {
+    private static class ServerHandler implements TransportConnectionListener, TransportMessageListener {
 
         @Override
         public void onConnectionOpened(Transport connection) {

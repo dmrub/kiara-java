@@ -22,7 +22,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.netty.AbstractTransportFactory;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelHandler;
@@ -129,7 +129,7 @@ public class TcpBlockTransportFactory extends AbstractTransportFactory {
         // Configure the client.
         final SettableFuture<Transport> onConnectionActive = SettableFuture.create();
         final TcpHandler clientHandler = new TcpHandler(this, uri, null);
-        clientHandler.setConnectionListener(new TransportListener() {
+        clientHandler.setConnectionListener(new TransportConnectionListener() {
 
             @Override
             public void onConnectionOpened(Transport connection) {
@@ -153,7 +153,7 @@ public class TcpBlockTransportFactory extends AbstractTransportFactory {
     }
 
     @Override
-    public ChannelHandler createServerChildHandler(String path, TransportListener connectionHandler) {
+    public ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionHandler) {
         try {
             return new TcpServerInitializer(this, createServerSslContext(), path, connectionHandler);
         } catch (CertificateException ex) {

@@ -17,7 +17,7 @@
  */
 package de.dfki.kiara.tcp;
 
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.netty.ByteBufferDecoder;
 import de.dfki.kiara.netty.ByteBufferEncoder;
 import io.netty.buffer.ByteBuf;
@@ -36,10 +36,10 @@ public class TcpServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final TcpBlockTransportFactory transport;
     private final SslContext sslCtx;
-    private final TransportListener connectionListener;
+    private final TransportConnectionListener connectionListener;
     private final String path;
 
-    public TcpServerInitializer(TcpBlockTransportFactory transport, SslContext sslCtx, String path, TransportListener connectionListener) {
+    public TcpServerInitializer(TcpBlockTransportFactory transport, SslContext sslCtx, String path, TransportConnectionListener connectionListener) {
         this.transport = transport;
         this.sslCtx = sslCtx;
         this.path = path;

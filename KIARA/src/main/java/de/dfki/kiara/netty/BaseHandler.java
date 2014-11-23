@@ -19,7 +19,7 @@ package de.dfki.kiara.netty;
 
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportFactory;
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.TransportMessageListener;
 import io.netty.channel.Channel;
@@ -46,7 +46,7 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
 
     protected final T transportFactory;
     protected volatile Channel channel = null;
-    protected TransportListener connectionListener;
+    protected TransportConnectionListener connectionListener;
     protected final List<TransportMessageListener> listeners = new ArrayList<>();
 
     public static enum Mode {
@@ -66,7 +66,7 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
     }
     protected State state;
 
-    protected BaseHandler(Mode mode, State state, T transportFactory, TransportListener connectionListener) {
+    protected BaseHandler(Mode mode, State state, T transportFactory, TransportConnectionListener connectionListener) {
         this.mode = mode;
         this.state = state;
         this.connectionListener = connectionListener;
@@ -98,11 +98,11 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
         }
     }
 
-    public TransportListener getConnectionListener() {
+    public TransportConnectionListener getConnectionListener() {
         return connectionListener;
     }
 
-    public void setConnectionListener(TransportListener connectionListener) {
+    public void setConnectionListener(TransportConnectionListener connectionListener) {
         this.connectionListener = connectionListener;
     }
 

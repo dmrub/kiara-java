@@ -19,7 +19,7 @@
 package de.dfki.kiara.netty;
 
 import de.dfki.kiara.TransportFactory;
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.impl.Global;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
@@ -59,6 +59,6 @@ public abstract class AbstractTransportFactory implements TransportFactory {
         }
     }
 
-    public abstract ChannelHandler createServerChildHandler(String path, TransportListener connectionListener);
+    public abstract ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionListener);
 
 }

@@ -20,7 +20,7 @@ package de.dfki.kiara.http;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.BaseHandler;
@@ -70,7 +70,7 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
     private final URI uri;
     private final HttpMethod method;
 
-    public HttpHandler(HttpTransportFactory transportFactory, URI uri, HttpMethod method, TransportListener connectionListener) {
+    public HttpHandler(HttpTransportFactory transportFactory, URI uri, HttpMethod method, TransportConnectionListener connectionListener) {
         super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, connectionListener);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
@@ -86,7 +86,7 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public HttpHandler(HttpTransportFactory transportFactory, String path, TransportListener connectionListener) {
+    public HttpHandler(HttpTransportFactory transportFactory, String path, TransportConnectionListener connectionListener) {
         super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");

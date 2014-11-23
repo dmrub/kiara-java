@@ -20,7 +20,7 @@ package de.dfki.kiara.impl;
 import de.dfki.kiara.Kiara;
 import de.dfki.kiara.RunningService;
 import de.dfki.kiara.TransportFactory;
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportServer;
 import de.dfki.kiara.netty.AbstractTransportFactory;
 import io.netty.bootstrap.ServerBootstrap;
@@ -52,10 +52,10 @@ public class TransportServerImpl implements TransportServer, RunningService {
         public final String port;
         public final String path;
         public final AbstractTransportFactory transportFactory;
-        public final TransportListener listener;
+        public final TransportConnectionListener listener;
         public Channel channel;
 
-        public ServerEntry(String address, String port, String path, AbstractTransportFactory transportFactory, TransportListener listener) {
+        public ServerEntry(String address, String port, String path, AbstractTransportFactory transportFactory, TransportConnectionListener listener) {
             this.address = address;
             this.port = port;
             this.path = path;
@@ -79,7 +79,7 @@ public class TransportServerImpl implements TransportServer, RunningService {
     }
 
     @Override
-    public void listen(String address, String port, String path, TransportFactory transport, TransportListener listener) {
+    public void listen(String address, String port, String path, TransportFactory transport, TransportConnectionListener listener) {
         if (!(transport instanceof AbstractTransportFactory))
             throw new IllegalArgumentException("transport is not an instance of " + AbstractTransportFactory.class.getName() + " class");
         synchronized (serverEntries) {

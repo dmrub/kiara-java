@@ -21,7 +21,7 @@ import de.dfki.kiara.netty.BaseHandler;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -88,7 +88,7 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
      * @param handshaker
      * @param method
      */
-    public WebsocketHandler(WebsocketTransportFactory transportFactory, URI uri, WebSocketClientHandshaker handshaker, HttpMethod method, TransportListener connectionListener) {
+    public WebsocketHandler(WebsocketTransportFactory transportFactory, URI uri, WebSocketClientHandshaker handshaker, HttpMethod method, TransportConnectionListener connectionListener) {
         super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, connectionListener);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
@@ -114,7 +114,7 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
      * @param path
      * @param connectionListener
      */
-    public WebsocketHandler(WebsocketTransportFactory transportFactory, String path, TransportListener connectionListener) {
+    public WebsocketHandler(WebsocketTransportFactory transportFactory, String path, TransportConnectionListener connectionListener) {
         super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");

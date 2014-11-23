@@ -20,7 +20,7 @@ package de.dfki.kiara.tcp;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
@@ -48,7 +48,7 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory> {
     private volatile String sessionId = null;
     private final boolean SEND_SESSION_ID = true;
 
-    public TcpHandler(TcpBlockTransportFactory transportFactory, URI uri, TransportListener connectionListener) {
+    public TcpHandler(TcpBlockTransportFactory transportFactory, URI uri, TransportConnectionListener connectionListener) {
         super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, connectionListener);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
@@ -60,7 +60,7 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory> {
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public TcpHandler(TcpBlockTransportFactory transportFactory, String path, TransportListener connectionListener) {
+    public TcpHandler(TcpBlockTransportFactory transportFactory, String path, TransportConnectionListener connectionListener) {
         super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");

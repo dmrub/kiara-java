@@ -22,7 +22,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.netty.AbstractTransportFactory;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -123,7 +123,7 @@ public class WebsocketTransportFactory extends AbstractTransportFactory {
                 WebSocketClientHandshakerFactory.newHandshaker(
                         uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()),
                 HttpMethod.POST, null);
-        clientHandler.setConnectionListener(new TransportListener() {
+        clientHandler.setConnectionListener(new TransportConnectionListener() {
 
             @Override
             public void onConnectionOpened(Transport connection) {
@@ -153,7 +153,7 @@ public class WebsocketTransportFactory extends AbstractTransportFactory {
     }
 
     @Override
-    public ChannelHandler createServerChildHandler(String path, TransportListener connectionListener) {
+    public ChannelHandler createServerChildHandler(String path, TransportConnectionListener connectionListener) {
         try {
             return new WebsocketServerInitializer(this, createServerSslContext(), path, connectionListener);
         } catch (CertificateException ex) {

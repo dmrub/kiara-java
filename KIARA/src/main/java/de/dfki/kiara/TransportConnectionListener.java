@@ -21,7 +21,7 @@ package de.dfki.kiara;
  *
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public interface TransportListener {
+public interface TransportConnectionListener {
     public void onConnectionOpened(Transport connection);
     public void onConnectionClosed(Transport connection);
 }

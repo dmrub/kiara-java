@@ -26,7 +26,7 @@ import de.dfki.kiara.Service;
 import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.Transport;
-import de.dfki.kiara.TransportListener;
+import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportFactoryRegistry;
 import de.dfki.kiara.TransportServer;
 import de.dfki.kiara.config.ServerConfiguration;
@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author shahzad, Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class ServerImpl implements Server, TransportListener {
+public class ServerImpl implements Server, TransportConnectionListener {
 
     private final String configHost;
     private final int configPort;

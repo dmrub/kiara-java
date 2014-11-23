@@ -17,8 +17,6 @@
  */
 package de.dfki.kiara.tcp;
 
-import com.google.common.util.concurrent.SettableFuture;
-import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.netty.ByteBufferDecoder;
 import de.dfki.kiara.netty.ByteBufferEncoder;
@@ -39,15 +37,13 @@ public class TcpServerInitializer extends ChannelInitializer<SocketChannel> {
     private final TcpBlockTransportFactory transport;
     private final SslContext sslCtx;
     private final TransportListener connectionListener;
-    private final SettableFuture<Transport> onConnectionActive;
     private final String path;
 
-    public TcpServerInitializer(TcpBlockTransportFactory transport, SslContext sslCtx, String path, TransportListener connectionListener, SettableFuture<Transport> onConnectionActive) {
+    public TcpServerInitializer(TcpBlockTransportFactory transport, SslContext sslCtx, String path, TransportListener connectionListener) {
         this.transport = transport;
         this.sslCtx = sslCtx;
         this.path = path;
         this.connectionListener = connectionListener;
-        this.onConnectionActive = onConnectionActive;
     }
 
     @Override
@@ -70,6 +66,6 @@ public class TcpServerInitializer extends ChannelInitializer<SocketChannel> {
             }
         });
         p.addLast(new ByteBufferEncoder());
-        p.addLast(new TcpHandler(transport, path, connectionListener, onConnectionActive));
+        p.addLast(new TcpHandler(transport, path, connectionListener));
     }
 }

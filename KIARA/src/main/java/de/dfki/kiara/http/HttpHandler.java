@@ -18,9 +18,7 @@
 package de.dfki.kiara.http;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.InvalidAddressException;
-import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.TransportMessage;
@@ -72,8 +70,8 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
     private final URI uri;
     private final HttpMethod method;
 
-    public HttpHandler(HttpTransportFactory transportFactory, URI uri, HttpMethod method, SettableFuture<Transport> onConnectionActive) {
-        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, null, onConnectionActive);
+    public HttpHandler(HttpTransportFactory transportFactory, URI uri, HttpMethod method, TransportListener connectionListener) {
+        super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, connectionListener);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
         }
@@ -88,8 +86,8 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
         this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
-    public HttpHandler(HttpTransportFactory transportFactory, String path, TransportListener connectionListener, SettableFuture<Transport> onConnectionActive) {
-        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener, onConnectionActive);
+    public HttpHandler(HttpTransportFactory transportFactory, String path, TransportListener connectionListener) {
+        super(Mode.SERVER, State.UNINITIALIZED, transportFactory, connectionListener);
         if (transportFactory == null) {
             throw new NullPointerException("transportFactory");
         }

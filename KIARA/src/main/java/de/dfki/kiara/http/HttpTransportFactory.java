@@ -115,11 +115,25 @@ public class HttpTransportFactory extends AbstractTransportFactory {
 
         // Configure the client.
         final SettableFuture<Transport> onConnectionActive = SettableFuture.create();
-        final HttpHandler httpClientHandler = new HttpHandler(this, uri, HttpMethod.POST, onConnectionActive);
+        final HttpHandler clientHandler = new HttpHandler(this, uri, HttpMethod.POST, null);
+        clientHandler.setConnectionListener(new TransportListener() {
+
+            @Override
+            public void onConnectionOpened(Transport connection) {
+                clientHandler.setConnectionListener(null);
+                onConnectionActive.set(connection);
+            }
+
+            @Override
+            public void onConnectionClosed(Transport connection) {
+
+            }
+        });
+
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
-                .handler(new HttpClientInitializer(sslCtx, httpClientHandler));
+                .handler(new HttpClientInitializer(sslCtx, clientHandler));
         b.connect(host, port);
 
         return onConnectionActive;
@@ -128,8 +142,7 @@ public class HttpTransportFactory extends AbstractTransportFactory {
     @Override
     public ChannelHandler createServerChildHandler(String path, TransportListener connectionListener) {
         try {
-            SettableFuture<Transport> onConnectionActive = null;
-            return new HttpServerInitializer(this, createServerSslContext(), path, connectionListener, onConnectionActive);
+            return new HttpServerInitializer(this, createServerSslContext(), path, connectionListener);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

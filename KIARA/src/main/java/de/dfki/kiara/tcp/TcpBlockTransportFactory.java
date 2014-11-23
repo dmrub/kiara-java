@@ -128,11 +128,25 @@ public class TcpBlockTransportFactory extends AbstractTransportFactory {
 
         // Configure the client.
         final SettableFuture<Transport> onConnectionActive = SettableFuture.create();
-        final TcpHandler tcpClientHandler = new TcpHandler(this, uri, onConnectionActive);
+        final TcpHandler clientHandler = new TcpHandler(this, uri, null);
+        clientHandler.setConnectionListener(new TransportListener() {
+
+            @Override
+            public void onConnectionOpened(Transport connection) {
+                clientHandler.setConnectionListener(null);
+                onConnectionActive.set(connection);
+            }
+
+            @Override
+            public void onConnectionClosed(Transport connection) {
+
+            }
+        });
+
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
-                .handler(new TcpClientInitializer(sslCtx, tcpClientHandler));
+                .handler(new TcpClientInitializer(sslCtx, clientHandler));
         b.connect(host, port);
 
         return onConnectionActive;
@@ -141,7 +155,7 @@ public class TcpBlockTransportFactory extends AbstractTransportFactory {
     @Override
     public ChannelHandler createServerChildHandler(String path, TransportListener connectionHandler) {
         try {
-            return new TcpServerInitializer(this, createServerSslContext(), path, connectionHandler, null);
+            return new TcpServerInitializer(this, createServerSslContext(), path, connectionHandler);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

@@ -24,8 +24,6 @@ import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportListener;
 import de.dfki.kiara.netty.AbstractTransportFactory;
-import de.dfki.kiara.netty.ChannelFutureAndConnection;
-import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -123,7 +121,22 @@ public class WebsocketTransportFactory extends AbstractTransportFactory {
         final SettableFuture<Transport> onConnectionActive = SettableFuture.create();
         final WebsocketHandler clientHandler = new WebsocketHandler(this, uri,
                 WebSocketClientHandshakerFactory.newHandshaker(
-                        uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()), HttpMethod.POST, onConnectionActive);
+                        uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()),
+                HttpMethod.POST, null);
+        clientHandler.setConnectionListener(new TransportListener() {
+
+            @Override
+            public void onConnectionOpened(Transport connection) {
+                clientHandler.setConnectionListener(null);
+                onConnectionActive.set(connection);
+            }
+
+            @Override
+            public void onConnectionClosed(Transport connection) {
+
+            }
+        });
+
         Bootstrap b = new Bootstrap();
         b.group(getEventLoopGroup())
                 .channel(NioSocketChannel.class)
@@ -132,17 +145,17 @@ public class WebsocketTransportFactory extends AbstractTransportFactory {
         try {
             b.connect(host, port).sync();
             ChannelFuture f = clientHandler.getHandshakeFuture().sync();
-            return onConnectionActive;
         } catch (InterruptedException ex) {
-            throw new IOException(ex);
+            clientHandler.setConnectionListener(null);
+            onConnectionActive.setException(ex);
         }
+        return onConnectionActive;
     }
 
     @Override
     public ChannelHandler createServerChildHandler(String path, TransportListener connectionListener) {
         try {
-            SettableFuture<Transport> onConnectionActive = null;
-            return new WebsocketServerInitializer(this, createServerSslContext(), path, connectionListener, onConnectionActive);
+            return new WebsocketServerInitializer(this, createServerSslContext(), path, connectionListener);
         } catch (CertificateException ex) {
             throw new RuntimeException(ex);
         } catch (SSLException ex) {

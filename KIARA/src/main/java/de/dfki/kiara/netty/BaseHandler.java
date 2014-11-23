@@ -17,7 +17,6 @@
  */
 package de.dfki.kiara.netty;
 
-import com.google.common.util.concurrent.SettableFuture;
 import de.dfki.kiara.Transport;
 import de.dfki.kiara.TransportFactory;
 import de.dfki.kiara.TransportListener;
@@ -47,8 +46,7 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
 
     protected final T transportFactory;
     protected volatile Channel channel = null;
-    protected final TransportListener connectionListener;
-    protected final SettableFuture<Transport> onConnectionActive;
+    protected TransportListener connectionListener;
     protected final List<TransportMessageListener> listeners = new ArrayList<>();
 
     public static enum Mode {
@@ -68,11 +66,10 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
     }
     protected State state;
 
-    protected BaseHandler(Mode mode, State state, T transportFactory, TransportListener connectionListener, SettableFuture<Transport> onConnectionActive) {
+    protected BaseHandler(Mode mode, State state, T transportFactory, TransportListener connectionListener) {
         this.mode = mode;
         this.state = state;
         this.connectionListener = connectionListener;
-        this.onConnectionActive = onConnectionActive;
         this.transportFactory = transportFactory;
     }
 
@@ -99,6 +96,14 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
         synchronized (listeners) {
             return listeners.remove(listener);
         }
+    }
+
+    public TransportListener getConnectionListener() {
+        return connectionListener;
+    }
+
+    public void setConnectionListener(TransportListener connectionListener) {
+        this.connectionListener = connectionListener;
     }
 
     protected final void notifyListeners(final TransportMessage message) {
@@ -138,9 +143,6 @@ public abstract class BaseHandler<I, T extends TransportFactory> extends SimpleC
             case UNINITIALIZED:
             case WAIT_CONNECT:
                 state = State.CONNECTED;
-                if (onConnectionActive != null) {
-                    onConnectionActive.set(this);
-                }
                 if (connectionListener != null) {
                     connectionListener.onConnectionOpened(this);
                 }

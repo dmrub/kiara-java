@@ -94,7 +94,7 @@ public class Kiara {
         logger.info("shutdown {} services", tmp.size());
         for (RunningService s : tmp) {
             logger.info("shutdown {}", s);
-            s.shutdownGracefully();
+            s.shutdownService();
         }
     }
 

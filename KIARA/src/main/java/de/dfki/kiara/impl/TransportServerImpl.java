@@ -143,7 +143,7 @@ public class TransportServerImpl implements TransportServer, RunningService {
     }
 
     @Override
-    public void shutdownGracefully() {
+    public void shutdownService() {
         try {
             close();
         } catch (IOException ex) {

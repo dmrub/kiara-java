@@ -84,7 +84,6 @@ public abstract class AbstractMessageConnection implements MessageConnection, Tr
             final TransportMessage tresponse = transportConnection.createTransportMessage(tmessage);
             tresponse.setPayload(message.getMessageData());
             tresponse.setContentType(message.getProtocol().getMimeType());
-            assert transportConnection.isOpen(); // FIXME
             return transportConnection.send(tresponse);
         } catch (Exception ex) {
             logger.error("Could not send message", ex);

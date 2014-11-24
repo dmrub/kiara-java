@@ -39,7 +39,7 @@ public class Global {
         Kiara.addRunningService(new RunningService() {
 
             @Override
-            public void shutdownGracefully() {
+            public void shutdownService() {
                 executor.shutdown();
                 sameThreadExecutor.shutdown();
                 transportGroup.shutdownGracefully();

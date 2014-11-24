@@ -24,7 +24,6 @@ import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
-import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import de.dfki.kiara.netty.BaseHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -39,11 +38,10 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
  */
-public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory> {
+public class TcpHandler extends BaseHandler<ByteBuffer, TcpBlockTransportFactory> {
 
     private static final Logger logger = LoggerFactory.getLogger(TcpHandler.class);
 
-    private final NoCopyByteArrayOutputStream bout;
     private final URI uri;
     private volatile String sessionId = null;
     private final boolean SEND_SESSION_ID = true;
@@ -57,7 +55,6 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory> {
             throw new NullPointerException("uri");
         }
         this.uri = uri;
-        this.bout = new NoCopyByteArrayOutputStream(1024);
     }
 
     public TcpHandler(TcpBlockTransportFactory transportFactory, String path, TransportConnectionListener connectionListener) {
@@ -69,7 +66,6 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory> {
             throw new NullPointerException("connectionListener");
         }
         this.uri = null;
-        this.bout = null;
     }
 
     @Override
@@ -106,10 +102,10 @@ public class TcpHandler extends BaseHandler<Object, TcpBlockTransportFactory> {
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx, Object msg) throws Exception {
+    protected void channelRead0(final ChannelHandlerContext ctx, ByteBuffer msg) throws Exception {
         logger.debug("Handler: {} / Mode: {} / Channel: {} / Message class {}", this, mode, ctx.channel(), msg.getClass());
 
-        final TcpBlockMessage transportMessage = new TcpBlockMessage(this, (ByteBuffer) msg);
+        final TcpBlockMessage transportMessage = new TcpBlockMessage(this, msg);
 
         if (logger.isDebugEnabled()) {
             logger.debug("RECEIVED CONTENT {}", new String(transportMessage.getPayload().array(), transportMessage.getPayload().arrayOffset(), transportMessage.getPayload().remaining()));

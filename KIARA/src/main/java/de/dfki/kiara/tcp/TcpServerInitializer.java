@@ -34,13 +34,13 @@ import java.nio.ByteOrder;
 
 public class TcpServerInitializer extends ChannelInitializer<SocketChannel> {
 
-    private final TcpBlockTransportFactory transport;
+    private final TcpBlockTransportFactory transportFactory;
     private final SslContext sslCtx;
     private final TransportConnectionListener connectionListener;
     private final String path;
 
-    public TcpServerInitializer(TcpBlockTransportFactory transport, SslContext sslCtx, String path, TransportConnectionListener connectionListener) {
-        this.transport = transport;
+    public TcpServerInitializer(TcpBlockTransportFactory transportFactory, SslContext sslCtx, String path, TransportConnectionListener connectionListener) {
+        this.transportFactory = transportFactory;
         this.sslCtx = sslCtx;
         this.path = path;
         this.connectionListener = connectionListener;
@@ -66,6 +66,6 @@ public class TcpServerInitializer extends ChannelInitializer<SocketChannel> {
             }
         });
         p.addLast(new ByteBufferEncoder());
-        p.addLast(new TcpHandler(transport, path, connectionListener));
+        p.addLast(new TcpHandler(transportFactory, path, connectionListener));
     }
 }

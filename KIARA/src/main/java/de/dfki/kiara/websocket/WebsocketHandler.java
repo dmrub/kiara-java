@@ -26,6 +26,7 @@ import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.Glob;
+import de.dfki.kiara.util.HexDump;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -251,7 +252,8 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
                 //ctx.channel().write(new TextWebSocketFrame(request.toUpperCase()));
 
                 if (logger.isDebugEnabled()) {
-                    logger.debug("RECEIVED REQUEST WITH CONTENT {}", Util.bufferToString(transportMessage.getPayload()));
+                    logger.debug("RECEIVED REQUEST WITH CONTENT {}", HexDump.dumpHexString(transportMessage.getPayload()));
+                    //logger.debug("RECEIVED REQUEST WITH CONTENT {}", Util.bufferToString(transportMessage.getPayload()));
                 }
 
                 notifyListeners(transportMessage);
@@ -327,7 +329,8 @@ public class WebsocketHandler extends BaseHandler<Object, WebsocketTransportFact
 
     private void onResponse(TransportMessage response) {
         if (logger.isDebugEnabled()) {
-            logger.debug("RECEIVED RESPONSE WITH CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
+            logger.debug("RECEIVED RESPONSE WITH CONTENT {}", HexDump.dumpHexString(response.getPayload()));
+            //logger.debug("RECEIVED RESPONSE WITH CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
         }
 
         notifyListeners(response);

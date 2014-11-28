@@ -25,6 +25,7 @@ import de.dfki.kiara.TransportMessage;
 import de.dfki.kiara.Util;
 import de.dfki.kiara.netty.BaseHandler;
 import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
+import de.dfki.kiara.util.HexDump;
 import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -138,7 +139,8 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
                 transportMessage.setPayload(request.content().nioBuffer());
 
                 if (logger.isDebugEnabled()) {
-                    logger.debug("RECEIVED REQUEST WITH CONTENT {}", Util.bufferToString(transportMessage.getPayload()));
+                    logger.debug("RECEIVED CONTENT {}", HexDump.dumpHexString(transportMessage.getPayload()));
+                    //logger.debug("RECEIVED REQUEST WITH CONTENT {}", Util.bufferToString(transportMessage.getPayload()));
                 }
 
                 notifyListeners(transportMessage);
@@ -187,7 +189,7 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
 
     private void onResponse(HttpResponseMessage response) {
         if (logger.isDebugEnabled()) {
-            logger.debug("RECEIVED RESPONSE WITH CONTENT {}", new String(response.getPayload().array(), response.getPayload().arrayOffset(), response.getPayload().remaining()));
+            logger.debug("RECEIVED RESPONSE WITH CONTENT {}", HexDump.dumpHexString(response.getPayload()));
         }
 
         notifyListeners(response);

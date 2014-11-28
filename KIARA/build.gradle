@@ -61,6 +61,12 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version:'4.10'
 }
 
+test {
+    testLogging {
+        events 'started', 'passed'
+    }
+}
+
 antlr4.source = project.file("src/main/antlr4")
 antlr4.listener = true
 antlr4.visitor = true

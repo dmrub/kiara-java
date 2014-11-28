@@ -22,18 +22,22 @@ import de.dfki.kiara.*;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author Shahzad, Dmitri Rubinstein
@@ -151,16 +155,25 @@ public class CalcTest {
         calcSetup.shutdown();
     }
 
+    private static ExecutorService executor;
+
+
+    @BeforeClass
+    public static void setUpClass() {
+        executor = Executors.newCachedThreadPool();
+    }
+
     @AfterClass
     public static void tearDownClass() throws Exception {
+        executor.shutdown();
         // Kiara.shutdownGracefully();
     }
 
     @Parameters
     public static Collection configs() {
         Object[][] data = new Object[][] {
-                //{ "http", "jsonrpc" },
-                //{ "http", "javaobjectstream" },
+                { "http", "jsonrpc" },
+                { "http", "javaobjectstream" },
                 { "ws", "jsonrpc" },
                 { "ws", "javaobjectstream" },
                 { "tcp", "jsonrpc" },
@@ -186,6 +199,28 @@ public class CalcTest {
         assertEquals("-42", calc.int32ToString(-42));
         assertEquals(new Integer(521), calc.stringToInt32_CharSequence("521"));
         assertEquals("142", calc.int32ToString_Integer(142));
+
+        // Asynchronous test
+        Future<Integer>[] result = new Future[100];
+
+        // Addition
+        for (int i = 0; i < result.length; i++) {
+            final int arg = i;
+            result[arg] = executor.submit(new Callable<Integer>() {
+
+                public Integer call() throws Exception {
+                    final int result = calc.add(arg, arg);
+                    System.err.println(arg + "+" + arg + "=" + result);
+                    assertEquals(arg + arg, result);
+                    return result;
+                }
+            });
+        }
+
+        for (int i = 0; i < result.length; i++) {
+            assertEquals(i + i, result[i].get().intValue());
+        }
+
     }
 
 }

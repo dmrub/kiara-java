@@ -31,10 +31,14 @@ import org.apache.thrift.transport.TTransport;
 public class ThriftJavaClient {
 
     public static void main(String[] args) {
+        runClient(9090);
+    }
+
+    public static void runClient(int port) {
         try {
             int numMessages = 10000;
             String host = "localhost";
-            TTransport transport = new TSocket(host, 9090);
+            TTransport transport = new TSocket(host, port);
             TProtocol protocol = new TBinaryProtocol(transport);
             Benchmark.Client client = new Benchmark.Client(protocol);
             transport.open();
@@ -46,7 +50,7 @@ public class ThriftJavaClient {
             difference = difference * 1000;
             transport.close();
             double latency = (double) difference / (numMessages * 2.0);
-            System.out.println(String.format("\n\nAverage latency in microseconds %.3f\n\n\n", latency));
+            System.out.printf("%n%nAverage latency in microseconds %.3f%n%n%n", latency);
             System.out.println("Finished");
         } catch (NumberFormatException | TException e) {
             e.printStackTrace();

@@ -39,24 +39,26 @@ public class ThriftJavaServer {
     static TTransportFactory transportFactory;
 
     public static void main(String[] args) {
-        try {
-            handler = new BenchmarkHandler();
-            processor = new Benchmark.Processor(handler);
-            startServer(processor);
-        } catch (Exception x) {
-            x.printStackTrace();
-        }
+        TServer server = createServer(9090);
+        System.out.println("ApacheThrift server started...");
+        server.serve();
     }
 
-    public static void startServer(Benchmark.Processor processor) {
+    public static TServer createServer(int port) {
+        handler = new BenchmarkHandler();
+        processor = new Benchmark.Processor(handler);
+        return createServer(port, processor);
+    }
+
+    public static TServer createServer(int port, Benchmark.Processor processor) {
         try {
             System.out.println("Starting ApacheThrift server...");
-            TServerTransport serverTransport = new TServerSocket(9090);
+            TServerTransport serverTransport = new TServerSocket(port);
             TServer server = new TSimpleServer(new Args(serverTransport).processor(processor));
-            System.out.println("ApacheThrift server started...");
-            server.serve();
+            return server;
         } catch (TTransportException e) {
             e.printStackTrace();
         }
+        return null;
     }
 }

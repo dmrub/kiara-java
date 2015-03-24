@@ -107,7 +107,7 @@ public class HumanSimClient {
         System.out.format("Opening connection to %s...\n", uri);
 
         try (Context context = Kiara.createContext();
-                Connection connection = context.openConnection(uri)) {
+                Connection connection = context.connect(uri)) {
 
             MethodBinding<HumanSim> binder
             = new MethodBinding<>(HumanSim.class)

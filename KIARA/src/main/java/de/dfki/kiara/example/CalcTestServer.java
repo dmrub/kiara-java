@@ -53,7 +53,7 @@ public class CalcTestServer {
         System.out.printf("Protocol: %s\n", protocol);
         Service service = null;
         try (Context context = Kiara.createContext()) {
-            service = context.newService();
+            service = context.createService();
             service.loadServiceIDLFromString("KIARA",
                     "namespace * calc "
                     + "service calc { "
@@ -73,7 +73,7 @@ public class CalcTestServer {
             service.registerServiceFunction("calc.int32ToString", impl, "int32ToString");
             System.out.printf("Starting server...\n");
 
-            Server server = context.newServer("0.0.0.0", port, "/service");
+            Server server = context.createServer("0.0.0.0", port, "/service");
             server.addService("/rpc/calc", protocol, service);
             server.run();
         } catch (IDLParseException e) {

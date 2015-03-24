@@ -199,7 +199,7 @@ public class AosTest {
 
         @Override
         protected Server createServer(Context context, int port, String transport, String protocol, String configPath) throws Exception {
-            Service service = context.newService();
+            Service service = context.createService();
             service.loadServiceIDLFromString("KIARA",
                     "namespace * aostest "
                             + "struct Vec3f {"
@@ -230,7 +230,7 @@ public class AosTest {
             service.registerServiceFunction("aostest.getLocations", impl, "getLocations");
             System.out.printf("Starting server...%n");
 
-            Server server = context.newServer("0.0.0.0", port, "/service");
+            Server server = context.createServer("0.0.0.0", port, "/service");
             if ("http".equals(transport))
                 server.addService("/rpc/aostest", protocol, service);
             else if ("tcp".equals(transport))

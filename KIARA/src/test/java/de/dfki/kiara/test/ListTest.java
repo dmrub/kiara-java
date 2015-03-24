@@ -117,7 +117,7 @@ public class ListTest {
 
         @Override
         protected Server createServer(Context context, int port, String transport, String protocol, String configPath) throws Exception {
-            Service service = context.newService();
+            Service service = context.createService();
             service.loadServiceIDLFromString("KIARA",
                     "namespace * listtest "
                             + "struct KeyValue {"
@@ -136,7 +136,7 @@ public class ListTest {
             service.registerServiceFunction("listtest.getKeyValuePairs", impl, "getKeyValuePairs");
             System.out.printf("Starting server...%n");
 
-            Server server = context.newServer("0.0.0.0", port, "/service");
+            Server server = context.createServer("0.0.0.0", port, "/service");
             if ("http".equals(transport))
                 server.addService("/rpc/listtest", protocol, service);
             else if ("tcp".equals(transport))

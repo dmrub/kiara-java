@@ -55,7 +55,7 @@ public class BenchmarkClient {
     }
 
     public static void runClient(Context context, String uri) throws Exception {
-        try (Connection connection = context.openConnection(uri)) {
+        try (Connection connection = context.connect(uri)) {
 
             MethodBinding<Benchmark> binder
                     = new MethodBinding<>(Benchmark.class)

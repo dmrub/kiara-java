@@ -83,7 +83,7 @@ public abstract class TestSetup<CLIENT_INTERFACE> {
 
         final URI uri = new URI("http://localhost:"+port+"/"+configPath).normalize();
         System.out.printf("Opening connection to %s...%n", uri);
-        Connection connection = clientCtx.openConnection(uri.toString());
+        Connection connection = clientCtx.connect(uri.toString());
 
         return createClient(connection);
     }

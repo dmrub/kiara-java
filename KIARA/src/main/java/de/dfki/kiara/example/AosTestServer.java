@@ -55,7 +55,7 @@ public class AosTestServer {
         try (Context context = Kiara.createContext()) {
 
             /* Create a new service */
-            Service service = context.newService();
+            Service service = context.createService();
 
             /* Add IDL to the service */
             service.loadServiceIDLFromString("KIARA",
@@ -102,7 +102,7 @@ public class AosTestServer {
             /*
              * Create new server and register service
              */
-            Server server = context.newServer("0.0.0.0", port, "/service");
+            Server server = context.createServer("0.0.0.0", port, "/service");
 
             server.addService("/rpc/aostest", protocol, service);
             server.addService("tcp://0.0.0.0:5555/", protocol, service);

@@ -46,7 +46,7 @@ public class StructTestServer {
         System.out.printf("Protocol: %s\n", protocol);
         Service service = null;
         try (Context context = Kiara.createContext()) {
-            service = context.newService();
+            service = context.createService();
             service.loadServiceIDLFromString("KIARA",
                     "namespace * struct_test "
                     + "typedef i64 Integer "
@@ -107,7 +107,7 @@ public class StructTestServer {
             // Debugging calls end
 
             System.out.printf("Starting server...\n");
-            Server server = context.newServer("0.0.0.0", port, "/service2");
+            Server server = context.createServer("0.0.0.0", port, "/service2");
             server.addService("/rpc/struct", protocol, service);
             server.run();
         } catch (IDLParseException e) {

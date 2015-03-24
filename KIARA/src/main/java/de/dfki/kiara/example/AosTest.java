@@ -104,7 +104,7 @@ public class AosTest {
         System.out.format("Opening connection to %s...\n", uri);
 
         try (Context context = Kiara.createContext();
-                Connection connection = context.openConnection(uri)) {
+                Connection connection = context.connect(uri)) {
 
             MethodBinding<GetSetLocations> binder
                     = new MethodBinding<>(GetSetLocations.class)

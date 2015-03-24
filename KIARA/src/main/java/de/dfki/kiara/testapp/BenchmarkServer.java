@@ -54,7 +54,7 @@ public class BenchmarkServer {
     public static Server runServer(Context context, int port, String protocol) throws Exception {
 
         /* Create a new service */
-        Service service = context.newService();
+        Service service = context.createService();
 
         /* Add IDL to the service */
         service.loadServiceIDLFromString("KIARA",
@@ -148,7 +148,7 @@ public class BenchmarkServer {
         /*
          * Create new server and register service
          */
-        Server server = context.newServer("0.0.0.0", port, "/service");
+        Server server = context.createServer("0.0.0.0", port, "/service");
 
         //server.addService("/rpc/benchmark", protocol, service);
         server.addService("tcp://0.0.0.0:53212", protocol, service);

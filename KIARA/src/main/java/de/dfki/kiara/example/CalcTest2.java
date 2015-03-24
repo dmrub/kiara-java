@@ -54,7 +54,7 @@ public class CalcTest2 {
 
     public static void main(String[] args) throws Exception {
         try (Context context = Kiara.createContext();
-                Connection connection = context.openConnection("http://localhost:8080/service")) {
+                Connection connection = context.connect("http://localhost:8080/service")) {
 
             MethodBinding<Calc> binder
                     = new MethodBinding<>(Calc.class)

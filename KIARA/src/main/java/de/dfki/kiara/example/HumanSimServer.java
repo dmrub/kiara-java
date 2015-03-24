@@ -87,7 +87,7 @@ public class HumanSimServer {
 
             /* Create a new service */
 
-            Service service = context.newService();
+            Service service = context.createService();
 
             /* Add IDL to the service */
 
@@ -138,7 +138,7 @@ public class HumanSimServer {
              * Create new server and register service
              */
 
-            Server server = context.newServer("0.0.0.0", port, "/service");
+            Server server = context.createServer("0.0.0.0", port, "/service");
 
             server.addService("/rpc/humansim", protocol, service);
 

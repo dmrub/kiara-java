@@ -31,7 +31,7 @@ import java.net.URISyntaxException;
 public class ContextImpl implements Context {
 
     @Override
-    public Connection openConnection(String url) throws IOException {
+    public Connection connect(String url) throws IOException {
         return new ConnectionImpl(url);
     }
 
@@ -40,12 +40,12 @@ public class ContextImpl implements Context {
     }
 
     @Override
-    public Server newServer(String host, int port, String configPath) throws IOException, URISyntaxException {
+    public Server createServer(String host, int port, String configPath) throws IOException, URISyntaxException {
         return new ServerImpl(host, port, configPath);
     }
 
     @Override
-    public Service newService() {
+    public Service createService() {
         return new ServiceImpl(this);
     }
 

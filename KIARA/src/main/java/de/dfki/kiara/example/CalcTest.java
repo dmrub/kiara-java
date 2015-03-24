@@ -51,7 +51,7 @@ public class CalcTest {
         System.out.format("Opening connection to %s...\n", uri);
 
         try (Context context = Kiara.createContext();
-                Connection connection = context.openConnection(uri)) {
+                Connection connection = context.connect(uri)) {
 
             MethodBinding<Calc> binder
                     = new MethodBinding<>(Calc.class)

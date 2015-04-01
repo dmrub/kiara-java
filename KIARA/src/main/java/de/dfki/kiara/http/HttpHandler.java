@@ -22,11 +22,9 @@ import de.dfki.kiara.InvalidAddressException;
 import de.dfki.kiara.TransportAddress;
 import de.dfki.kiara.TransportConnectionListener;
 import de.dfki.kiara.TransportMessage;
-import de.dfki.kiara.Util;
+import de.dfki.kiara.impl.Global;
 import de.dfki.kiara.netty.BaseHandler;
-import de.dfki.kiara.netty.ListenableConstantFutureAdapter;
 import de.dfki.kiara.util.HexDump;
-import de.dfki.kiara.util.NoCopyByteArrayOutputStream;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -47,29 +45,36 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import io.netty.handler.codec.http.HttpVersion;
 import static io.netty.handler.codec.http.HttpVersion.*;
 import io.netty.handler.codec.http.LastHttpContent;
+import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Dmitri Rubinstein <dmitri.rubinstein@dfki.de>
+ * @author Dmitri Rubinstein {@literal <dmitri.rubinstein@dfki.de>}
  */
 public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpHandler.class);
 
+    private static final boolean SYNC_REQUEST_RESPONSE = true;
+
     private HttpHeaders headers = null;
-    private final NoCopyByteArrayOutputStream bout;
+    private final ByteArrayOutputStream bout;
 
     private final URI uri;
     private final HttpMethod method;
+    private final Semaphore semaphore;
+    private final AtomicBoolean canSend;
 
     public HttpHandler(HttpTransportFactory transportFactory, URI uri, HttpMethod method, TransportConnectionListener connectionListener) {
         super(Mode.CLIENT, State.UNINITIALIZED, transportFactory, connectionListener);
@@ -84,7 +89,9 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
         }
         this.uri = uri;
         this.method = method;
-        this.bout = new NoCopyByteArrayOutputStream(1024);
+        this.bout = new ByteArrayOutputStream(1024);
+        this.semaphore = SYNC_REQUEST_RESPONSE ? new Semaphore(1, true) : null;
+        this.canSend = SYNC_REQUEST_RESPONSE ? new AtomicBoolean(true) : null;
     }
 
     public HttpHandler(HttpTransportFactory transportFactory, String path, TransportConnectionListener connectionListener) {
@@ -103,6 +110,11 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
         this.uri = tmp;
         this.method = null;
         this.bout = null;
+        this.semaphore = SYNC_REQUEST_RESPONSE ? new Semaphore(1, true) : null;
+        this.canSend = SYNC_REQUEST_RESPONSE ? new AtomicBoolean(false) : null;
+        if (SYNC_REQUEST_RESPONSE) {
+            this.semaphore.acquireUninterruptibly();
+        }
     }
 
     @Override
@@ -125,6 +137,9 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
+        if (SYNC_REQUEST_RESPONSE && canSend.compareAndSet(false, true)) {
+            semaphore.release();
+        }
         ctx.flush();
     }
 
@@ -136,7 +151,7 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
                 final FullHttpRequest request = (FullHttpRequest) msg;
 
                 HttpRequestMessage transportMessage = new HttpRequestMessage(this, request);
-                transportMessage.setPayload(request.content().nioBuffer());
+                transportMessage.setPayload(request.content().copy().nioBuffer());
 
                 if (logger.isDebugEnabled()) {
                     logger.debug("RECEIVED CONTENT {}", HexDump.dumpHexString(transportMessage.getPayload()));
@@ -248,7 +263,7 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
     @Override
     public ListenableFuture<Void> send(TransportMessage message) {
         if (message == null) {
-            throw new NullPointerException("msg");
+            throw new NullPointerException("message");
         }
         if (state != State.CONNECTED || channel == null) {
             throw new IllegalStateException("state=" + state.toString() + " channel=" + channel);
@@ -264,7 +279,7 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
             httpMsg = msg.finalizeRequest();
 
             if (logger.isDebugEnabled()) {
-                logger.debug("SEND CONTENT: {}", msg.getContent().content().toString(StandardCharsets.UTF_8));
+                logger.debug("SEND CONTENT: {}", HexDump.dumpHexString(msg.getPayload()));
             }
         } else if (message instanceof HttpResponseMessage) {
             HttpResponseMessage msg = (HttpResponseMessage) message;
@@ -274,21 +289,35 @@ public class HttpHandler extends BaseHandler<Object, HttpTransportFactory> {
             keepAlive = HttpHeaders.isKeepAlive(httpMsg);
 
             if (logger.isDebugEnabled()) {
-                logger.debug("SEND CONTENT: {}", msg.getContent().content().toString(StandardCharsets.UTF_8));
+                logger.debug("SEND CONTENT: {}", HexDump.dumpHexString(msg.getPayload()));
             }
         } else {
             throw new IllegalArgumentException("msg is neither of type HttpRequestMessage nor HttpResponseMessage");
         }
 
-        ChannelFuture result = channel.writeAndFlush(httpMsg);
+        final HttpMessage httpMsgArg = httpMsg;
+        final boolean keepAliveArg = keepAlive;
 
-        if (!keepAlive) {
-            // If keep-alive is off, close the connection once the content is fully written.
-            channel.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-        }
+        ListenableFuture<Void> f = Global.executor.submit(new Callable<Void>() {
 
-        return new ListenableConstantFutureAdapter<>(result, null);
+            @Override
+            public Void call() throws Exception {
+                if (SYNC_REQUEST_RESPONSE) {
+                    semaphore.acquireUninterruptibly();
+                    canSend.set(false);
+                }
+                final ChannelFuture result = channel.writeAndFlush(httpMsgArg);
+                if (!keepAliveArg) {
+                    // If keep-alive is off, close the connection once the content is fully written.
+                    channel.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+                }
+
+                result.syncUninterruptibly();
+                return null;
+            }
+
+        });
+        return f;
     }
-
 
 }

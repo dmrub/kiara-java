@@ -31,6 +31,7 @@ public abstract class TransportMessage {
         public static final String CONTENT_TYPE = "content-type";
         public static final String REQUEST_URI = "request-uri";
         public static final String HTTP_METHOD = "http-method";
+        public static final String STATUS_CODE = "status-code";
     }
 
     private final Transport connection;
